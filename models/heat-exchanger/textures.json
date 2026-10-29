@@ -1,0 +1,12 @@
+{
+  "rust_coarse_01_diff_1k.jpg": {
+    "source": "https://polyhaven.com/a/rust_coarse_01",
+    "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rust_coarse_01/rust_coarse_01_diff_1k.jpg",
+    "licence": "CC0-1.0",
+    "licence_url": "https://polyhaven.com/license",
+    "authors": ["Dimitrios Savva", "Rico Cilliers"],
+    "fetched": "2026-10-30",
+    "md5": "c2d2facc7184f216d15a8f9957d3aa4c",
+    "sha256": "369f69eb86a7dcc4e5b6e30b1f3a4da5ce6ba50cf417de937efb4f09101f88d4"
+  }
+}
