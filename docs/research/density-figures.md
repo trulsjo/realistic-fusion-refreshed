@@ -168,9 +168,10 @@ the sheet and 16 for the normal pass.
 **A re-roll moved the normal-pass figure by about 0.003 on each machine, and the pixel figure by
 under 0.001**, *measured*. This is one re-roll per machine, so it shows how big one draw's spread
 can be, not how wide the spread is. Beside it, the fall after Truls's adjustments of 2026-10-29
-was 0.0109 and 0.0125 on the exchanger. That fall is three to four times anything this re-roll
-moved, so most of it was probably the change itself and not the reshuffle. That is *inferred*
-from one sample of the re-roll and was not tested further.
+was 0.0109 and 0.0125 on the exchanger. The normal-pass fall is three to four times what this
+re-roll moved that figure, and the pixel fall over ten times what it moved that one, so most of
+it was probably the change itself and not the reshuffle. That is *inferred* from one sample of
+the re-roll and was not tested further.
 
 **The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
 others, as #824's reshuffle had, *measured* by a mesh-overlap test on the built model before and

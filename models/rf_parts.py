@@ -1,7 +1,7 @@
 """The mesh helpers every machine's build script shares, imported from inside Blender's Python.
 
     import rf_parts as parts
-    parts.use(mat, geo)         # the machine's material resolver and geometry, before building
+    parts.use(mat, geo, seed)   # the machine's material resolver, geometry and seed, first
 
 ONE COPY, because two drifted in a week. models/isotope-collector/build.py was written by copying
 these out of models/heat-exchanger/build.py, and by the time #340 pulled them back together the two
@@ -54,8 +54,9 @@ after it in that loop that draws. Nothing outside the loop moves.
 AND SO IS A STREAM DRAWN FROM IN A LOOP. rf-heat-exchanger draws from the loom's stream once for
 each span it lies on but the one round the steam outlet, before `loom` draws its winding, so a span
 added there turns the winding too. models/test_rf_blender.py holds that one name's stream is
-independent of the others and that no file under models/ imports the global `random`; what a build
-script draws from one stream, and in what order, it cannot see, nor a draw from anything else.
+independent of the others, and that no file under models/ but models/rf_blender.py imports the
+global `random`, which that one uses only for `random.Random`; what a build script draws from one
+stream, and in what order, it cannot see, nor a draw from anything else.
 
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
