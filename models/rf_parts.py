@@ -469,10 +469,10 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), ring_
     """A pipe along a Bezier curve through `points` (slightly wobbly by construction), with
     optional corrugation rings every `corrugate` tiles.
 
-    `band` scales a ring against the pipe's radius: (major, minor). `ring_phase` is where the first
-    ring falls, as a fraction of the pitch; half a pitch in, unless a caller varies it. The default is the subtle
+    `band` scales a ring against the pipe's radius: (major, minor). The default band is the subtle
     ring every pipe here has always had; the steam header passes a heavier one, because on that
-    pipe the corrugation is the thing being drawn rather than a detail on it.
+    pipe the corrugation is the thing being drawn rather than a detail on it. `ring_phase` is where
+    the first ring falls, as a fraction of the pitch: half a pitch in, unless a caller varies it.
 
     A RING HAS A HIGHER FLOOR THAN ITS PIPE. At the default band a ring's minor diameter is 0.44 of
     the pipe's radius, so a pipe that clears the raised-detail floor on its own at radius 0.03 dies

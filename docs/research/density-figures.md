@@ -126,7 +126,7 @@ every random draw after them moved, the drums' radius and height among them, and
 moved with their new phases; any of these can move both figures. That is *inferred* from the build
 script and was not tested part by part. The bench prints four
 places, and the kit's rows give all four; the first row is #801's, given to three.
-Neither says the parts read at 32 px a tile; that is Truls's eye, on a frame from
+Neither figure says the parts read at 32 px a tile; that is Truls's eye, on a frame from
 `scripts/probe-heat-exchanger-art.ps1`.
 
 **The loom's sheath colours** are 43.7 dE00 or more from every accent and from hazard yellow, on
