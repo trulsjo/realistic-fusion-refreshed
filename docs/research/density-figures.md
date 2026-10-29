@@ -124,7 +124,8 @@ pixel figure rose with it, from 0.236 to 0.2846, a little under the 0.286 it sto
 not isolated. The guard rail's six lengths each draw their own jitter where one beam drew one, so
 every random draw after them moved, the drums' radius and height among them, and the hoses' rings
 moved with their new phases; any of these can move both figures. That is *inferred* from the build
-script and was not tested part by part. The bench prints four
+script and was not tested part by part. [The re-roll of #825](#the-re-roll-of-825), below,
+measures how much one reshuffle moves on its own. The bench prints four
 places, and the kit's rows give all four; the first row is #801's, given to three.
 Neither figure says the parts read at 32 px a tile; that is Truls's eye, on a frame from
 `scripts/probe-heat-exchanger-art.ps1`.
@@ -148,6 +149,27 @@ is near any of them. Rerun it from the repository root:
 ```
 python -c "import sys,itertools;sys.path[:0]=['tools','models'];import numpy as n,colour_distance as c,rf_blender as r;s=lambda l:n.where(n.asarray(l)<=0.0031308,12.92*n.asarray(l),1.055*n.asarray(l)**(1/2.4)-0.055);a={'energy':(1,.45,.1),'steam':(.85,.88,.9),'water':(.25,.55,1),'plasma':(.55,.2,1),'tritium':(.5,1,.6),'helium-3':(.8,.45,1),'hazard':(.72,.55,.09)};d=lambda x,y:round(float(c.ciede2000(c.srgb_to_lab(s(x)),c.srgb_to_lab(s(y)))),1);[print(k,{m:d(v[0],w) for m,w in a.items()}) for k,v in r.CABLE_COLOURS.items()];print(sorted((d(a[x],a[y]),x,y) for x,y in itertools.combinations(list(a)[:6],2))[:2])"
 ```
+
+## The re-roll of #825
+
+Measured 2026-10-29 with the same two commands, before and after
+[#825](https://github.com/trulsjo/realistic-fusion-refreshed/issues/825) gave each part of a model
+its own random stream, seeded from its name. That change moves no part on purpose. Every
+imperfection is drawn again, once, from a different stream, so this is the re-roll alone that the
+kit's last two rows could not separate from the change they followed. Blender 5.2.0, 64 samples for
+the sheet and 16 for the normal pass.
+
+| sheet | pixel figure, before | after | normal-pass figure, before | after |
+|---|---:|---:|---:|---:|
+| `rf-heat-exchanger`, north | 0.2754 | 0.2757 | 0.5199 | 0.5231 |
+| `rf-isotope-collector`, north | 0.3484 | 0.3475 | 0.4966 | 0.4995 |
+
+**A re-roll moved the normal-pass figure by about 0.003 on each machine, and the pixel figure by
+under 0.001**, *measured*. This is one re-roll per machine, so it shows how big one draw's spread
+can be, not how wide the spread is. Beside it, the fall after Truls's adjustments of 2026-10-29
+was 0.0109 and 0.0125 on the exchanger. That fall is three to four times anything this re-roll
+moved, so most of it was probably the change itself and not the reshuffle. That is *inferred*
+from one sample of the re-roll and was not tested further.
 
 ## What the "before" says, and how far it goes
 
