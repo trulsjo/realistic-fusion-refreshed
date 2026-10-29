@@ -274,7 +274,13 @@ else:
     # cross rails at the post lines -- is at OUTLET_X, which is inside the deck. So the deck gives
     # it a floor opening, which is what a deck has where a pipe drops through it; the alternative
     # was a hose visibly cutting a slat.
-    OUTLET_X, OUTLET_Y = 1.80, 1.45
+    #
+    # 1.52 AND NOT 1.80, so the descent's rings clear the frame (#825). They stand 0.285 off the
+    # hose's axis, and at 1.80 they reached 2.085, past the conduit's inner face at 1.92 and the
+    # top rail's inner flange at 2.03: the run passed through one or the other, and which one turned
+    # on where its rings fell. The descent also bows about 0.07 east of its control points, so 1.60
+    # still put a ring 0.02 into the conduit (measured on the built model).
+    OUTLET_X, OUTLET_Y = 1.52, 1.45
     #
     # THE GUARD RAIL, IN LENGTHS BETWEEN THE POSTS, NOT ONE BEAM ALONG THEM (Truls, 2026-10-29). As
     # one beam it ran through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter
@@ -282,8 +288,9 @@ else:
     # into the cabinet and across its blue panel. Each length stops RAIL_STOP short of a post's
     # centre, which leaves 0.045 beyond the flange; the post and the length each jitter by up to
     # 0.02, so together they close it by at most 0.04. The first starts at the cabinet's north
-    # face, and the length under the steam outlet is cut round its descent, whose rings reach past
-    # the rail's inner flange. RailE2 is still the rail's name; its
+    # face, and the length under the steam outlet is cut round its descent, whose rings reached
+    # past the rail's inner flange while OUTLET_X was 1.80. They stop short of it since #825 moved
+    # the descent in, and the cut is kept as it was. RailE2 is still the rail's name; its
     # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
     RAIL_STOP, OUTLET_GAP = 0.16, 0.6
@@ -325,8 +332,9 @@ else:
     # at RailE2's height, and with the plates standing proud of a backing on the post line they
     # passed through it; the backing already did. Set back BAY_BACK, the plates' faces stop short
     # of the rail's flange and the rail runs in front of them. The rivets keep their place behind
-    # the backing.
-    BAY_BACK = 0.12
+    # the backing. 0.14 rather than the 0.12 it was set at, which left 0.03 for the bay's yaw and the
+    # rail's own jitter to share, and on #825's draws a plate met the rail.
+    BAY_BACK = 0.14
     bays = []
     for i, k in enumerate((2, 5)):
         y0, y1 = post_ys[k], post_ys[k + 1]
@@ -421,9 +429,18 @@ else:
         torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
               rot=(math.pi / 2, 0, 0))
         # glowing feed line from the manifold to the foot of the drum, under the deck
+        #
+        # IT CROSSES THE MID-LINE POSTS BESIDE THE DRUM'S POST, NOT THROUGH IT (#825). Each drum
+        # stands within 0.04 of a post line, so a feed leaving the manifold at the drum's own y
+        # went through the post or grazed its flange, and which one turned on its jitter. It
+        # leaves on the side of the post the drum stands, FEED_CLEAR or a little more off the
+        # post's centre: the flange's 0.115 and its jitter, the feed's 0.1, and air.
+        FEED_CLEAR = 0.27
         s = stream(f"Feed{i}")
-        pipe(f"Feed{i}", [(MX + MAN_W / 2, y + s.jitter(0, 0.3), SLAB + 0.42),
-                          (s.jitter(-0.7, 0.15), y + s.jitter(0, 0.2), SLAB + s.jitter(0.4, 0.03)),
+        post = min(post_ys, key=lambda p: abs(p - y))
+        fy = post + (1 if y >= post else -1) * (FEED_CLEAR + s.uniform(0, 0.15))
+        pipe(f"Feed{i}", [(MX + MAN_W / 2, fy, SLAB + 0.42),
+                          (s.jitter(-0.7, 0.15), fy, SLAB + s.jitter(0.4, 0.03)),
                           (DX - r * 0.7, y, SLAB + 0.45)], 0.1, "energy", glow=True)
 
     # -- steam: three corrugated hose runs, each one BENDING DOWN ONTO A DRUM CAP (Truls, #275).
@@ -558,8 +575,10 @@ else:
     # the beam -- and wanders a little across it between the posts, which is what keeps it a loom
     # and not a fourth rail.
     #
-    # IT STEPS OUT ROUND THE STEAM OUTLET, whose rings reach 0.285 from the hose's axis, 0.31 inboard
-    # of the rail line: on the rail line the loom passed through them (the branch's pre-PR review).
+    # IT STEPS OUT ROUND THE STEAM OUTLET, whose rings reach 0.285 from the hose's axis. With the
+    # descent at 1.80 that was 0.31 inboard of the rail line, and on the rail line the loom passed
+    # through them (#824's pre-PR review). Since #825 moved it to 1.52 the step is no longer what
+    # keeps the two apart, and it is kept as it was.
     # JOG_X is where the loom's axis passes the outlet, set ABSOLUTELY rather than off the rail:
     # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
     # collision box. Here, by the arithmetic, that edge is 0.004 inside it and the inner edge 0.003
@@ -583,7 +602,9 @@ else:
     LOOM_HALF = rf.loom_spread(3, 0.035) + 0.035         # the bundle's half-width
     JOG_X, DROP_X = HALF_W - LOOM_HALF - 0.004, EX - 0.43
     END_Y = HALF_L - 0.73
-    LOOM_R = LOOM_HALF + 0.025                           # resting on the rail, with air for the cross rails
+    # Resting on the rail, with air for the cross rails: 0.05, since a cross rail's own jitter and
+    # tilt can lift its top 0.03 over the rail's where the loom crosses it (#825).
+    LOOM_R = LOOM_HALF + 0.05
     from mathutils import Vector
     top = bpy.data.objects["RailE-f1"]
     bpy.context.view_layer.update()
