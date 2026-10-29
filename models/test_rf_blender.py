@@ -5,7 +5,8 @@ in its resolution; this only pins the numbers the sheets are declared from, the 
 the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pieces go and how
 its floors are checked, and since #825 the named streams parts draw from and that no file here
 but rf_blender.py imports the global `random`, which that one uses only for `random.Random`, and
-since #827 that no part that draws is named from a loop's counter. It renders nothing, so it cannot see whether a part reads; it cannot
+since #827 that neither rendered machine's build script names a part that draws from a loop's
+counter. It renders nothing, so it cannot see whether a part reads; it cannot
 see what a build script draws from one stream or in what order, nor a draw from anything but
 `random`, such as `mathutils.noise`."""
 import math
@@ -382,11 +383,17 @@ for _dir, _, _files in os.walk(_models):
 #
 # What draws is worked out rather than listed, so a new helper is held without an edit here: a
 # function draws when its body calls `stream`, `bevel`, or a function that draws, in rf_parts.py or
-# in the build script itself. A call that passes `bev=0` puts no bevel on and draws nothing.
+# in the build script itself. A call that passes `bev=0` puts no bevel on and draws nothing, so
+# `seam`, which cuts a box with `bev=0`, draws nothing either.
 #
-# It reads names written in the call. It cannot see one that reaches the call through a variable
-# (`n = f"Rail{k}"; hbeam(n, ...)`), a counter kept by hand (`k += 1`), or a loop over anything but
-# `enumerate` and `range` that numbers its parts some other way.
+# It reads the two rendered machines' build scripts, and only them. rf_parts.py's own helpers
+# number the pieces of one part from `enumerate` -- a panel set's plates, a casing's segments, a
+# fan stack's discs -- and are not held: a part's pieces are its own grid, fixed by the call.
+#
+# It reads names written in the call, as an f-string, a `+` or `%` on a string, or a `.format`.
+# It cannot see one that reaches the call through a variable (`n = f"Rail{k}"; hbeam(n, ...)`), a
+# counter kept by hand (`k += 1`), or a loop over anything but `enumerate` and `range` that numbers
+# its parts some other way, such as `zip` with a string of letters.
 def _drawing(trees):
     defs = {}
     for tree in trees:
@@ -396,7 +403,8 @@ def _drawing(trees):
     draws = {"stream", "bevel"}
     while True:
         more = {name for name, nodes in defs.items() if name not in draws
-                and any(_callee(c) in draws for n in nodes for c in ast.walk(n) if isinstance(c, ast.Call))}
+                and any(_callee(c) in draws and not _bevelless(c)
+                        for n in nodes for c in ast.walk(n) if isinstance(c, ast.Call))}
         if not more:
             return draws
         draws |= more
@@ -405,6 +413,23 @@ def _drawing(trees):
 def _callee(call):
     f = call.func
     return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+
+
+def _bevelless(call):
+    """A call that passes `bev` as a constant that is false: it puts no bevel on."""
+    return any(k.arg == "bev" and isinstance(k.value, ast.Constant) and not k.value.value
+               for k in call.keywords)
+
+
+def _a_name(node):
+    """An expression that builds a string: an f-string, `+` or `%` with a string in it, `.format`."""
+    if isinstance(node, ast.JoinedStr):
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Mod)):
+        return any(isinstance(n, (ast.Constant, ast.JoinedStr)) and not isinstance(getattr(n, "value", ""), (int, float))
+                   for n in ast.walk(node))
+    return (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "format" and isinstance(node.func.value, ast.Constant))
 
 
 def _counters(loop):
@@ -430,11 +455,9 @@ def loop_named(source, kit=""):
             counters = counters | _counters(node)
         if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
             counters = counters.union(*(_counters(g) for g in node.generators))
-        if isinstance(node, ast.Call) and _callee(node) in draws and not any(
-                k.arg == "bev" and isinstance(k.value, ast.Constant) and not k.value.value
-                for k in node.keywords):
+        if isinstance(node, ast.Call) and _callee(node) in draws and not _bevelless(node):
             for arg in list(node.args) + [k.value for k in node.keywords]:
-                if isinstance(arg, ast.JoinedStr) and any(
+                if _a_name(arg) and any(
                         isinstance(n, ast.Name) and n.id in counters for n in ast.walk(arg)):
                     found.append(ast.unparse(arg))
         for child in ast.iter_child_nodes(node):
@@ -460,6 +483,15 @@ assert loop_named("for sx in (-1, 1):\n    cyl(f'Post{sx}')", _kit_src) == []
 assert loop_named("for i in range(30):\n    box(f'Slat{i}', bev=0)",
                   _kit_src + "def box(name, bev=0.03): bevel(0, bev, name)\n") == []
 assert loop_named("def rivet(n): pass\nfor i in range(3):\n    rivet(f'Rivet{i}')", _kit_src) == []
+# Nor does a helper that reaches one only through a call passing `bev=0`, as `seam` reaches `box`.
+assert loop_named("def seam(n): box(n, bev=0)\nfor i in range(3):\n    seam(f'Seam{i}')",
+                  _kit_src + "def box(name, bev=0.03): bevel(0, bev, name)\n") == []
+# A name built by `+`, `%` or `.format` is read as an f-string is; a number worked from the counter
+# is not a name.
+assert loop_named("for i in range(3):\n    cyl('Drum' + str(i))", _kit_src) == ["'Drum' + str(i)"]
+assert loop_named("for i in range(3):\n    cyl('Drum%d' % i)", _kit_src) == ["'Drum%d' % i"]
+assert loop_named("for i in range(3):\n    cyl('Drum{}'.format(i))", _kit_src) == ["'Drum{}'.format(i)"]
+assert loop_named("for i in range(3):\n    cyl('Drum', i * 0.5 + 1)", _kit_src) == []
 
 _kit = open(os.path.join(_models, "rf_parts.py"), encoding="utf-8").read()
 for _machine in ("heat-exchanger", "isotope-collector"):

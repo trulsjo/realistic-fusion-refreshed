@@ -237,11 +237,11 @@ else:
 
     box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body", corrode=True,
         rot=(0, 0, MAN_YAW))
-    # Each seam is named for where it stands along the manifold, never for its place in the loop
-    # (#827): a part's name is its stream, and a number counted off a loop is an order.
+    # Each seam is named for where it stands along the manifold, as the frame's parts are (#827).
+    # A seam is cut with no bevel and draws nothing, so its name moves no stream.
     for i in range(6):
         y = -HALF_L + 0.1 + (i + 1) * (L - 0.2) / 7
-        seam(f"ManifoldSeam{y:+.2f}",(MAN_W + 0.02, 0.05, MAN_H - 0.2), (on_manifold(y), y, SLAB + MAN_H / 2),
+        seam(f"ManifoldSeam{y:+.2f}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (on_manifold(y), y, SLAB + MAN_H / 2),
              rot=(0, 0, MAN_YAW))
     rivets("ManifoldRivetsTop", (on_manifold(-HALF_L + 0.3) - MAN_W / 2 + 0.08, -HALF_L + 0.3, SLAB + MAN_H + 0.01),
            (on_manifold(HALF_L - 0.3) - MAN_W / 2 + 0.08, HALF_L - 0.3, SLAB + MAN_H + 0.01), 28)
@@ -258,16 +258,15 @@ else:
     EX = HALF_W - 0.12
     MXE = MX + MAN_W / 2 + 0.2
     #
-    # THE POST LINES ARE LETTERED, A at the south end to G at the north, and every part that stands
-    # on one is named for its letter (#827). A part draws from the stream of its name, so a name
-    # numbered off a loop re-rolled every part after one inserted earlier in it.
+    # EACH POST LINE IS NAMED FOR WHERE IT STANDS, its y to two places with its sign, and every
+    # part that stands on one is named for it (#827). A part draws from the stream of its name, so a
+    # name numbered off a loop re-rolled every part after one inserted earlier in it.
     post_ys = [-HALF_L + 0.3 + k * (L - 0.6) / 6 for k in range(7)]
-    POST_LINES = "ABCDEFG"
-    posts = dict(zip(POST_LINES, post_ys))
+    posts = {f"{y:+.2f}": y for y in post_ys}
     for p, y in posts.items():
-        hbeam(f"PostE-{p}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
-        hbeam(f"PostM-{p}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
-        hbeam(f"Rail-{p}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
+        hbeam(f"PostE{p}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
+        hbeam(f"PostM{p}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
+        hbeam(f"Rail{p}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
     hbeam("RailE", L - 0.4, (EX, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     # The low rail along the open side is the guard rail a walkway behind it would have, and is
@@ -299,9 +298,9 @@ else:
     # face, and the length under the steam outlet is cut round its descent, whose rings reached
     # past the rail's inner flange while OUTLET_X was 1.80. They stop short of it since #825 moved
     # the descent in, and the cut is kept as it was. RailE2 is still the rail's name. Each length
-    # is named for where it starts, the cabinet or a post line's letter, as RailE2-Cab and
-    # RailE2-C, and the two halves of the cut one end in S and N (#827). It moved here from beside
-    # RailE so that OUTLET_Y is known.
+    # is named for where it starts, the cabinet or a post line, as RailE2Cab and RailE2-2.40, and
+    # the two halves of the cut one end in S and N (#827). It moved here from beside RailE so that
+    # OUTLET_Y is known.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
     RAIL_STOP, OUTLET_GAP = 0.16, 0.6
     spans = []
@@ -311,7 +310,7 @@ else:
         spans += ([(p + "S", a, OUTLET_Y - OUTLET_GAP), (p + "N", OUTLET_Y + OUTLET_GAP, b)]
                   if a < OUTLET_Y < b else [(p, a, b)])
     for p, a, b in spans:
-        hbeam(f"RailE2-{p}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
+        hbeam(f"RailE2{p}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
               depth=0.12, flange=0.12, material="hazard")
     #
     # THE TWO END SLATS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the
@@ -348,16 +347,16 @@ else:
     BAY_BACK = 0.14
     bays = []
     for k in (2, 5):                                  # each bay named for the post line it starts at
-        p, y0, y1 = POST_LINES[k], post_ys[k], post_ys[k + 1]
-        yaw = stream(f"BayPanel-{p}").jitter(0, 0.008)
-        box(f"BayPanel-{p}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
+        p, y0, y1 = f"{post_ys[k]:+.2f}", post_ys[k], post_ys[k + 1]
+        yaw = stream(f"BayPanel{p}").jitter(0, 0.008)
+        box(f"BayPanel{p}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
             "dark", rot=(0, 0, yaw))
         bays.append((p, (EX - 0.015 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
-        rivets(f"BayPanelRivets-{p}", (EX - 0.1 - BAY_BACK, y0 + 0.25, SLAB + 1.42),
+        rivets(f"BayPanelRivets{p}", (EX - 0.1 - BAY_BACK, y0 + 0.25, SLAB + 1.42),
                (EX - 0.1 - BAY_BACK, y1 - 0.25, SLAB + 1.42), 5, r=0.035)
     for k, rise in ((1, 1), (4, -1)):                 # two bays only: a braced frame, not a lattice
         dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * rise
-        box(f"Brace-{POST_LINES[k]}", (0.06, math.hypot(dy, dz), 0.14),
+        box(f"Brace{post_ys[k]:+.2f}", (0.06, math.hypot(dy, dz), 0.14),
             (EX, (post_ys[k] + post_ys[k + 1]) / 2, SLAB + FRAME_H / 2), "frame",
             rot=(math.atan2(dz, dy), 0, 0), bev=0.01)
 
@@ -649,7 +648,7 @@ else:
     LOOM_Z = on_rail(0)[2]
     #
     # EACH SPAN'S WANDER IS DRAWN FROM A STREAM OF ITS OWN, named for the post line the span starts
-    # at, as Loom-C (#827). Drawn from the loom's own stream, once a span, a span added to the rail
+    # at, as Loom-2.40 (#827). Drawn from the loom's own stream, once a span, a span added to the rail
     # turned every wander after it and the winding `loom` draws after them; the winding is all
     # that stream carries now.
     clamps = [(p, y) for p, y in posts.items() if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
@@ -659,7 +658,7 @@ else:
             lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, x=JOG_X),
                     on_rail(OUTLET_Y + 0.5)]
         else:
-            lie += [on_rail(a), on_rail((a + b) / 2, dx=stream(f"Loom-{p}").jitter(-0.02, 0.03))]
+            lie += [on_rail(a), on_rail((a + b) / 2, dx=stream(f"Loom{p}").jitter(-0.02, 0.03))]
     cab_top, cab_n = cpos[2] + CAB[2] / 2, cpos[1] + CAB[1] / 2
     loom("Loom", [(DROP_X + 0.15, cpos[1], cab_top + 0.02), (DROP_X + 0.1, cpos[1] + 0.3, LOOM_Z),
                   (DROP_X + 0.2, cab_n + 0.1, LOOM_Z + 0.06), on_rail(cab_n + 0.5)]
@@ -670,7 +669,7 @@ else:
         # The plates stop 0.06 inside the backing's ends: a handwheel rim beside a bay can stand
         # just past the backing, and plates out to its ends touched one (the branch's pre-PR
         # review).
-        panels(f"BayPlates-{p}", centre, (size[0] - 0.12, size[1]), "+X", (3, 2), "paint", yaw=yaw)
+        panels(f"BayPlates{p}", centre, (size[0] - 0.12, size[1]), "+X", (3, 2), "paint", yaw=yaw)
     # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
     # by their shadow alone. Its outer quarter tile is left bare: the conduit and the corner post's
     # flange pass just over it, and plates there stood into both (the branch's pre-PR review).
