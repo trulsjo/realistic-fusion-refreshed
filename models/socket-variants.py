@@ -5,10 +5,10 @@
 
 MORE THAN ONE AT A TIME, AND THEY ARE APPLIED IN THIS FILE'S OWN ORDER RATHER THAN THE CALLER'S.
 `unflanged,groundless` and `groundless,unflanged` must give the same model, or two runs that asked
-for the same thing would differ -- and they would differ invisibly, because `random.seed` below
-makes the bevels deterministic per SET of treatments and nothing else would say which set was
-drawn. So the list is sorted into TREATMENTS order before anything is applied, and a name repeated
-is an error rather than a silent no-op.
+for the same thing could differ, and differ invisibly. Since #825 the bevels cannot: each piece
+draws from the stream of its own name, whatever ran before it. Whether two treatments meet on the
+geometry is not something this file proves, so the list is still sorted into TREATMENTS order
+before anything is applied, and a name repeated is an error rather than a silent no-op.
 
 ONE PAIR IS REFUSED, and it is the only one: `flanged` with `unflanged`. One adds the rib pair and
 the other deletes it, so whichever ran second would decide, and the model would be whatever the
@@ -89,7 +89,6 @@ not already wear.
 import json
 import math
 import os
-import random
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -136,8 +135,6 @@ CORE_MATERIAL = "frame"
 # sets the rim 0.03 INBOARD of the footprint edge, where it rings nothing but air. Nor is it
 # rf_parts.RIM_PROUD, which is how far the shipped rim's major radius stands past the tube.
 RIM_OUTBOARD = 0.03
-
-random.seed(350)                 # rf_parts' bevels draw from `random`; same treatments, same model
 
 
 def fail(message):
@@ -202,7 +199,7 @@ def resolve(name, frost=False):
     return m
 
 
-rf_parts.use(resolve, geo)
+rf_parts.use(resolve, geo, seed=350)  # each bevel: its piece's name and this
 
 
 def axis_of(obj):

@@ -17,6 +17,7 @@ import hashlib
 import json
 import math
 import os
+import random
 import sys
 
 PX_PER_TILE = 64
@@ -485,6 +486,32 @@ def casing_arc(n, radius, gap):
     """The arc, in radians, each of `n` casing segments round `radius` spans when neighbours stand
     `gap` tiles apart along the circumference."""
     return 2 * math.pi / n - gap / radius
+
+
+class Stream(random.Random):
+    """One part's own random stream: `random.Random` with the one draw the models make most."""
+
+    def jitter(self, v, s):
+        """`v` moved by up to `s` either way."""
+        return v + self.uniform(-s, s)
+
+
+def stream(seed, name):
+    """The random stream a part named `name` draws its imperfections from, on a machine built with
+    `seed` (#825). rf_parts.stream hands these out, one per name for the whole build.
+
+    A PART'S IMPERFECTIONS DEPEND ON ITS NAME ALONE. They used to come from one global `random`
+    seeded once per build, in build order, so a part added early moved every draw after it: on
+    #824 a guard rail laid in lengths re-rolled the drums and the handwheels, and a handwheel rim
+    landed on a bay's plates. Seeded from the name, a part keeps its values whatever is built
+    before it, after it or instead of it.
+
+    THE SEED IS A HASH, NOT `random.Random(str)`. Both are stable, but this one says what it does
+    without leaning on how `random` turns a string into a number, and models/test_rf_blender.py
+    pins a draw from it so that Blender's Python and the system's are held to the same numbers.
+    """
+    digest = hashlib.sha256(f"{seed}/{name}".encode("utf-8")).digest()
+    return Stream(int.from_bytes(digest, "big"))
 
 
 def geometry_sha256(path):

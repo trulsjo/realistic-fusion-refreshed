@@ -370,3 +370,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-10-29, #803: `models/test_rf_blender.py` also pins that `rf_blender.bundle`'s `phase`
   turns a bundle at its start, so two looms on one curve wind differently (Truls, on the
   exchanger's frame).
+- 2026-10-29, #825: `models/test_rf_blender.py` also pins `rf_blender.stream`: a part's draws
+  are the same whatever other part is added before or after it, the machine's seed and the
+  part's name both reach its stream, and one draw is pinned to a number so that Blender's Python
+  and the system's are held to the same values. It also fails when any file under `models/` but
+  `models/rf_blender.py` imports `random`, or when that file uses it for anything but
+  `random.Random`.

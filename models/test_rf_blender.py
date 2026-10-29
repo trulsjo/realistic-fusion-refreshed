@@ -2,8 +2,9 @@
 exits 0 or raises. What needs Blender -- that the camera really lands a tile on 64 px, that two
 renders give the same bytes -- was measured by hand for #249 on the calibration cube and is recorded
 in its resolution; this only pins the numbers the sheets are declared from, the detail floors,
-the footprint-edge check, and since #803 the kit's arithmetic: where a kit part's pieces go and how
-its floors are checked. It renders nothing, so it cannot see whether a part reads."""
+the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pieces go and how
+its floors are checked, and since #825 that a part's imperfections depend on its name alone. It
+renders nothing, so it cannot see whether a part reads."""
 import math
 import os
 import sys
@@ -307,6 +308,60 @@ _slot = rf.least_gap(_seg, rf.ring((0, 0, 0), 1.0, 8))
 assert abs(_slot - 2 * math.sin(0.05 / 2)) < 1e-9, _slot
 # Up a stack 0.4 apart, segments 0.34 tall leave 0.06 between bands.
 assert abs(rf.least_gap(_seg, rf.stack((0, 0, 0), 2, 0.4)) - 0.06) < 1e-9
+
+# ---- each part's own random stream (#825) ----
+#
+# A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,
+# so they depend on that name alone. Here a "build" is a list of (name, draws) in build order, each
+# drawing from its own stream the way rf_parts.stream hands them out: one per name, kept for the
+# build. Adding a part anywhere, early or late, leaves every other part's values as they were.
+def _build(parts, seed=7):
+    streams, drawn = {}, {}
+    for name, n in parts:
+        s = streams.setdefault(name, rf.stream(seed, name))
+        drawn.setdefault(name, []).extend(s.uniform(0.75, 1.6) for _ in range(n))
+    return drawn
+
+
+_parts = [("Manifold", 2), ("PostE0", 3), ("Drum0", 4), ("Header0", 2), ("Drum0", 1), ("Loom", 1)]
+_before = _build(_parts)
+for _at in range(len(_parts) + 1):
+    _after = _build(_parts[:_at] + [("RailE2-0", 5)] + _parts[_at:])
+    assert {k: v for k, v in _after.items() if k != "RailE2-0"} == _before, _at
+# Re-ordering the parts leaves each one's values too; a name drawn from twice keeps its own order.
+assert _build(list(reversed(_parts[:4])) + _parts[4:]) == _before
+# The seed and the name both reach the stream; neither is ignored.
+assert rf.stream(7, "Drum0").random() != rf.stream(11, "Drum0").random()
+assert rf.stream(7, "Drum0").random() != rf.stream(7, "Drum1").random()
+# AND THE SAME IN EVERY PYTHON. Blender builds under its own Python and this runs under the
+# system's, so the seeding is pinned to a number: a change in how a name becomes a seed would
+# re-roll every model silently, and this is where it shows.
+assert rf.stream(7, "Drum0").random() == 0.10422063600183107, rf.stream(7, "Drum0").random()
+# `jitter` stays inside its spread.
+_s = rf.stream(7, "jitter")
+assert all(abs(_s.jitter(1.0, 0.02) - 1.0) <= 0.02 for _ in range(1000))
+
+# NOTHING ELSE DRAWS. The test above holds only if every draw a model makes comes through
+# rf_blender.stream, so no file under models/ but rf_blender.py imports `random`, and that one
+# uses it for `random.Random` and nothing else: a draw from the shared global stream is what
+# made a part's imperfections depend on everything built before it.
+import ast  # noqa: E402
+_models = os.path.dirname(os.path.abspath(__file__))
+for _dir, _, _files in os.walk(_models):
+    for _f in _files:
+        if not _f.endswith(".py"):
+            continue
+        _path = os.path.join(_dir, _f)
+        _tree = ast.parse(open(_path, encoding="utf-8").read(), _path)
+        _imports = [n for n in ast.walk(_tree)
+                    if (isinstance(n, ast.Import) and any(a.name == "random" for a in n.names))
+                    or (isinstance(n, ast.ImportFrom) and n.module == "random")]
+        if _path == os.path.join(_models, "rf_blender.py"):
+            _uses = {n.attr for n in ast.walk(_tree)
+                     if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "random"}
+            assert _uses == {"Random"}, (_path, _uses)
+        else:
+            assert not _imports, (os.path.relpath(_path, _models), "imports random: draw from rf_parts.stream")
 
 print("ok")
 

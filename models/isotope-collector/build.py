@@ -21,7 +21,6 @@ note went stale, and a model rebuilt from it came back as a different machine.
 import json
 import math
 import os
-import random
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,12 +43,11 @@ import rf_blender as rf  # noqa: E402
 # the helpers put every machine's bevels on from inside themselves, and the one call here that
 # needs it by hand -- `ice_lump`, on a primitive no helper builds -- is easier to find spelt out.
 import rf_parts  # noqa: E402
-from rf_parts import box, cyl, hbeam, jitter, pipe, rivets, seam, torus  # noqa: E402,F401
+from rf_parts import box, cyl, hbeam, pipe, rivets, seam, stream, torus  # noqa: E402,F401
 
 args = rf.script_args()
 out_path = args[0] if args else os.path.join(HERE, "isotope-collector.blend")
 variant = args[1] if len(args) > 1 else "machine"
-random.seed(11)  # imperfections are deterministic: same script, same model
 
 geo_path = os.path.join(HERE, "geometry.json")
 geo = json.load(open(geo_path, encoding="utf-8"))
@@ -279,9 +277,9 @@ def ice_lump(name, loc, width, height=None):
     bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=width / 2, location=loc)
     o = bpy.context.object
     o.name = name
-    o.scale = (1.0, jitter(0.85, 0.12), (height or width * 0.45) / width)
+    o.scale = (1.0, stream(name).jitter(0.85, 0.12), (height or width * 0.45) / width)
     o.data.materials.append(mat("ice"))
-    rf_parts.bevel(o, 0.01)
+    rf_parts.bevel(o, 0.01, name)
     return o
 
 
@@ -301,12 +299,13 @@ def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
     """
     cx, cy, cz = centre
     d = cyl(f"{name}Shell", radius, length, centre, "metal", axis="X", verts=56, frost=True)
-    d.scale = (1.0, jitter(1.0, 0.02), 1.0)
+    d.scale = (1.0, stream(f"{name}Shell").jitter(1.0, 0.02), 1.0)
     for k, frac in enumerate((-0.28, 0.30)):
         torus(f"{name}Rib{k}", radius + 0.015, 0.035, (cx + frac * length, cy, cz), "dark",
               rot=(0, math.pi / 2, 0))
+    weld = stream(f"{name}Weld")
     seam(f"{name}Weld", (0.05, 0.05, 2 * radius + 0.02),
-         (cx + jitter(0, 0.2), cy - radius + 0.02, cz), rot=(0, jitter(0, 0.15), 0))
+         (cx + weld.jitter(0, 0.2), cy - radius + 0.02, cz), rot=(0, weld.jitter(0, 0.15), 0))
     for sx in (-1, 1):                                    # dished ends
         cyl(f"{name}End{sx}", radius * 0.92, 0.1, (cx + sx * (length / 2 + 0.04), cy, cz),
             "metal", axis="X", verts=40, frost=True)
@@ -315,7 +314,7 @@ def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
     # Relief valve on top: bare metal with an accent band, never a body in the accent -- the house
     # style says an accent is a band, and a whole valve in near-white blew out on the heat
     # exchanger's drum tops (Truls, #252).
-    vx = cx + jitter(0.15, 0.1)
+    vx = cx + stream(f"{name}ValveStem").jitter(0.15, 0.1)
     cyl(f"{name}ValveStem", 0.08, 0.3, (vx, cy, cz + radius + 0.15), "metal", verts=24)
     cyl(f"{name}ValveBody", 0.14, 0.2, (vx, cy, cz + radius + 0.38), "dark", verts=24)
     torus(f"{name}ValveBand", 0.15, 0.03, (vx, cy, cz + radius + 0.38), accent)
@@ -345,7 +344,8 @@ def column(name, base, radius, height, accent):
     for k, frac in enumerate((0.26, 0.58, 0.86)):
         torus(f"{name}Rib{k}", radius + 0.012, 0.03, (cx, cy, z0 + height * frac), "dark")
     seam(f"{name}Weld", (0.05, 2 * radius + 0.02, 0.05),
-         (cx + radius - 0.02, cy, z0 + height * 0.42), rot=(0, 0, jitter(0, 0.2)))
+         (cx + radius - 0.02, cy, z0 + height * 0.42),
+         rot=(0, 0, stream(f"{name}Weld").jitter(0, 0.2)))
     top = z0 + height
     torus(f"{name}CapFlange", radius * 0.98, 0.05, (cx, cy, top), "metal", frost=True)
     cyl(f"{name}Cap", radius * 0.72, 0.16, (cx, cy, top + 0.08), "metal", verts=32, frost=True)
@@ -367,7 +367,7 @@ def column(name, base, radius, height, accent):
     return top + 0.16
 
 
-rf_parts.use(mat, geo)
+rf_parts.use(mat, geo, seed=11)  # each part's imperfections: its name and this, nothing else
 
 # ---- the machine ----------------------------------------------------------------------------
 if variant == "cube":
@@ -388,8 +388,8 @@ else:
     DECK_Z = SLAB + 0.2                  # top of the walkway plates in the bays
 
     box("Slab", (2 * HALF, 2 * HALF, SLAB), (0, 0, SLAB / 2), "frame")
-    seam("SlabSeam", (2 * HALF + 0.02, 0.05, 0.05), (0, jitter(0, 0.5), SLAB))
-    seam("SlabSeam2", (0.05, 2 * HALF + 0.02, 0.05), (jitter(0, 0.5), 0, SLAB))
+    seam("SlabSeam", (2 * HALF + 0.02, 0.05, 0.05), (0, stream("SlabSeam").jitter(0, 0.5), SLAB))
+    seam("SlabSeam2", (0.05, 2 * HALF + 0.02, 0.05), (stream("SlabSeam2").jitter(0, 0.5), 0, SLAB))
 
     # -- the cold box. Closed panels, not an open frame: a vacuum-jacketed cold box is closed for
     # real, which is the house style's own exception. Frosted, and it is the biggest frosted
@@ -716,26 +716,31 @@ else:
     #    south rim, which the camera faces, and two on each of the east and west rims, which it sees
     #    in profile. None on the north rim: the machine's own body is in front of it.
     for k, t in enumerate((-0.9, -0.3, 0.35, 0.85)):
-        ice_lump(f"IceRimS{k}", (t + jitter(0, 0.06), -LID_ICE, BOX_TOP + 0.02), jitter(0.3, 0.06))
+        s = stream(f"IceRimS{k}")                # `ice_lump` carries on along it for its scale
+        ice_lump(f"IceRimS{k}", (t + s.jitter(0, 0.06), -LID_ICE, BOX_TOP + 0.02), s.jitter(0.3, 0.06))
     for sx in (-1, 1):
         for k, t in enumerate((-0.55, 0.45)):
-            ice_lump(f"IceRim{sx}{k}", (sx * LID_ICE, t + jitter(0, 0.08), BOX_TOP + 0.02),
-                     jitter(0.26, 0.05))
+            s = stream(f"IceRim{sx}{k}")
+            ice_lump(f"IceRim{sx}{k}", (sx * LID_ICE, t + s.jitter(0, 0.08), BOX_TOP + 0.02),
+                     s.jitter(0.26, 0.05))
 
     # 3. Hanging, on SOUTH faces only, where an icicle shows against the wall behind it instead of
     #    behind the thing it hangs from. The lid's south rim and both drums' south flanks are the
     #    only three places on this machine where that is true.
     for k, t in enumerate((-0.62, -0.05, 0.5, 0.95)):
-        icicle(f"IceDripLid{k}", (t + jitter(0, 0.05), -LID_ICE - 0.02, BOX_TOP - 0.03),
-               jitter(0.26, 0.07))
+        s = stream(f"IceDripLid{k}")
+        icicle(f"IceDripLid{k}", (t + s.jitter(0, 0.05), -LID_ICE - 0.02, BOX_TOP - 0.03),
+               s.jitter(0.26, 0.07))
     for k, t in enumerate((-0.62, -0.18, 0.3, 0.66)):
-        icicle(f"IceDrumT{k}", (T_DRUM[0] + t, T_DRUM[1] - 0.28, T_DRUM[2] - 0.02), jitter(0.28, 0.07))
+        icicle(f"IceDrumT{k}", (T_DRUM[0] + t, T_DRUM[1] - 0.28, T_DRUM[2] - 0.02),
+               stream(f"IceDrumT{k}").jitter(0.28, 0.07))
     for k, t in enumerate((-0.8, -0.2, 0.5)):
-        icicle(f"IceDrumHe{k}", (H_DRUM[0] + t, H_DRUM[1] - 0.24, H_DRUM[2] - 0.02), jitter(0.2, 0.05))
+        icicle(f"IceDrumHe{k}", (H_DRUM[0] + t, H_DRUM[1] - 0.24, H_DRUM[2] - 0.02),
+               stream(f"IceDrumHe{k}").jitter(0.2, 0.05))
     # And on the suction line, which is the coldest thing on the lid and the reason the skid is here.
     for k, t in enumerate((0.3, 0.62)):
         ice_lump(f"IceSuction{k}", (SKID[0] - 0.05 + k * 0.16, SKID[1] + t, BOX_TOP + 0.2),
-                 jitter(0.2, 0.04))
+                 stream(f"IceSuction{k}").jitter(0.2, 0.04))
 
     # -- sockets: one per declared connection, body to footprint edge, with its fluid's accent
     # band. Placed in the declared frame from geometry.json, so they land where the prototype says.
@@ -825,7 +830,8 @@ else:
         pipe(f"RunT-{c['direction']}",
              [(T_DRUM[0] + sx * (T_LEN / 2 - 0.1), T_DRUM[1], T_DRUM[2]),
               (T_DRUM[0] + sx * (T_LEN / 2 + 0.3), T_DRUM[1], T_DRUM[2]),
-              (sx * (HALF - 0.42), T_DRUM[1] + 0.62, DECK_Z + jitter(0.1, 0.03)),
+              (sx * (HALF - 0.42), T_DRUM[1] + 0.62,
+               DECK_Z + stream(f"RunT-{c['direction']}").jitter(0.1, 0.03)),
               (drop_x, end[1], DECK_Z + 0.06),
               (drop_x, end[1], SLAB - 0.02)], 0.12, "metal", frost=True)
         # A collar where it goes in, and NO HOLE UNDER IT: unlike a socket's `port`, nothing is

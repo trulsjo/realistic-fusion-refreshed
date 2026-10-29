@@ -32,18 +32,26 @@ at (#354, #365). Every caller still reads them here: build scripts say `rf_parts
 models/socket-variants.py takes the three flange constants off `rf_parts` as it always did. None of
 them changed.
 
-THE ORDER OF `random` DRAWS IS PART OF THE CONTRACT. `bevel` and `jitter` both draw from the global
-`random`, which each build script seeds once; the imperfections are deterministic only as long as
-the draws happen in the same order. Anything that re-orders a helper's body changes every
-imperfection after it, even when the geometry logic is identical -- so a change here is verified by
-re-rendering both machines and comparing sheets, never by reading the diff.
+EACH PART DRAWS FROM ITS OWN STREAM, SEEDED FROM ITS NAME (#825). `stream(name)` hands a part the
+stream `rf_blender.stream` seeds from the machine's seed, which a build passes to `use`, and that
+name; the part keeps it for the build. A bevel draws from the stream of the object it rounds, a
+helper that jitters from the stream of the part it draws, and a build script from the stream of
+the element it is shaping, named as that element is. So a part's imperfections depend on its name
+alone: adding, removing or re-ordering any other part leaves them as they were. Nothing draws from
+the global `random`, which models/test_rf_blender.py holds.
+
+UNTIL #825 THEY CAME FROM ONE GLOBAL STREAM, in build order, and a part added early re-rolled
+everything after it: on #824 a guard rail laid in lengths moved the drums and the handwheels, and a
+handwheel rim landed on a bay's plates. What still moves a part's values is what moves its stream:
+its name, the order of the draws made from that one stream, and the machine's seed. Renaming a part
+re-rolls it, and so does a change to the order of the draws inside a helper's body, on every part
+that helper draws -- which is verified by re-rendering both machines, never by reading the diff.
 
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
 """
 import json
 import math
-import random
 import sys
 
 import bpy
@@ -65,27 +73,44 @@ def MATERIAL(name, **flags):                      # replaced by use(); a clear e
 
 
 GEOMETRY = None                                   # replaced by use(); `pipe` refuses without it
+SEED = None                                       # replaced by use(); `stream` refuses without it
 _RUNS = []                                        # (object, points, radius) for every `pipe`
+_STREAMS = {}                                     # name -> the stream `stream` handed out for it
 
 
-def use(mat_fn, geo):
-    """Install the machine's material resolver and its geometry.json. Every helper calls the
-    resolver as `mat_fn(name, **flags)`; `pipe` and `socket` hold their runs against the geometry's
-    footprint edge (`rf_blender.check_edge`, #800). The geometry is not optional, so a build that
-    forgets it cannot draw a pipe unchecked.
+def use(mat_fn, geo, seed):
+    """Install the machine's material resolver, its geometry.json and its seed. Every helper calls
+    the resolver as `mat_fn(name, **flags)`; `pipe` and `socket` hold their runs against the
+    geometry's footprint edge (`rf_blender.check_edge`, #800); `stream` seeds every part's stream
+    from `seed` and the part's name (#825). None of the three is optional, so a build that forgets
+    the geometry cannot draw a pipe unchecked, and one that forgets the seed cannot draw at all.
 
-    ONE MACHINE PER PROCESS. The resolver, the geometry and the runs `pipe` has drawn are module
-    state, so a future batch builder that made two machines in one Blender session would paint the
-    second with the first's palette unless it called this again between them. Calling it again
-    forgets the runs, whose objects belong to the first machine. Every build today is its own
+    ONE MACHINE PER PROCESS. The resolver, the geometry, the seed, the streams and the runs `pipe`
+    has drawn are module state, so a future batch builder that made two machines in one Blender
+    session would paint the second with the first's palette unless it called this again between
+    them. Calling it again forgets the runs, whose objects belong to the first machine, and the
+    streams, which the second machine's seed would not have made. Every build today is its own
     `blender -b`, so nothing is at risk yet.
     """
-    global MATERIAL, GEOMETRY
+    global MATERIAL, GEOMETRY, SEED
     MATERIAL = mat_fn
     GEOMETRY = geo
+    SEED = seed
     _RUNS.clear()
+    _STREAMS.clear()
     if _check_edges not in bpy.app.handlers.save_pre:
         bpy.app.handlers.save_pre.append(_check_edges)
+
+
+def stream(name):
+    """The random stream the part named `name` draws its imperfections from: the same one every
+    time it is asked for in a build, so a part drawn in several steps -- a build script's jitter,
+    then the bevel the helper puts on -- carries on along it. See this module's header (#825)."""
+    if SEED is None:
+        sys.exit("rf_parts: no seed installed -- call rf_parts.use(mat, geo, seed) before building.")
+    if name not in _STREAMS:
+        _STREAMS[name] = rf.stream(SEED, name)
+    return _STREAMS[name]
 
 
 def _check_edges(*_):
@@ -136,16 +161,20 @@ def _check_edges(*_):
     os._exit(1)
 
 
-def bevel(obj, width=0.03):
+def bevel(obj, width=0.03, name=None):
     """Round every visible edge so the key light catches it (house style).
 
     THE WIDTH IS UNEVEN ON PURPOSE (Truls, #252). One bevel width across a whole machine is itself
     a kind of perfection: every corner catches the sun with the same highlight and the result reads
     as one extruded object. A spread of 0.75 to 1.6 of the nominal width is invisible as a number
     and enough that no two corners are the same.
+
+    It draws from the stream of `name`, the name the object was GIVEN, which the helpers pass:
+    Blender renames an object whose name is taken, and a suffix that depends on what was built
+    first would make the draw depend on it too. Left out, it is the object's own name.
     """
     mod = obj.modifiers.new("Bevel", "BEVEL")
-    mod.width = width * random.uniform(0.75, 1.6)
+    mod.width = width * stream(name or obj.name).uniform(0.75, 1.6)
     mod.segments = 2
 
 
@@ -159,7 +188,7 @@ def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     o.scale = size
     o.data.materials.append(MATERIAL(material, **mat_opts))
     if bev:
-        bevel(o, bev)
+        bevel(o, bev, name)
     return o
 
 
@@ -194,7 +223,7 @@ def cyl(name, radius, depth, loc, material, axis="Z", rot=None, verts=48, read=N
     o = bpy.context.object
     o.name = name
     o.data.materials.append(MATERIAL(material, **mat_opts))
-    bevel(o, 0.02)
+    bevel(o, 0.02, name)
     return o
 
 
@@ -296,9 +325,7 @@ def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7, rim=True
     because a machine may cut a port for a socket of any width: models/house-style.md binds a
     PLUMBABLE socket to the pipe's 0.249, and says nothing about the rest.
 
-    DRAWS NOTHING FROM `random`, which is why it could be lifted out of a build script without
-    moving a single imperfection: the cutter is a raw primitive and `torus` puts on no bevel. See
-    this module's own header on why that matters.
+    It draws nothing: the cutter is a raw primitive and `torus` puts on no bevel.
     """
     cutter_loc = [0.0, 0.0, z]
     cutter_loc[0 if axis == "X" else 1] = edge - sign * (depth / 2 - 0.12)
@@ -362,9 +389,9 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
     the tube's own material -- and nothing else. An accent band must stay the colour of the fluid it
     names, and a rim is always `dark`.
 
-    THE ORDER IS PART OF THE CONTRACT -- stub, band, port, then the ribs -- because `cyl` bevels
-    and a bevel draws from `random`. Re-ordering them moves every imperfection after them on every
-    machine that calls this, and the only way to see it is to re-render. See this module's header.
+    Each piece's bevel draws from that piece's own stream, named for its connection's direction
+    and fluid, so the pieces can be drawn in any order and a socket added or removed moves no
+    other part's imperfections. See this module's header (#825).
     """
     d = connection["direction"]
     fluid = connection["fluid"]
@@ -386,7 +413,7 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
         return tuple(loc)
 
     # A socket is the one thing allowed to meet the edge, and is held to the same check as a run,
-    # so a connection the geometry does not declare cannot be drawn either. Draws no `random`.
+    # so a connection the geometry does not declare cannot be drawn either.
     rf.check_edge(f"Socket-{d}-{fluid}", [at(inner), at(edge)], radius, geo)
     cyl(f"Socket-{d}-{fluid}", radius, abs(edge - inner), at((edge + inner) / 2), "metal",
         axis=axis, **mat_opts)
@@ -436,9 +463,6 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
     # and this has to survive being saved into the .blend and read back by another script. Keyed by
     # POSITION, the one field unique to a connection: a machine can carry two on the same side and
     # rf-heat-exchanger does.
-    #
-    # IT DRAWS NOTHING FROM `random`, so it cannot move an imperfection -- see the order contract
-    # in this function's docstring.
     drawn = json.loads(bpy.context.scene.get("rf_sockets", "[]"))
     drawn.append({"position": list(connection["position"]), "direction": d, "fluid": fluid,
                   "radius": radius, "z": z, "plumbable": plumbable})
@@ -548,8 +572,9 @@ def hbeam(name, length, loc, axis="Z", depth=0.2, flange=0.16, web=0.03, materia
     # web, the floor would condemn the frame the house style is built around -- so the beam is
     # checked once, here, and its three boxes go in unchecked.
     rf.check_detail(name, flange)
-    loc = (jitter(loc[0], 0.02), jitter(loc[1], 0.02), jitter(loc[2], 0.012))
-    rot = (jitter(0, 0.012), jitter(0, 0.012), jitter(0, 0.012))
+    s = stream(name)
+    loc = (s.jitter(loc[0], 0.02), s.jitter(loc[1], 0.02), s.jitter(loc[2], 0.012))
+    rot = (s.jitter(0, 0.012), s.jitter(0, 0.012), s.jitter(0, 0.012))
     if axis == "Z":
         _plate(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
         for sx in (-1, 1):
@@ -584,10 +609,6 @@ def seam(name, size, loc, rot=(0, 0, 0)):
     box(name, size, loc, "frame", rot=rot, bev=0, cut=True)
 
 
-def jitter(v, s):
-    return v + random.uniform(-s, s)
-
-
 # ==== THE KIT ==================================================================================
 #
 # KIT PARTS (GLOSSARY.md): plant machinery defined once here and placed by any machine's model, so
@@ -608,6 +629,8 @@ def jitter(v, s):
 #   with no extra call.
 # - It takes its material by role name and never by colour. A colour a part brings with it -- a
 #   loom's sheaths -- is a row in models/rf_blender.py that the machine's palette takes in whole.
+# - Whatever it draws comes from `stream(name)` and the streams of its pieces' names, never from
+#   anywhere shared, so placing it moves nothing else's imperfections (#825).
 
 
 def _facing(d):
@@ -618,12 +641,12 @@ def _facing(d):
     return (0, math.pi / 2 - pitch, yaw)
 
 
-def _wobbled(points, wobble):
-    """`points` with every inner point moved up to `wobble` tiles on each axis; the ends stay put,
-    since an end is where a run meets the thing it serves."""
+def _wobbled(points, wobble, s):
+    """`points` with every inner point moved up to `wobble` tiles on each axis, drawn from stream
+    `s`; the ends stay put, since an end is where a run meets the thing it serves."""
     if not wobble:
         return list(points)
-    return [points[0]] + [tuple(jitter(c, wobble) for c in p) for p in points[1:-1]] + [points[-1]]
+    return [points[0]] + [tuple(s.jitter(c, wobble) for c in p) for p in points[1:-1]] + [points[-1]]
 
 
 def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), wobble=0.0, **mat_opts):
@@ -645,8 +668,9 @@ def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), 
     """
     pitch = 1.37 * radius if pitch is None else pitch
     rf.check_detail(f"{name} (corrugation pitch)", pitch)
-    return pipe(name, _wobbled(points, wobble), radius, material, corrugate=pitch, band=band,
-                ring_phase=random.random(), **mat_opts)
+    s = stream(name)
+    return pipe(name, _wobbled(points, wobble, s), radius, material, corrugate=pitch, band=band,
+                ring_phase=s.random(), **mat_opts)
 
 
 def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r=0.035, twist=0.6,
@@ -667,8 +691,9 @@ def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r
     """
     rf.check_detail(f"{name} (cable diameter)", 2 * cable_r)
     spread = rf.loom_spread(len(cables), cable_r)
-    points = _wobbled(points, wobble)
-    strands = rf.bundle(points, len(cables), spread, twist, phase=random.uniform(0, 2 * math.pi))
+    s = stream(name)
+    points = _wobbled(points, wobble, s)
+    strands = rf.bundle(points, len(cables), spread, twist, phase=s.uniform(0, 2 * math.pi))
     for k, (strand, material) in enumerate(zip(strands, cables)):
         pipe(f"{name}-{k}", strand, cable_r, material)
     if not ties:
@@ -702,9 +727,10 @@ def panels(name, centre, size, normal, grid, material="body", seam=0.05, depth=0
     cells = rf.panel_grid(size[0], size[1], grid[0], grid[1], seam)
     rf.check_inset(name, seam, depth, min(min(c[2], c[3]) for c in cells))
     c, s = math.cos(yaw), math.sin(yaw)
+    draw = stream(name)
     out = []
     for k, (cu, cv, su, sv) in enumerate(cells):
-        d = max(seam, depth + random.uniform(-0.01, 0.01))
+        d = max(seam, draw.jitter(depth, 0.01))
         off = [0.0, 0.0, 0.0]
         off[iu], off[iv], off[n] = cu, cv, sign * d / 2
         dims = [0.0, 0.0, 0.0]
@@ -741,9 +767,7 @@ def bolts(name, placements, r=0.035, head=0.05, material="dark"):
     """A hex bolt head at each placement, standing `head` tall along its own Z.
 
     A BOLT READS BY ITS HEAD'S DIAMETER, which is checked, and neighbouring bolts must stand apart
-    by the cut floor or they read as one lump. It carries no bevel, so it draws nothing from
-    `random`: a ring of bolts can replace hand-placed ones without moving any imperfection after
-    it."""
+    by the cut floor or they read as one lump. It carries no bevel and draws nothing."""
     rf.check_detail(f"{name} (head)", 2 * r)
     gap = rf.least_gap(_circle(r, 0, 6) + _circle(r, head, 6), placements)
     if gap is not None:
@@ -818,7 +842,7 @@ def casing(name, placements, radius, arc, height, thick=0.07, material="dark"):
         o = bpy.data.objects.new(f"{name}-{k}", mesh)
         bpy.context.scene.collection.objects.link(o)
         o.data.materials.append(MATERIAL(material))
-        bevel(o, 0.015)
+        bevel(o, 0.015, f"{name}-{k}")
         _place([o], p)
 
 
