@@ -237,9 +237,11 @@ else:
 
     box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body", corrode=True,
         rot=(0, 0, MAN_YAW))
+    # Each seam is named for where it stands along the manifold, never for its place in the loop
+    # (#827): a part's name is its stream, and a number counted off a loop is an order.
     for i in range(6):
         y = -HALF_L + 0.1 + (i + 1) * (L - 0.2) / 7
-        seam(f"ManifoldSeam{i}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (on_manifold(y), y, SLAB + MAN_H / 2),
+        seam(f"ManifoldSeam{y:+.2f}",(MAN_W + 0.02, 0.05, MAN_H - 0.2), (on_manifold(y), y, SLAB + MAN_H / 2),
              rot=(0, 0, MAN_YAW))
     rivets("ManifoldRivetsTop", (on_manifold(-HALF_L + 0.3) - MAN_W / 2 + 0.08, -HALF_L + 0.3, SLAB + MAN_H + 0.01),
            (on_manifold(HALF_L - 0.3) - MAN_W / 2 + 0.08, HALF_L - 0.3, SLAB + MAN_H + 0.01), 28)
@@ -255,11 +257,17 @@ else:
     FRAME_H = 2.0
     EX = HALF_W - 0.12
     MXE = MX + MAN_W / 2 + 0.2
+    #
+    # THE POST LINES ARE LETTERED, A at the south end to G at the north, and every part that stands
+    # on one is named for its letter (#827). A part draws from the stream of its name, so a name
+    # numbered off a loop re-rolled every part after one inserted earlier in it.
     post_ys = [-HALF_L + 0.3 + k * (L - 0.6) / 6 for k in range(7)]
-    for i, y in enumerate(post_ys):
-        hbeam(f"PostE{i}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
-        hbeam(f"PostM{i}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
-        hbeam(f"Rail{i}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
+    POST_LINES = "ABCDEFG"
+    posts = dict(zip(POST_LINES, post_ys))
+    for p, y in posts.items():
+        hbeam(f"PostE-{p}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
+        hbeam(f"PostM-{p}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
+        hbeam(f"Rail-{p}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
     hbeam("RailE", L - 0.4, (EX, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     # The low rail along the open side is the guard rail a walkway behind it would have, and is
@@ -290,17 +298,20 @@ else:
     # 0.02, so together they close it by at most 0.04. The first starts at the cabinet's north
     # face, and the length under the steam outlet is cut round its descent, whose rings reached
     # past the rail's inner flange while OUTLET_X was 1.80. They stop short of it since #825 moved
-    # the descent in, and the cut is kept as it was. RailE2 is still the rail's name; its
-    # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known.
+    # the descent in, and the cut is kept as it was. RailE2 is still the rail's name. Each length
+    # is named for where it starts, the cabinet or a post line's letter, as RailE2-Cab and
+    # RailE2-C, and the two halves of the cut one end in S and N (#827). It moved here from beside
+    # RailE so that OUTLET_Y is known.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
     RAIL_STOP, OUTLET_GAP = 0.16, 0.6
     spans = []
-    for k, (a, b) in enumerate(zip([CAB_N] + post_ys[1:-1], post_ys[1:])):
-        a, b = (a if k == 0 else a + RAIL_STOP), b - RAIL_STOP
-        spans += ([(a, OUTLET_Y - OUTLET_GAP), (OUTLET_Y + OUTLET_GAP, b)] if a < OUTLET_Y < b
-                  else [(a, b)])
-    for k, (a, b) in enumerate(spans):
-        hbeam(f"RailE2-{k}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
+    starts = [("Cab", CAB_N)] + [(p, y + RAIL_STOP) for p, y in list(posts.items())[1:-1]]
+    for (p, a), b in zip(starts, post_ys[1:]):
+        b -= RAIL_STOP
+        spans += ([(p + "S", a, OUTLET_Y - OUTLET_GAP), (p + "N", OUTLET_Y + OUTLET_GAP, b)]
+                  if a < OUTLET_Y < b else [(p, a, b)])
+    for p, a, b in spans:
+        hbeam(f"RailE2-{p}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
               depth=0.12, flange=0.12, material="hazard")
     #
     # THE TWO END SLATS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the
@@ -336,17 +347,17 @@ else:
     # rail's own jitter to share, and on #825's draws a plate met the rail.
     BAY_BACK = 0.14
     bays = []
-    for i, k in enumerate((2, 5)):
-        y0, y1 = post_ys[k], post_ys[k + 1]
-        yaw = stream(f"BayPanel{i}").jitter(0, 0.008)
-        box(f"BayPanel{i}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
+    for k in (2, 5):                                  # each bay named for the post line it starts at
+        p, y0, y1 = POST_LINES[k], post_ys[k], post_ys[k + 1]
+        yaw = stream(f"BayPanel-{p}").jitter(0, 0.008)
+        box(f"BayPanel-{p}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
             "dark", rot=(0, 0, yaw))
-        bays.append(((EX - 0.015 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
-        rivets(f"BayPanelRivets{i}", (EX - 0.1 - BAY_BACK, y0 + 0.25, SLAB + 1.42),
+        bays.append((p, (EX - 0.015 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
+        rivets(f"BayPanelRivets-{p}", (EX - 0.1 - BAY_BACK, y0 + 0.25, SLAB + 1.42),
                (EX - 0.1 - BAY_BACK, y1 - 0.25, SLAB + 1.42), 5, r=0.035)
-    for i, k in enumerate((1, 4)):                    # two bays only: a braced frame, not a lattice
-        dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * (1 if i == 0 else -1)
-        box(f"Brace{i}", (0.06, math.hypot(dy, dz), 0.14),
+    for k, rise in ((1, 1), (4, -1)):                 # two bays only: a braced frame, not a lattice
+        dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * rise
+        box(f"Brace-{POST_LINES[k]}", (0.06, math.hypot(dy, dz), 0.14),
             (EX, (post_ys[k] + post_ys[k + 1]) / 2, SLAB + FRAME_H / 2), "frame",
             rot=(math.atan2(dz, dy), 0, 0), bev=0.01)
 
@@ -360,21 +371,23 @@ else:
     # -- three drums: rib bands, weld seam, cap, relief valve. Not identical.
     DRUM_H = 2.3
     DX = 0.35
-    drum_ys = (-4.6, 0.0, 4.6)
-    DENTED = 2                      # the north drum in the body's frame; the east one once turned
-    cap_tops = []                   # (y, z) of each drum's cap, for the header to clear and collect
+    # Named south, middle and north in the body's frame, and every part of a drum takes its name
+    # (#827).
+    DRUMS = (("S", -4.6), ("Mid", 0.0), ("N", 4.6))
+    DENTED = "N"                    # the north drum in the body's frame; the east one once turned
+    cap_tops = {}                   # (y, z) of each drum's cap, for the header to clear and collect
     drums = []                      # where each drum's valve and gauges landed, for the kit below
-    for i, y in enumerate(drum_ys):
-        s = stream(f"Drum{i}")
+    for n, y in DRUMS:
+        s = stream(f"Drum{n}")
         r = s.jitter(1.05, 0.04)
         h = s.jitter(DRUM_H, 0.08)
         z0 = SLAB + 0.5
-        cap_tops.append((y, z0 + h + 0.18))
-        d = cyl(f"Drum{i}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
+        cap_tops[n] = (y, z0 + h + 0.18)
+        d = cyl(f"Drum{n}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
         d.scale = (1.0, s.jitter(1.0, 0.03), 1.0)
-        ribs = [torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
-                for k, frac in enumerate((0.3, 0.7))]
-        if i == DENTED:
+        ribs = [torus(f"Drum{n}Rib{band}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
+                for band, frac in (("Low", 0.3), ("High", 0.7))]
+        if n == DENTED:
             # SOUTH FLANK, because the camera stands south of the machine looking north: a drum
             # shows its cap and its south side, and a hollow struck anywhere else hides behind the
             # drum's own top.
@@ -395,38 +408,38 @@ else:
             dent(d, strike, 0.62, 0.42)
             for rib in ribs:                     # already 48x12; a few cuts is plenty
                 dent(rib, strike, 0.62, 0.42, cuts=4)
-        seam(f"Drum{i}Weld", (0.05, 2 * r + 0.02, 0.05), (DX + r - 0.02, y, z0 + h * 0.4),
-             rot=(0, 0, stream(f"Drum{i}Weld").jitter(0, 0.2)))
-        cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
+        seam(f"Drum{n}Weld", (0.05, 2 * r + 0.02, 0.05), (DX + r - 0.02, y, z0 + h * 0.4),
+             rot=(0, 0, stream(f"Drum{n}Weld").jitter(0, 0.2)))
+        cyl(f"Drum{n}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
         # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
         # what the camera sees most of, and they were bare (#252).
-        torus(f"Drum{i}CapFlange", r * 0.62, 0.05, (DX, y, z0 + h + 0.01), "metal")
+        torus(f"Drum{n}CapFlange", r * 0.62, 0.05, (DX, y, z0 + h + 0.01), "metal")
         # The ring of bolts is the kit's (#804), on the spots the hand-placed ones stood.
-        bolts(f"Drum{i}CapBolt", ring((DX, y, z0 + h + 0.025), r * 0.62, 10))
+        bolts(f"Drum{n}CapBolt", ring((DX, y, z0 + h + 0.025), r * 0.62, 10))
         # relief valve: a stub, a body and a little cap, off-centre so rotations differ.
         # BARE METAL WITH A STEAM BAND, not a steam-coloured body. The accent is near white, and a
         # whole valve in it blew out on the drum tops (Truls, #252); the house style already says an
         # accent is a band and never a body, so this was the model disagreeing with it.
         vx, vy = DX + r * 0.45, y - r * 0.3
-        cyl(f"Drum{i}ValveStem", 0.09, 0.35, (vx, vy, z0 + h + 0.35), "metal", verts=24)
-        cyl(f"Drum{i}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "dark", verts=24)
-        torus(f"Drum{i}ValveBand", 0.17, 0.03, (vx, vy, z0 + h + 0.6), "steam")
-        cyl(f"Drum{i}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
+        cyl(f"Drum{n}ValveStem", 0.09, 0.35, (vx, vy, z0 + h + 0.35), "metal", verts=24)
+        cyl(f"Drum{n}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "dark", verts=24)
+        torus(f"Drum{n}ValveBand", 0.17, 0.03, (vx, vy, z0 + h + 0.6), "steam")
+        cyl(f"Drum{n}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
         # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
         # it: the deck between the drums read as empty.
-        gx, gy = DX + r + 0.32, y + stream(f"Drum{i}Gauges").jitter(0.55, 0.15)
-        box(f"Drum{i}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
-        for k in range(2):
-            cyl(f"Drum{i}Gauge{k}", 0.13, 0.06, (gx + 0.15, gy - 0.17 + k * 0.34, SLAB + 0.95),
+        gx, gy = DX + r + 0.32, y + stream(f"Drum{n}Gauges").jitter(0.55, 0.15)
+        box(f"Drum{n}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
+        for side, dy in (("S", -0.17), ("N", 0.17)):
+            cyl(f"Drum{n}Gauge{side}", 0.13, 0.06, (gx + 0.15, gy + dy, SLAB + 0.95),
                 "steam", axis="X", verts=20, read=0.26)
         # BACK TO 0.05, and judged on its face. #339 took this to 0.06 because the floor was
         # reading its edge; with `read` the disc is measured across, so it keeps the thickness it
         # was drawn with.
-        cyl(f"Drum{i}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y",
+        cyl(f"Drum{n}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y",
             verts=24, read=0.56)
-        drums.append({"y": y, "r": r, "h": h, "z0": z0, "vx": vx, "vy": vy, "gx": gx, "gy": gy})
-        cyl(f"Drum{i}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
-        torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
+        drums.append({"name": n, "y": y, "r": r, "h": h, "z0": z0, "vx": vx, "vy": vy, "gx": gx, "gy": gy})
+        cyl(f"Drum{n}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
+        torus(f"Drum{n}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
               rot=(math.pi / 2, 0, 0))
         # glowing feed line from the manifold to the foot of the drum, under the deck
         #
@@ -436,10 +449,10 @@ else:
         # leaves on the side of the post the drum stands, FEED_CLEAR or a little more off the
         # post's centre: the flange's 0.115 and its jitter, the feed's 0.1, and air.
         FEED_CLEAR = 0.27
-        s = stream(f"Feed{i}")
+        s = stream(f"Feed{n}")
         post = min(post_ys, key=lambda p: abs(p - y))
         fy = post + (1 if y >= post else -1) * (FEED_CLEAR + s.uniform(0, 0.15))
-        pipe(f"Feed{i}", [(MX + MAN_W / 2, fy, SLAB + 0.42),
+        pipe(f"Feed{n}", [(MX + MAN_W / 2, fy, SLAB + 0.42),
                           (s.jitter(-0.7, 0.15), fy, SLAB + s.jitter(0.4, 0.03)),
                           (DX - r * 0.7, y, SLAB + 0.45)], 0.1, "energy", glow=True)
 
@@ -469,7 +482,7 @@ else:
     HEADER_R = 0.19
     HEADER_CORRUGATE, HEADER_BAND = 0.26, (1.24, 0.26)
     CAP_ENTRY = 0.34               # how far off a cap's centre a run lands: inside its ring of bolts
-    mid_y, mid_cap = cap_tops[1]
+    mid_y, mid_cap = cap_tops["Mid"]
     # THE GOOSENECK NEEDS ROOM, and the first attempt did not give it any: a run rose 0.22 off the
     # cap and then had to turn through ninety degrees, so the Bezier's own handles overshot and the
     # hose curled back over itself like a candy cane. Half a tile of straight rise turns the same
@@ -479,23 +492,23 @@ else:
     # they read as hoses running between the drums rather than as three loops arching over the
     # machine. The outlet run is the one that needs height: it has to cross the middle drum's own
     # shoulder, so it rises further and keeps its gooseneck.
-    RUN_Z = max(z for _, z in cap_tops) + 0.35
-    SAG_Z = max(z for _, z in cap_tops) - 0.25     # clears the frame's top rails by about 0.65
-    OUT_Z = max(z for _, z in cap_tops) + 0.55
+    RUN_Z = max(z for _, z in cap_tops.values()) + 0.35
+    SAG_Z = max(z for _, z in cap_tops.values()) - 0.25     # clears the frame's top rails by about 0.65
+    OUT_Z = max(z for _, z in cap_tops.values()) + 0.55
 
     # The middle drum's cap carries THREE runs, so their landings are spread around it rather than
     # stacked on one line: the two neighbours land west of the cap's centre, north and south of each
     # other, and the outlet leaves due east. Any closer together and the three tangle on the cap.
-    for i in (0, 2):
-        y, cap = cap_tops[i]
+    for n in ("S", "N"):                    # each named for the drum it leaves (#827)
+        y, cap = cap_tops[n]
         toward = 1 if y < mid_y else -1
         start = (DX, y + toward * CAP_ENTRY, cap)
         land = (DX - 0.29, mid_y - toward * 0.17)
         # A hose slung between two nozzles hangs below them, and there is nothing under this span
         # but open frame.
-        s = stream(f"Header{i}")             # `hose` carries on along it for the rings
+        s = stream(f"Header{n}")             # `hose` carries on along it for the rings
         sag = (DX + s.jitter(0.3 * toward, 0.06), (y + mid_y) / 2 + s.jitter(0, 0.15), SAG_Z)
-        hose(f"Header{i}", [start, (start[0], start[1], RUN_Z), sag,
+        hose(f"Header{n}", [start, (start[0], start[1], RUN_Z), sag,
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
              HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
 
@@ -560,10 +573,10 @@ else:
     # drum reads as a part missing its pipe. Thin enough to read as a vent rather than a second
     # header, which is why its ring is fuller than the header's: at a 0.075 radius the header's
     # band would put each ring under the floor.
-    for i, d in enumerate(drums):
+    for d in drums:
         vz = d["z0"] + d["h"] + 0.6
         flank = DX + d["r"] + 0.32                 # off the weld bead, which stands proud of the flank
-        hose(f"VentHose{i}", [(d["vx"] + 0.30, d["vy"], vz),
+        hose(f"VentHose{d['name']}", [(d["vx"] + 0.30, d["vy"], vz),
                               (d["vx"] + 0.55, d["vy"], vz - 0.05),
                               (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
                               (flank, d["vy"] - 0.3, d["z0"] + d["h"] * 0.4),
@@ -618,25 +631,30 @@ else:
         return (rx + dx if x is None else x, y, z + LOOM_R)
 
     LOOM_Z = on_rail(0)[2]
-    clamps = [y for y in post_ys if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
+    #
+    # EACH SPAN'S WANDER IS DRAWN FROM A STREAM OF ITS OWN, named for the post line the span starts
+    # at, as Loom-C (#827). Drawn from the loom's own stream, once a span, a span added to the rail
+    # turned every wander after it and the winding `loom` draws after them; the winding is all
+    # that stream carries now.
+    clamps = [(p, y) for p, y in posts.items() if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
     lie = []
-    for a, b in zip(clamps, clamps[1:]):
+    for (p, a), (_, b) in zip(clamps, clamps[1:]):
         if a < OUTLET_Y < b:
             lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, x=JOG_X),
                     on_rail(OUTLET_Y + 0.5)]
         else:
-            lie += [on_rail(a), on_rail((a + b) / 2, dx=stream("Loom").jitter(-0.02, 0.03))]
+            lie += [on_rail(a), on_rail((a + b) / 2, dx=stream(f"Loom-{p}").jitter(-0.02, 0.03))]
     cab_top, cab_n = cpos[2] + CAB[2] / 2, cpos[1] + CAB[1] / 2
     loom("Loom", [(DROP_X + 0.15, cpos[1], cab_top + 0.02), (DROP_X + 0.1, cpos[1] + 0.3, LOOM_Z),
                   (DROP_X + 0.2, cab_n + 0.1, LOOM_Z + 0.06), on_rail(cab_n + 0.5)]
-         + lie + [on_rail(clamps[-1]), (DROP_X, END_Y - 0.5, LOOM_Z + 0.04),
+         + lie + [on_rail(clamps[-1][1]), (DROP_X, END_Y - 0.5, LOOM_Z + 0.04),
                   (DROP_X, END_Y, SLAB + 1.2), (DROP_X, END_Y, SLAB + 0.02)], ties=False)
     # -- kit parts: inset panels (#802). Each on a face the camera sees once the body is turned.
-    for i, (centre, size, yaw) in enumerate(bays):
+    for p, centre, size, yaw in bays:
         # The plates stop 0.06 inside the backing's ends: a handwheel rim beside a bay can stand
         # just past the backing, and plates out to its ends touched one (the branch's pre-PR
         # review).
-        panels(f"BayPlates{i}", centre, (size[0] - 0.12, size[1]), "+X", (3, 2), "paint", yaw=yaw)
+        panels(f"BayPlates-{p}", centre, (size[0] - 0.12, size[1]), "+X", (3, 2), "paint", yaw=yaw)
     # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
     # by their shadow alone. Its outer quarter tile is left bare: the conduit and the corner post's
     # flange pass just over it, and plates there stood into both (the branch's pre-PR review).
@@ -652,10 +670,10 @@ else:
     # the insulation jacket a hot vessel wears. Under the cap, where the camera looks down on it;
     # at the foot it hid behind the deck. It stands above the upper rib and clear of the dent
     # struck between the ribs.
-    for i, d in enumerate(drums):
+    for d in drums:
         jacket_r = d["r"] + 0.02
         at = ring((DX, d["y"], d["z0"] + d["h"] - 0.24), jacket_r, 8, phase=math.pi / 8)
-        casing(f"Drum{i}Jacket", at, jacket_r, rf.casing_arc(8, jacket_r, 0.06), 0.34)
+        casing(f"Drum{d['name']}Jacket", at, jacket_r, rf.casing_arc(8, jacket_r, 0.06), 0.34)
     # A FAN STACK at the deck's far end, past the last drum: four discs on a shaft, the cooler a
     # steam plant has beside its drums. The body's north end is the declared east once turned, and
     # the camera sees it from the south.
@@ -668,8 +686,8 @@ else:
     kerb = row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36)
     bolts("SlabBolts", [p for p in kerb
                         if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
-    for i, d in enumerate(drums):
-        loom(f"GaugeLoom{i}", [on_rail(d["gy"] + 0.1),
+    for d in drums:
+        loom(f"GaugeLoom{d['name']}", [on_rail(d["gy"] + 0.1),
                                (DROP_X, d["gy"] + 0.05, LOOM_Z + 0.04),
                                (DROP_X, d["gy"], SLAB + 1.4),
                                (d["gx"] + 0.04, d["gy"], SLAB + 1.13)],

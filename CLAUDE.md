@@ -28,7 +28,8 @@ about whether a change is safe. What each proves, in a line:
 - **`models/test_rf_blender.py`** pins the arithmetic the rendered sheets are declared from,
   #800's footprint-edge check, since #803 the kit's arithmetic, and since #825 the named streams
   parts draw from and that no file under `models/` but `rf_blender.py` imports the global
-  `random`, without Blender (#810).
+  `random`, and since #827 that neither rendered machine's build script names a part that draws
+  from a loop's counter, without Blender (#810).
 - **`scripts/load-check.ps1`** creates a real map and asserts against it, and is where the
   invariants tying the simulation to the prototypes are enforced. It also fails when a rendered
   machine's `manifest.json` or any committed `models/*/geometry.json` disagrees with the live

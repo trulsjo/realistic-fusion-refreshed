@@ -60,6 +60,10 @@ reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Asse
 **Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
 never the default: the default is to render the model that exists, so that hand edits survive.
 
+**Re-roll** — a part's imperfections drawn again, so its shape changes when nothing about it was
+changed on purpose. It happens when the part's name, its machine's seed, or the order of the draws
+within its stream changes. Not "reshuffle" or "re-randomise".
+
 **Kit part** — a modelled piece of plant machinery, such as a valve, a cable tray or a walkway,
 defined once for the whole set and placed by any machine's model. It is what a look note names when
 it asks for machinery a plant has, which is why the set grows denser as the kit grows rather than
