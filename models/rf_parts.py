@@ -51,11 +51,11 @@ A NAME NUMBERED BY A LOOP IS STILL AN ORDER. `RailE2-<k>` and `IceRimS{k}` take 
 where they fall in their loop, so a part added early in one renumbers, and so re-rolls, every part
 after it in that loop that draws. Nothing outside the loop moves.
 
-AND SO IS A STREAM DRAWN FROM IN A LOOP. rf-heat-exchanger draws from the loom's stream once per
-span it lies on before `loom` draws its winding, so a span added there turns the winding too.
-models/test_rf_blender.py holds that every draw comes from a named stream and that one stream is
-independent of the others; what a build script draws from one stream, and in what order, it
-cannot see.
+AND SO IS A STREAM DRAWN FROM IN A LOOP. rf-heat-exchanger draws from the loom's stream once for
+each span it lies on but the one round the steam outlet, before `loom` draws its winding, so a span
+added there turns the winding too. models/test_rf_blender.py holds that one name's stream is
+independent of the others and that no file under models/ imports the global `random`; what a build
+script draws from one stream, and in what order, it cannot see, nor a draw from anything else.
 
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
