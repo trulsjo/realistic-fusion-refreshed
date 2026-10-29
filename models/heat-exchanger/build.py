@@ -408,7 +408,11 @@ else:
             dent(d, strike, 0.62, 0.42)
             for rib in ribs:                     # already 48x12; a few cuts is plenty
                 dent(rib, strike, 0.62, 0.42, cuts=4)
-        seam(f"Drum{n}Weld", (0.05, 2 * r + 0.02, 0.05), (DX + r - 0.02, y, z0 + h * 0.4),
+        # THE WELD STOPS 0.03 SHORT OF THE CABINET'S NORTH FACE (#827). It runs 2r + 0.02 along the
+        # drum's east side, so the south drum's reached past CAB_N whenever its radius was drawn
+        # over about 1.05, and stood in the cabinet. The north and middle drums are nowhere near.
+        weld_half = min(r + 0.01, y - CAB_N - 0.03)
+        seam(f"Drum{n}Weld", (0.05, 2 * weld_half, 0.05), (DX + r - 0.02, y, z0 + h * 0.4),
              rot=(0, 0, stream(f"Drum{n}Weld").jitter(0, 0.2)))
         cyl(f"Drum{n}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
         # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
@@ -428,6 +432,18 @@ else:
         # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
         # it: the deck between the drums read as empty.
         gx, gy = DX + r + 0.32, y + stream(f"Drum{n}Gauges").jitter(0.55, 0.15)
+        # THE HANDWHEEL STANDS CLEAR OF A BAY'S PLATES (#827), and the cluster moves with it. The
+        # wheel stands 0.72 south of the gauges, and the middle drum's, drawn far enough south,
+        # landed on the north end of the plates of the bay beside it, as a rim did on #824. Its rim
+        # is 0.05 thick either side of its plane, so WHEEL_CLEAR is that and air.
+        WHEEL_CLEAR = 0.07
+        wy = gy - 0.72
+        for _, centre, size, _ in bays:
+            half = (size[0] - 0.12) / 2              # the plates, 0.06 inside the backing's ends
+            lo, hi = centre[1] - half - WHEEL_CLEAR, centre[1] + half + WHEEL_CLEAR
+            if lo < wy < hi:
+                wy = hi if wy > centre[1] else lo
+        gy = wy + 0.72
         box(f"Drum{n}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
         for side, dy in (("S", -0.17), ("N", 0.17)):
             cyl(f"Drum{n}Gauge{side}", 0.13, 0.06, (gx + 0.15, gy + dy, SLAB + 0.95),
