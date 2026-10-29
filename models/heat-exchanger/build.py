@@ -298,7 +298,7 @@ else:
     # face, and the length under the steam outlet is cut round its descent, whose rings reached
     # past the rail's inner flange while OUTLET_X was 1.80. They stop short of it since #825 moved
     # the descent in, and the cut is kept as it was. RailE2 is still the rail's name. Each length
-    # is named for where it starts, the cabinet or a post line, as RailE2Cab and RailE2-2.40, and
+    # is named for where it starts, the cabinet or a post line, as RailE2Cab and RailE2-2.32, and
     # the two halves of the cut one end in S and N (#827). It moved here from beside RailE so that
     # OUTLET_Y is known.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
@@ -648,9 +648,9 @@ else:
     LOOM_Z = on_rail(0)[2]
     #
     # EACH SPAN'S WANDER IS DRAWN FROM A STREAM OF ITS OWN, named for the post line the span starts
-    # at, as Loom-2.40 (#827). Drawn from the loom's own stream, once a span, a span added to the rail
-    # turned every wander after it and the winding `loom` draws after them; the winding is all
-    # that stream carries now.
+    # at, as Loom-2.32 (#827). Drawn from the loom's own stream, once a span, a span added to the
+    # rail turned every wander after it and the winding `loom` draws after them; the winding is
+    # all that stream carries now.
     clamps = [(p, y) for p, y in posts.items() if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
     lie = []
     for (p, a), (_, b) in zip(clamps, clamps[1:]):

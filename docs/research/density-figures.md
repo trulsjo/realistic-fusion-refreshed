@@ -212,21 +212,23 @@ The exchanger was measured three times on the way, *measured*:
 | the post lines named for where they stand | 0.2735 | 0.5180 |
 
 **Two re-rolls of the exchanger moved its pixel figure by 0.0049 and 0.0009**, *measured*: the
-first renaming, and the second, which renamed the frame alone with the fixes kept. #825's one
-re-roll moved it by 0.0003. So a re-roll can move that figure by about 0.005, *inferred* from
-three samples, and a difference of that size between two sheets may be chance.
+first renaming, and the second, which renamed the post lines and what is named for them, the
+frame, the bays and the loom's spans, with the fixes kept. #825's one re-roll moved it by 0.0003.
+So a re-roll can move that figure by about 0.005, *inferred* from three samples, and a difference
+of that size between two sheets may be chance.
 
 **The renaming landed two contacts of the kind #824 and #825 fixed**, *measured* by the same
 mesh-overlap test: the middle drum's handwheel stood on the plates of the bay beside it, and the
 south drum's weld seam stood in the cabinet. Both were fixed on the same branch, the wheel and its
 gauges kept 0.07 clear of a bay's plates and the weld stopped 0.03 short of the cabinet, *read from
-source*. Every other contact the test found new on the exchanger is of three kinds, *inferred* from
+source*. Every other contact the test found new on the exchanger is of four kinds, *inferred* from
 its list of pairs: a handwheel against the frame, which #806 is left to settle; a beam meeting a
 beam or the slab; the pieces of one drum or one hose meeting each other, and the headers where they
 land together on the middle drum's cap; and a part meeting what it is joined to, as a hose its cap,
 a vent hose its valve and the deck, a gauge loom the main loom, the loom the cabinet it climbs off,
 and a conduit clamp its post. On the collector it found
-four new contacts and lost four, all of ice against what it hangs from or sits on, *measured*.
+five new contacts and lost four, all of ice against what it hangs from or sits on or against other
+ice, *measured*.
 
 ## What the "before" says, and how far it goes
 
