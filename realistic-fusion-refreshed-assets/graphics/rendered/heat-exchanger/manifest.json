@@ -175,7 +175,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "d0cc3b9736d91336b8ce5b6835a4892a5b6bd8413cf9258ffe0c7f527e05acda",
+  "model_sha256": "2f54652879fffcdd1bc02808d51abbfa55e513146924f19bc84edd6d741aeba3",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
@@ -253,5 +253,13 @@
       "z": 0.033
     }
   ],
-  "source": "written by models/render.py"
+  "source": "written by models/render.py",
+  "textures": [
+    {
+      "file": "rust_coarse_01_diff_1k.jpg",
+      "licence": "CC0-1.0",
+      "sha256": "369f69eb86a7dcc4e5b6e30b1f3a4da5ce6ba50cf417de937efb4f09101f88d4",
+      "source": "https://polyhaven.com/a/rust_coarse_01"
+    }
+  ]
 }

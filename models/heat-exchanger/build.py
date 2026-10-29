@@ -4,9 +4,10 @@
 
 Reads geometry.json beside this file for the collision box and the connections, so the sockets
 land where the prototype declares them, and stamps the scene with that file's hash so render.py
-can refuse a model whose geometry has moved on. Everything is a primitive or a curve with a
-procedural material: nothing imported (ADR 0030; ADR 0043 now allows a CC0 texture, and this model
-uses none). `cube` builds a 1x1x1
+can refuse a model whose geometry has moved on. Every shape is a primitive or a curve: no mesh is
+imported (ADR 0030). The materials are procedural but for one CC0 image texture, the rust photograph
+under the manifold's broad rust (ADR 0043, #805), kept beside this file with its record in
+textures.json. `cube` builds a 1x1x1
 calibration cube for measuring the camera. Written to heat-exchanger.blend beside this file
 unless a path is given.
 
@@ -117,6 +118,14 @@ MATS = {}
 RUST = (0.27, 0.14, 0.07)
 RUST_DARK = (0.09, 0.045, 0.025)
 VERDIGRIS = (0.14, 0.28, 0.20)
+# THE BROAD RUST IS A PHOTOGRAPH OF RUST (ADR 0043, #805): Poly Haven's rust_coarse_01, CC0, kept
+# beside this file and recorded in textures.json. Noise at 64 px a tile washes out or turns into
+# render noise, and the photograph has grain at every scale. It brings its grain and not its
+# colour: scaled channel by channel by RUST over its own mean linear colour, measured off the file
+# (2026-10-30), so the rust is the palette's on average and the value range #801 set is unmoved.
+RUST_TEXTURE = "rust_coarse_01_diff_1k.jpg"
+RUST_TEXTURE_MEAN = (0.129, 0.0436, 0.0152)
+RUST_TEXTURE_TILES = 2.0               # one repeat of the image: it is about 2.2 m of steel
 
 
 def mat(name, glow=False, corrode=False):
@@ -190,6 +199,10 @@ def mat(name, glow=False, corrode=False):
                 mx = nt.nodes.new("ShaderNodeMix")
                 mx.data_type = "RGBA"
                 mx.inputs["B"].default_value = (*colour, 1.0)
+                if colour is RUST:
+                    nt.links.new(rf_parts.texture(nt, HERE, RUST_TEXTURE, RUST_TEXTURE_TILES,
+                                                  tuple(c / m for c, m in zip(RUST, RUST_TEXTURE_MEAN))),
+                                 mx.inputs["B"])
                 nt.links.new(n.outputs["Fac"], r.inputs["Fac"])
                 nt.links.new(r.outputs["Color"], mx.inputs["Factor"])
                 nt.links.new(out, mx.inputs["A"])
