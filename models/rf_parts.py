@@ -21,7 +21,9 @@ rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's 
 materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
-forwards to the tube and its ribs, and chooses the accent and the rim itself.
+forwards to the tube and its ribs, and chooses the accent and the rim itself. `texture` builds no
+surface: a machine's `mat` calls it for a recorded CC0 image's colour to wire into its own nodes
+(ADR 0043, #805).
 
 AND A SOCKET'S NUMBERS ARE RE-EXPORTED RATHER THAN HELD: `SOCKET_Z`, the height a player-facing
 socket is drawn at, and since #365 the ten proportions that say where its rim, its band and its
@@ -196,6 +198,68 @@ def bevel(obj, width=0.03, name=None):
     mod = obj.modifiers.new("Bevel", "BEVEL")
     mod.width = width * stream(name or obj.name).uniform(0.75, 1.6)
     mod.segments = 2
+
+
+def texture(nt, model_dir, filename, tiles=2.0, gain=(1.0, 1.0, 1.0)):
+    """A recorded CC0 image texture's colour in the node tree `nt`, as an output socket for a
+    machine's `mat` to wire where it likes (ADR 0043, #805). `filename` is in `model_dir`, and
+    `rf_blender.texture_record` refuses it there unless textures.json records it as CC0 with these
+    bytes. One repeat of the image covers `tiles` tiles, and `gain` scales its linear colour per
+    channel, so a palette can keep its colour and take only the grain.
+
+    PROJECTED IN WORLD SPACE FROM ALL THREE AXES, each weighted by the square of the surface normal
+    along it. A box here is a unit cube scaled, so its own coordinates would stretch one repeat over
+    a fourteen-tile manifold, and its UVs would do the same; Blender's box projection reads the
+    normal in the object's frame, which the exchanger's quarter turn takes away from the world's.
+    World space keeps one grain size on every part and every face.
+
+    THE PATH IS STORED RELATIVE, `//` and the file name, so the .blend has to be saved beside it:
+    that is where every build script saves, and models/render.py refuses an image anywhere else.
+    """
+    import os
+    rf.texture_record(model_dir, filename)
+    img = bpy.data.images.load(os.path.join(model_dir, filename), check_existing=True)
+    img.filepath = "//" + filename
+    geom = nt.nodes.new("ShaderNodeNewGeometry")
+    scaled = nt.nodes.new("ShaderNodeVectorMath")
+    scaled.operation = "SCALE"
+    scaled.inputs["Scale"].default_value = 1.0 / tiles
+    nt.links.new(geom.outputs["Position"], scaled.inputs[0])
+    xyz = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(scaled.outputs["Vector"], xyz.inputs[0])
+    weight = nt.nodes.new("ShaderNodeVectorMath")
+    weight.operation = "MULTIPLY"
+    nt.links.new(geom.outputs["Normal"], weight.inputs[0])
+    nt.links.new(geom.outputs["Normal"], weight.inputs[1])
+    w = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(weight.outputs["Vector"], w.inputs[0])
+    total = None
+    # Each axis looks along itself, so it reads the other two coordinates.
+    for axis, (a, b) in (("X", ("Y", "Z")), ("Y", ("X", "Z")), ("Z", ("X", "Y"))):
+        uv = nt.nodes.new("ShaderNodeCombineXYZ")
+        nt.links.new(xyz.outputs[a], uv.inputs["X"])
+        nt.links.new(xyz.outputs[b], uv.inputs["Y"])
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        nt.links.new(uv.outputs["Vector"], tex.inputs["Vector"])
+        part = nt.nodes.new("ShaderNodeVectorMath")
+        part.operation = "SCALE"
+        nt.links.new(tex.outputs["Color"], part.inputs[0])
+        nt.links.new(w.outputs[axis], part.inputs["Scale"])
+        if total is None:
+            total = part.outputs["Vector"]
+        else:
+            add = nt.nodes.new("ShaderNodeVectorMath")
+            add.operation = "ADD"
+            nt.links.new(total, add.inputs[0])
+            nt.links.new(part.outputs["Vector"], add.inputs[1])
+            total = add.outputs["Vector"]
+    # The squared components of a unit normal sum to one, so the three weights need no dividing.
+    tint = nt.nodes.new("ShaderNodeVectorMath")
+    tint.operation = "MULTIPLY"
+    tint.inputs[1].default_value = gain
+    nt.links.new(total, tint.inputs[0])
+    return tint.outputs["Vector"]
 
 
 def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):

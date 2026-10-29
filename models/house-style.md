@@ -169,6 +169,15 @@ Principled BSDF throughout. Meshes are never imported. An image texture may be, 
 recorded beside the model with its source and licence (ADR 0043, amending ADR 0030). Painted
 steel is roughness 0.72, metallic 0. Bare metal is roughness 0.35, metallic 0.8.
 
+**A texture is a file in the model's own directory with a record in its `textures.json`** (#805):
+the https page it came from, `"licence": "CC0-1.0"` and the file's `sha256`, keyed by file name.
+`rf_parts.texture` loads one, projected in world space so every part gets the same grain, and
+hands `mat` its colour; `gain` scales that colour so the palette keeps its hue and value and the
+image brings only its grain. The build refuses an unrecorded texture, `models/render.py` refuses an
+image a stored model names that is not one, and `scripts/ship-check.ps1` refuses any file in a
+model directory that is not `build.py`, `geometry.json`, `textures.json`, the model's own `.blend`
+or a recorded texture. The exchanger's broad rust is the worked example.
+
 **The range runs from a near-black base to the paint and the lit edges** (#801, 2026-10-28). The
 frame and the slab are the darkest thing on a machine. The highlights are what catches the key
 light: the off-white paint, and the specular edge of bare metal, which is dark in colour but

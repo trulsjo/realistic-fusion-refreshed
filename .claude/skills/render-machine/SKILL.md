@@ -39,8 +39,9 @@ Lua: pointing the prototype at the rendered files is a separate, reviewed edit.
    Principled materials, sockets placed from `geometry.json` by fluid, the geometry's sha256 stamped
    on the scene, headless, deterministic (a seed passed to `rf_parts.use`, and every imperfection
    drawn from `rf_parts.stream` under the part's own name, never from `random`). No mesh is
-   imported. A CC0 image texture may be, recorded beside the model with its source and licence
-   (ADR 0043); nothing else from Poly Haven, Sketchfab or anywhere else.
+   imported. A CC0 image texture may be, kept in `models/<machine>/` with a record in its
+   `textures.json` and loaded with `rf_parts.texture` (ADR 0043; `models/house-style.md`,
+   Materials, has the record); nothing else from Poly Haven, Sketchfab or anywhere else.
 
    To see what you are building, Blender is reachable over MCP (`mcp__blender__*`): run the same
    code with `execute_blender_code`, look with `get_viewport_screenshot`, then put the result in

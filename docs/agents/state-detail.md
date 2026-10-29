@@ -383,3 +383,12 @@ One line for each change to a gate, newest last, with its date and its ticket.
   draws nothing. It cannot see a counter that reaches the name through another variable, so it
   cannot tell a part named for where it stands from one named for its rank, nor a loop over
   anything else, such as `zip` with a string of letters.
+- 2026-10-30, #805: `scripts/ship-check.ps1` section 18 fails each file git tracks, or would add,
+  in a directory under `models/` that is not `build.py`, `geometry.json`, `textures.json`, the
+  model's own `.blend` or a `.jpg`, `.jpeg` or `.png` whose record in `textures.json` gives the
+  licence `CC0-1.0`, an https source and the file's own sha256; it also fails a record with no
+  file. Its `-SelfTest` plants one of each fault (`unproven-texture-caught`) and a directory that
+  passes (`proven-texture-passes`). It cannot see whether the source page really offers that file
+  under CC0, an image under `models/` outside a model directory, or an image packed into a
+  `.blend`, which `models/render.py` refuses. `models/test_rf_blender.py` also holds
+  `rf_blender.texture_record`, which the build and the render call, to the same record.

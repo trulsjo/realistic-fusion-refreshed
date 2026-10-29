@@ -6,7 +6,7 @@ the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pi
 its floors are checked, and since #825 the named streams parts draw from and that no file here
 but rf_blender.py imports the global `random`, which that one uses only for `random.Random`, and
 since #827 that neither rendered machine's build script names a part that draws from a loop's
-counter. It renders nothing, so it cannot see whether a part reads; it cannot
+counter, and since #805 a texture's provenance record. It renders nothing, so it cannot see whether a part reads; it cannot
 see what a build script draws from one stream or in what order, nor a draw from anything but
 `random`, such as `mathutils.noise`."""
 import math
@@ -498,6 +498,63 @@ _kit = open(os.path.join(_models, "rf_parts.py"), encoding="utf-8").read()
 for _machine in ("heat-exchanger", "isotope-collector"):
     _found = loop_named(open(os.path.join(_models, _machine, "build.py"), encoding="utf-8").read(), _kit)
     assert not _found, (_machine, "names a part that draws by its place in a loop", _found)
+
+# ---- CC0 image textures (#805, ADR 0043) ---------------------------------------------------------
+#
+# A texture loads only with a record beside it in the model's textures.json: an https source, the
+# CC0 licence and the file's own sha256. Anything that is not an image is refused whatever its
+# record says, which is what keeps a mesh out of this path.
+import hashlib  # noqa: E402
+import tempfile  # noqa: E402
+
+
+def texture_refusal(model_dir, filename):
+    """The message texture_record exits with, or None when it passes."""
+    try:
+        rf.texture_record(model_dir, filename)
+    except SystemExit as e:
+        return str(e.code)
+    return None
+
+
+with tempfile.TemporaryDirectory() as _tex:
+    _bytes = b"not really a jpeg, but bytes are bytes"
+    _good = {"source": "https://polyhaven.com/a/rust_coarse_01", "licence": "CC0-1.0",
+             "sha256": hashlib.sha256(_bytes).hexdigest()}
+
+    def _plant(records, *files):
+        for f in files:
+            with open(os.path.join(_tex, f), "wb") as out:
+                out.write(_bytes)
+        with open(os.path.join(_tex, rf.TEXTURE_RECORDS), "w", encoding="utf-8") as out:
+            json.dump(records, out)
+
+    assert "no textures.json" in texture_refusal(_tex, "rust.jpg")
+    _plant({"rust.jpg": _good}, "rust.jpg", "grime.png", "mesh.obj")
+    assert rf.texture_record(_tex, "rust.jpg")["licence"] == "CC0-1.0"
+    assert "no record" in texture_refusal(_tex, "grime.png")
+    assert "not on disk" in texture_refusal(_tex, "absent.jpg")
+    # A mesh is refused with a perfect record, so no record can let one in.
+    _plant({"mesh.obj": _good}, "mesh.obj")
+    assert "not an image" in texture_refusal(_tex, "mesh.obj")
+    for _field, _bad, _said in (("licence", "CC-BY-4.0", "CC0-1.0"), ("source", "http://example.com/x", "https"),
+                                ("source", "", "https"), ("sha256", "0" * 64, "sha256")):
+        _plant({"rust.jpg": {**_good, _field: _bad}})
+        _said_now = texture_refusal(_tex, "rust.jpg")
+        assert _said_now and _said in _said_now, (_field, _bad, _said_now)
+    _plant({"rust.jpg": {k: v for k, v in _good.items() if k != "licence"}})
+    assert "CC0-1.0" in texture_refusal(_tex, "rust.jpg")
+
+# Every texture the models keep passes, so a record that has rotted fails here as well as in
+# scripts/ship-check.ps1.
+_models = os.path.dirname(os.path.abspath(__file__))
+for _machine in sorted(os.listdir(_models)):
+    _dir = os.path.join(_models, _machine)
+    if not os.path.isdir(_dir):
+        continue
+    for _f in sorted(os.listdir(_dir)):
+        if os.path.splitext(_f)[1].lower() in rf.TEXTURE_EXTENSIONS:
+            rf.texture_record(_dir, _f)
 
 print("ok")
 
