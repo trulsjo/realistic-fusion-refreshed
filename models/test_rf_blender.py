@@ -4,7 +4,8 @@ renders give the same bytes -- was measured by hand for #249 on the calibration 
 in its resolution; this only pins the numbers the sheets are declared from, the detail floors,
 the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pieces go and how
 its floors are checked, and since #825 the named streams parts draw from and that no file here
-imports the global `random`. It renders nothing, so it cannot see whether a part reads; it cannot
+but rf_blender.py imports the global `random`, which that one uses only for `random.Random`.
+It renders nothing, so it cannot see whether a part reads; it cannot
 see what a build script draws from one stream or in what order, nor a draw from anything but
 `random`, such as `mathutils.noise`."""
 import math

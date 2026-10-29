@@ -582,11 +582,12 @@ else:
     # JOG_X is where the loom's axis passes the outlet, set ABSOLUTELY rather than off the rail:
     # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
     # collision box. Here, by the arithmetic, that edge is 0.004 inside it. Its inner edge stood
-    # 0.003 clear of the rings' nominal reach with the descent at 1.80, and stands 0.283 clear at
-    # 1.52, so the rings no longer bound it. Under #824 the cables' margin to the rings moved with
-    # every change before the loom, since every draw came from one stream in build order: it was
-    # 0.006, then 0.016, then 0.013, and the overlap test found no ring touched on any of the
-    # three. The loom's winding is drawn from the loom's own stream since #825.
+    # 0.003 clear of the rings' nominal reach with the descent at 1.80, and stands 0.283 clear of
+    # it at 1.52, about 0.21 with the descent's bow, so the rings no longer bound it. Under #824
+    # the cables' margin to the rings moved with every change before the loom, since every draw
+    # came from one stream in build order: it was 0.006, then 0.016, then 0.013, and the overlap
+    # test found no ring touched on any of the three. The loom's winding is drawn from the loom's
+    # own stream since #825.
     #
     # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
     # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
