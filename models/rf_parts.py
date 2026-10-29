@@ -38,7 +38,8 @@ name; the part keeps it for the build. A bevel draws from the stream of the obje
 helper that jitters from the stream of the part it draws, and a build script from the stream of
 the element it is shaping, named as that element is. So a part's imperfections depend on its name
 alone: adding, removing or re-ordering any other part leaves them as they were. Nothing draws from
-the global `random`, which models/test_rf_blender.py holds.
+the global `random`, read from source; models/test_rf_blender.py holds only that no file here but
+models/rf_blender.py imports it.
 
 UNTIL #825 THEY CAME FROM ONE GLOBAL STREAM, in build order, and a part added early re-rolled
 everything after it: on #824 a guard rail laid in lengths moved the drums and the handwheels, and a
