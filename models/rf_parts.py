@@ -48,21 +48,23 @@ its name, the order of the draws made from that one stream, and the machine's se
 re-rolls it, and so does a change to the order of the draws inside a helper's body, on every part
 that helper draws -- which is verified by re-rendering both machines, never by reading the diff.
 
-SO NO PART IS NAMED BY ITS PLACE IN A LOOP (#827). A name numbered off a loop is an order again: a
-part inserted early renumbers every part after it, and each draws from a stream it did not draw from
-before. A part in a list written out by hand carries a name given by hand, as the collector's ice
-does; one whose place is worked out is named for what it stands on, as the exchanger's guard-rail
-lengths are for the post line each starts at, or for where it stands, as a groove is. A part added
-at the end of a row of evenly spaced ones leaves the others' names, and so their values, as they
-were; a part named for where it stands is renamed, and so re-rolled, when it is nudged. And no stream is drawn from once per pass of a loop for one thing and then for another: the
-exchanger's loom draws each span's wander from a stream named for that span, and keeps its own for
-the winding.
+SO NO BUILD SCRIPT NAMES A PART THAT DRAWS BY ITS PLACE IN A LOOP (#827). A name numbered off a
+loop is an order again: a part inserted early renumbers every part after it, and each draws from a
+stream it did not draw from before. A part in a list written out by hand carries a name given by
+hand, as the collector's ice does; one whose place is worked out is named for what it stands on, as
+the exchanger's guard-rail lengths are for the post line each starts at, or for where it stands, as
+a bottle is. A part added at the end of a row of evenly spaced ones leaves the others' names, and
+so their values, as they were; a part named for where it stands is renamed, and so re-rolled, when
+it is nudged. And no build script draws from one stream once per pass of a loop for one thing and
+then for another: the exchanger's loom draws each span's wander from a stream named for that span,
+and keeps its own for the winding. The helpers here still number a part's own pieces -- a panel
+set's plates, a casing's segments -- from `enumerate`: those are the part's grid, fixed by the call.
 
 models/test_rf_blender.py holds that one name's stream is independent of the others, that no file
 under models/ but models/rf_blender.py imports the global `random`, which that one uses only for
-`random.Random`, and that no name given to a part that draws is formatted from a loop's counter.
-What a build script draws from one stream, and in what order, it cannot see, nor a draw from
-anything else.
+`random.Random`, and that neither rendered machine's build script gives a part that draws a name
+formatted from a loop's counter. What a build script draws from one stream, and in what order, it
+cannot see, nor a draw from anything else.
 
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.

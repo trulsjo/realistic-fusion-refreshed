@@ -125,7 +125,7 @@ not isolated. The guard rail's six lengths each draw their own jitter where one 
 every random draw after them moved, the drums' radius and height among them, and the hoses' rings
 moved with their new phases; any of these can move both figures. That is *inferred* from the build
 script and was not tested part by part. [The re-roll of #825](#the-re-roll-of-825), below,
-measures how much one reshuffle moves on its own. The bench prints four
+measures how much one re-roll moves on its own. The bench prints four
 places, and the kit's rows give all four; the first row is #801's, given to three.
 Neither figure says the parts read at 32 px a tile; that is Truls's eye, on a frame from
 `scripts/probe-heat-exchanger-art.ps1`.
@@ -170,13 +170,14 @@ under 0.001**, *measured*. This is one re-roll per machine, so it shows how big 
 can be, not how wide the spread is. Beside it, the fall after Truls's adjustments of 2026-10-29
 was 0.0109 and 0.0125 on the exchanger. The normal-pass fall is three to four times what this
 re-roll moved that figure, and the pixel fall over ten times what it moved that one, so most of
-it was probably the change itself and not the reshuffle. That is *inferred* from one sample of
+it was probably the change itself and not the re-roll. That is *inferred* from one sample of
 the re-roll and was not tested further. #827's re-roll, below, moved the exchanger's pixel
-figure by 0.0049, so on that figure the fall is only about twice what one re-roll can do, and
-the claim holds for the normal-pass figure more than for the pixel one.
+figure by 0.0049, so on that figure the fall is only about twice what one re-roll did, and the
+claim holds for the normal-pass figure more than for the pixel one. That is *inferred* from three
+samples of a re-roll.
 
 **The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
-others, as #824's reshuffle had, *measured* by a mesh-overlap test on the built model before and
+others, as #824's re-roll had, *measured* by a mesh-overlap test on the built model before and
 after. The fixes that followed on the same branch moved parts on purpose, so they get a row of
 their own. The feeds now cross the mid-line posts beside them, the steam outlet comes down at 1.52
 and not 1.80, the loom rests 0.025 higher over the cross rails, and the bays stand back 0.14 and
@@ -192,32 +193,40 @@ not 0.12, *read from source*.
 Measured 2026-10-29 with the same two commands, after
 [#827](https://github.com/trulsjo/realistic-fusion-refreshed/issues/827) renamed every part that
 draws and was named by its place in a loop. A part draws from the stream of its name, so each
-renamed part drew again, and the loom's wander between clamps moved to a stream of each span's
-own. No part moved on purpose in that change, *read from source*. The "before" is each machine as
-#825 left it, from the tables above, on sheets `main` still carried. Blender 5.2.0, 64 samples for
-the sheet and 16 for the normal pass.
+renamed part that draws drew again, and the loom's wander between clamps moved to a stream of each
+span's own. No part moved on purpose in the renaming, *read from source*; two contacts it landed
+were then fixed, below. The "before" is each machine as #825 left it, from the tables above, on
+sheets `main` still carried. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
 
 | sheet | pixel figure, before | after | normal-pass figure, before | after |
 |---|---:|---:|---:|---:|
-| `rf-heat-exchanger`, north | 0.2772 | 0.2723 | 0.5206 | 0.5172 |
+| `rf-heat-exchanger`, north | 0.2772 | 0.2735 | 0.5206 | 0.5180 |
 | `rf-isotope-collector`, north | 0.3475 | 0.3465 | 0.4995 | 0.4995 |
 
-**This re-roll moved the exchanger's two figures by 0.0049 and 0.0034 and the collector's by 0.0010
-and nothing**, *measured*. The exchanger's pixel figure moved further than #825's re-roll moved
-either machine's, so one draw's spread on that figure is at least 0.005, not under 0.001 as the
-section above found. That is *inferred* from two samples.
-
-**It also landed two contacts of the kind #824 and #825 fixed**, *measured* by the same
-mesh-overlap test: the middle drum's handwheel stood on the plates of the bay beside it, and the
-south drum's weld seam stood in the cabinet. Both were fixed on the same branch (Truls,
-2026-10-29), the wheel and its gauges kept 0.07 clear of a bay's plates and the weld stopped 0.03
-short of the cabinet, *read from source*. That moved the middle drum's wheel onto a post's
-flange, the contact between a handwheel and the frame that #806 is left to settle.
+The exchanger was measured three times on the way, *measured*:
 
 | `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
 |---|---:|---:|
-| the re-roll, from above | 0.2723 | 0.5172 |
-| after the fixes | 0.2726 | 0.5169 |
+| renamed, the post lines lettered | 0.2723 | 0.5172 |
+| the two contacts fixed | 0.2726 | 0.5169 |
+| the post lines named for where they stand | 0.2735 | 0.5180 |
+
+**Two re-rolls of the exchanger moved its pixel figure by 0.0049 and 0.0009**, *measured*: the
+first renaming, and the second, which renamed the frame alone with the fixes kept. #825's one
+re-roll moved it by 0.0003. So a re-roll can move that figure by about 0.005, *inferred* from
+three samples, and a difference of that size between two sheets may be chance.
+
+**The renaming landed two contacts of the kind #824 and #825 fixed**, *measured* by the same
+mesh-overlap test: the middle drum's handwheel stood on the plates of the bay beside it, and the
+south drum's weld seam stood in the cabinet. Both were fixed on the same branch, the wheel and its
+gauges kept 0.07 clear of a bay's plates and the weld stopped 0.03 short of the cabinet, *read from
+source*. Every other contact the test found new on the exchanger is of three kinds, *inferred* from
+its list of pairs: a handwheel against the frame, which #806 is left to settle; a beam meeting a
+beam or the slab; the pieces of one drum or one hose meeting each other, and the headers where they
+land together on the middle drum's cap; and a part meeting what it is joined to, as a hose its cap,
+a vent hose its valve and the deck, a gauge loom the main loom, the loom the cabinet it climbs off,
+and a conduit clamp its post. On the collector it found
+four new contacts and lost four, all of ice against what it hangs from or sits on, *measured*.
 
 ## What the "before" says, and how far it goes
 
