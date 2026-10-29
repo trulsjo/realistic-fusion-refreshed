@@ -207,6 +207,16 @@
     A fresh clone holds no commit that no ref reaches, so there it passes the pre-reword copy of a
     commit as naming nothing; the section comment has the rest.
 
+    SECTION 18 HAS A -SelfTest AND NO FLOOR (#805). It fails a file in a directory under models/
+    that is not build.py, geometry.json, textures.json, the model's own .blend or a texture, a mesh
+    in any format included, and a .jpg, .jpeg or .png whose record in textures.json is missing,
+    names a licence other than CC0-1.0, a source that is not an https page or a sha256 that is not
+    the file's, and a record with no file (ADR 0043). A model directory need hold no texture, so
+    there is no count to hold it to. The unproven-texture-caught half plants one of each fault and
+    requires each reported once; the proven-texture-passes half requires a recorded texture to
+    pass. It cannot see whether the source page really offers the file under CC0; the section
+    comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -216,12 +226,12 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove ten things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove eleven things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
     of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, and section 18 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents and the scratch repositories of sections 16 and 17 live in the scratch
     directory the run removes on its way out.
 
@@ -1564,6 +1574,86 @@ try {
     }
 } finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
 
+# ----------------------------------------------------------------- what a model directory holds
+# 18. A TEXTURE IN A MODEL DIRECTORY HAS ITS PROVENANCE, AND NOTHING ELSE IS IMPORTED (#805).
+#
+# ADR 0043 lets a model use a CC0 image texture, kept in the model's own directory and recorded
+# beside it in textures.json with the page it came from, its licence and the sha256 of its bytes.
+# It still bans meshes. models/rf_blender.py's texture_record refuses an unrecorded texture when a
+# build loads it and when models/render.py renders a stored model, but a file nobody builds with
+# is read by neither, so this reads the directories. Each file git tracks, or would add, in a
+# directory under models/ must be one of the five kinds a model is made of: build.py, geometry.json,
+# textures.json, the model's own <directory>.blend, or a .jpg, .jpeg or .png with a record whose
+# licence is CC0-1.0, whose source is an https page and whose sha256 is the file's. Anything else
+# fails, a mesh in any format included, and so does a record whose file is not there.
+#
+# WHAT IT CANNOT SEE: whether a record's source page really offers that file under CC0, which a
+# person checks when fetching it; an image under models/ but outside a model directory; and an
+# image packed into a .blend, which models/render.py refuses when it renders that model.
+$MODEL_FILES = @('build.py', 'geometry.json', 'textures.json')
+$TEXTURE_EXTENSIONS = @('.jpg', '.jpeg', '.png')
+
+function Find-UnprovenModelFiles {
+    <#  A failure for each file in a model directory that is not one a model is made of, each
+        texture without a CC0 record that matches its bytes, and each record with no file.
+        $Files are paths relative to $Root, as git lists them.  #>
+    param([Parameter(Mandatory)] [string] $Root, [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files)
+
+    $byDir = @{}
+    foreach ($rel in $Files) {
+        $parts = $rel -split '/'
+        if ($parts[0] -ne 'models' -or $parts.Count -lt 3) { continue }
+        if (-not (Test-Path -LiteralPath (Join-Path $Root $rel))) { continue }   # tracked, deleted
+        if ($parts.Count -gt 3) {
+            "$rel is below its model's directory. A model keeps its files, its textures included, in models/<machine>/ itself."
+            continue
+        }
+        if (-not $byDir.ContainsKey($parts[1])) { $byDir[$parts[1]] = [System.Collections.Generic.List[string]]::new() }
+        $byDir[$parts[1]].Add($parts[2])
+    }
+    foreach ($dir in $byDir.Keys | Sort-Object) {
+        $records = @{}
+        $recordsPath = Join-Path $Root "models/$dir/textures.json"
+        if ($byDir[$dir] -contains 'textures.json') {
+            try { $records = Get-Content -Raw -LiteralPath $recordsPath | ConvertFrom-Json -AsHashtable }
+            catch { "models/$dir/textures.json is not JSON: $($_.Exception.Message)"; continue }
+        }
+        foreach ($name in $byDir[$dir] | Sort-Object) {
+            $rel = "models/$dir/$name"
+            if ($name -in $MODEL_FILES -or $name -eq "$dir.blend") { continue }
+            if ([IO.Path]::GetExtension($name).ToLowerInvariant() -notin $TEXTURE_EXTENSIONS) {
+                "$rel is not one of the files a model is made of (build.py, geometry.json, textures.json, $dir.blend or a CC0 texture). ADR 0043 imports CC0 image textures and no meshes."
+                continue
+            }
+            $record = $records[$name]
+            if ($record -isnot [System.Collections.IDictionary]) {
+                "$rel is a texture with no record in models/$dir/textures.json. Record its source page, its licence (CC0-1.0) and its sha256 (ADR 0043)."
+                continue
+            }
+            if ($record['licence'] -cne 'CC0-1.0') {
+                "$rel is recorded as licence '$($record['licence'])'; only CC0-1.0 may be imported (ADR 0043)."
+            }
+            if ("$($record['source'])" -notmatch '^https://') {
+                "$rel records its source as '$($record['source'])'; record the https page it was fetched from."
+            }
+            $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $Root $rel)).Hash.ToLowerInvariant()
+            if ($record['sha256'] -cne $sha) {
+                "$rel has sha256 $sha, not the '$($record['sha256'])' its record holds, so the file is not the one recorded."
+            }
+        }
+        foreach ($name in $records.Keys | Sort-Object) {
+            if ($name -notin $byDir[$dir]) {
+                "models/$dir/textures.json records '$name', which is not in models/$dir/. Drop the record or restore the file."
+            }
+        }
+    }
+}
+
+$checks++
+$modelFiles = @(git -C $repoRoot ls-files --cached --others --exclude-standard -- models)
+if ($LASTEXITCODE -ne 0) { $failures.Add('section 18 could not list the files under models/.') }
+foreach ($why in Find-UnprovenModelFiles -Root $repoRoot -Files $modelFiles) { $failures.Add($why) }
+
 # ----------------------------------------------------------------- commits cited, on main
 # 17. A COMMIT CITED IN LIVE PROSE IS ONE origin/main REACHES (#817).
 #
@@ -2218,6 +2308,51 @@ if ($SelfTest) {
                 }
                 'a record citing a commit main never reached is not read, and a missing origin/main or a shallow clone is refused.'
             } }
+
+            @{ Name = 'unproven-texture-caught'; Body = {
+                # Section 18 passes by finding nothing. A planted model directory holds one of each
+                # thing it refuses, and each must be reported once, by name.
+                $root = Join-Path $planted 'textures'
+                $dir  = New-Item -ItemType Directory -Force -Path "$root/models/m/sub"
+                foreach ($f in 'm.blend', 'build.py', 'geometry.json', 'bare.jpg', 'byncnd.png', 'swapped.jpg',
+                               'httponly.jpeg', 'mesh.obj', 'other.blend', 'sub/deep.jpg') {
+                    "bytes of $f" | Set-Content -LiteralPath (Join-Path $dir.Parent.FullName $f) -Encoding utf8
+                }
+                $sha = { param([string] $f) (Get-FileHash -Algorithm SHA256 -LiteralPath "$root/models/m/$f").Hash.ToLowerInvariant() }
+                @{
+                    'byncnd.png'    = @{ source = 'https://example.com/a'; licence = 'CC-BY-NC-ND-4.0'; sha256 = (& $sha 'byncnd.png') }
+                    'swapped.jpg'   = @{ source = 'https://example.com/b'; licence = 'CC0-1.0'; sha256 = ('0' * 64) }
+                    'httponly.jpeg' = @{ source = 'http://example.com/c'; licence = 'CC0-1.0'; sha256 = (& $sha 'httponly.jpeg') }
+                    'gone.jpg'      = @{ source = 'https://example.com/d'; licence = 'CC0-1.0'; sha256 = ('0' * 64) }
+                } | ConvertTo-Json | Set-Content -LiteralPath "$root/models/m/textures.json" -Encoding utf8
+                $files = @('m.blend', 'build.py', 'geometry.json', 'textures.json', 'bare.jpg', 'byncnd.png', 'swapped.jpg',
+                           'httponly.jpeg', 'mesh.obj', 'other.blend', 'sub/deep.jpg') | ForEach-Object { "models/m/$_" }
+                $found = @(Find-UnprovenModelFiles -Root $root -Files $files)
+                $want = 'bare.jpg', 'byncnd.png', 'swapped.jpg', 'httponly.jpeg', 'mesh.obj', 'other.blend', 'sub/deep.jpg', "'gone.jpg'"
+                $missed = @($want | Where-Object { $w = $_; -not ($found | Where-Object { $_.Contains($w) }) })
+                if ($missed -or $found.Count -ne $want.Count) {
+                    throw ("of $($want.Count) planted faults section 18 reported $($found.Count), and missed " +
+                           "'$($missed -join ', ')': $($found -join ' | ')")
+                }
+                'an unrecorded texture, a licence not CC0, a swapped file, an http source, a mesh, a second .blend, a texture in a subdirectory and a record with no file are each reported.'
+            } }
+
+            @{ Name = 'proven-texture-passes'; Body = {
+                # The other direction: a model directory of the five kinds, its texture recorded as
+                # CC0 from an https page with its own sha256, is not reported.
+                $root = Join-Path $planted 'textures-ok'
+                New-Item -ItemType Directory -Force -Path "$root/models/m" | Out-Null
+                foreach ($f in 'm.blend', 'build.py', 'geometry.json', 'rust.jpg') {
+                    "bytes of $f" | Set-Content -LiteralPath "$root/models/m/$f" -Encoding utf8
+                }
+                @{ 'rust.jpg' = @{ source = 'https://polyhaven.com/a/rust'; licence = 'CC0-1.0'
+                                   sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath "$root/models/m/rust.jpg").Hash.ToLowerInvariant() } } |
+                    ConvertTo-Json | Set-Content -LiteralPath "$root/models/m/textures.json" -Encoding utf8
+                $found = @(Find-UnprovenModelFiles -Root $root -Files @('m.blend', 'build.py', 'geometry.json', 'textures.json', 'rust.jpg' |
+                    ForEach-Object { "models/m/$_" }))
+                if ($found) { throw "a model directory whose texture is recorded as CC0 was reported: $($found -join ' | ')" }
+                'a model directory whose only texture is recorded as CC0, from an https page, with its sha256, is not reported.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -2235,6 +2370,7 @@ Write-Host 'no prose line of the wrapped files is over the width they are wrappe
 Write-Host 'grouped figure across its end, every -SelfTest help that names a half names all of them,'
 Write-Host 'neither the review skills nor the markdown-only test reads the local main, and every rig'
 Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave,'
-Write-Host 'no live prose cites a commit origin/main does not reach;'
+Write-Host 'no live prose cites a commit origin/main does not reach, every texture in a model'
+Write-Host 'directory is recorded as CC0 with its own bytes and nothing else is imported there;'
 Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0

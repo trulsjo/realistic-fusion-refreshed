@@ -5,5 +5,7 @@
 
 # The binary kinds this repository tracks, or would: never converted, never diffed as text.
 *.png binary
+*.jpg binary
+*.jpeg binary
 *.blend binary
 *.zip binary

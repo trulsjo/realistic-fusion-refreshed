@@ -69,6 +69,22 @@ if geo_sha != scene.get("rf_geometry_sha256"):
              f"({geo_sha[:12]} now, {str(scene.get('rf_geometry_sha256'))[:12]} in the model). "
              f"Regenerate the model (blender -b --python {model_dir}/build.py) before rendering.")
 geo = json.load(open(geo_path, encoding="utf-8"))
+
+# EVERY IMAGE THE MODEL NAMES IS A RECORDED CC0 TEXTURE IN ITS OWN DIRECTORY (ADR 0043, #805), held
+# here as well as at build because a stored model is rendered as it is, and Blender draws a missing
+# image as magenta rather than failing. A packed image is refused: its bytes would live in the
+# .blend, where no record can be checked against them.
+textures = []
+for img in bpy.data.images:
+    if img.source != "FILE":
+        continue
+    path = os.path.normpath(bpy.path.abspath(img.filepath))
+    if img.packed_file or os.path.dirname(path) != os.path.normpath(model_dir):
+        sys.exit(f"{machine}: image {img.name!r} is {'packed into the model' if img.packed_file else path}; a "
+                 f"texture is a file in {model_dir} with a record in {rf.TEXTURE_RECORDS} (ADR 0043).")
+    record = rf.texture_record(model_dir, os.path.basename(path))
+    textures.append({"file": os.path.basename(path), "source": record["source"],
+                     "licence": record["licence"], "sha256": record["sha256"]})
 tiles_w, tiles_h = (int(v) for v in scene["rf_tiles"])
 margin = float(scene["rf_margin_tiles"])
 
@@ -322,6 +338,8 @@ manifest = {
     # whose socket list does not account for every connection in `geometry`, contained ones
     # included.
     "sockets": json.loads(scene.get("rf_sockets", "[]")),
+    # The CC0 textures the model drew with, as their records state them (ADR 0043).
+    "textures": sorted(textures, key=lambda t: t["file"]),
     "files": sorted(files),
     "source": "written by models/render.py",
 }

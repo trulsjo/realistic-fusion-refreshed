@@ -523,6 +523,53 @@ def geometry_sha256(path):
         return hashlib.sha256(json.dumps(json.load(f), sort_keys=True).encode()).hexdigest()
 
 
+# A CC0 IMAGE TEXTURE MAY BE IMPORTED, AND NOTHING ELSE MAY (ADR 0043, #805). It lives in the model's
+# own directory, so a build reads the same bytes on every machine and needs no network, and it is
+# recorded in that directory's textures.json under its file name: the page it came from, its
+# licence and the sha256 of the file as it was fetched. `rf_parts.texture` loads one only through
+# `texture_record`, render.py holds every image a stored model names to it, and
+# scripts/ship-check.ps1 section 18 holds every file in a model directory to the same record, so a
+# texture with no provenance fails a gate before it reaches a sheet.
+#
+# AN IMAGE, BY ITS EXTENSION. A mesh is refused whatever its record says, which is what keeps this
+# path from importing one: ADR 0043 allows CC0 textures and still bans meshes, CC0 or not.
+TEXTURE_RECORDS = "textures.json"
+TEXTURE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+TEXTURE_LICENCE = "CC0-1.0"
+
+
+def texture_record(model_dir, filename):
+    """The provenance record of the texture `filename` in `model_dir`, or an exit naming what is
+    wrong: not an image, no textures.json, no file, no record, a licence that is not CC0, a source
+    that is not an https page, or bytes that are not the ones recorded."""
+    where = f"{os.path.basename(os.path.normpath(model_dir))}/{filename}"
+    if os.path.splitext(filename)[1].lower() not in TEXTURE_EXTENSIONS:
+        sys.exit(f"texture: {where} is not an image ({', '.join(TEXTURE_EXTENSIONS)}). ADR 0043 allows "
+                 f"CC0 image textures and no meshes; every shape is built by a script.")
+    records_path = os.path.join(model_dir, TEXTURE_RECORDS)
+    if not os.path.exists(records_path):
+        sys.exit(f"texture: {where} has no {TEXTURE_RECORDS} beside it to record where it came from.")
+    path = os.path.join(model_dir, filename)
+    if not os.path.exists(path):
+        sys.exit(f"texture: {where} is not on disk; a texture is kept in its model's own directory.")
+    with open(records_path, encoding="utf-8") as f:
+        record = json.load(f).get(filename)
+    if not isinstance(record, dict):
+        sys.exit(f"texture: {where} has no record in {TEXTURE_RECORDS}.")
+    if record.get("licence") != TEXTURE_LICENCE:
+        sys.exit(f"texture: {where} is recorded as {record.get('licence')!r}; only {TEXTURE_LICENCE} "
+                 f"may be imported (ADR 0043).")
+    if not str(record.get("source", "")).startswith("https://"):
+        sys.exit(f"texture: {where}'s source is {record.get('source')!r}; record the https page it "
+                 f"was fetched from.")
+    with open(path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    if record.get("sha256") != digest:
+        sys.exit(f"texture: {where}'s sha256 is {digest}, not the {record.get('sha256')!r} recorded; "
+                 f"the file is not the one its record describes.")
+    return record
+
+
 def script_args():
     argv = sys.argv
     return argv[argv.index("--") + 1:] if "--" in argv else []
