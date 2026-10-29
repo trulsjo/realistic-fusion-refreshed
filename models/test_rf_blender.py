@@ -4,8 +4,8 @@ renders give the same bytes -- was measured by hand for #249 on the calibration 
 in its resolution; this only pins the numbers the sheets are declared from, the detail floors,
 the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pieces go and how
 its floors are checked, and since #825 the named streams parts draw from and that no file here
-but rf_blender.py imports the global `random`, which that one uses only for `random.Random`.
-It renders nothing, so it cannot see whether a part reads; it cannot
+but rf_blender.py imports the global `random`, which that one uses only for `random.Random`, and
+since #827 that no part that draws is named from a loop's counter. It renders nothing, so it cannot see whether a part reads; it cannot
 see what a build script draws from one stream or in what order, nor a draw from anything but
 `random`, such as `mathutils.noise`."""
 import math
@@ -365,6 +365,106 @@ for _dir, _, _files in os.walk(_models):
             assert _uses == {"Random"}, (_path, _uses)
         else:
             assert not _imports, (os.path.relpath(_path, _models), "imports random: draw from rf_parts.stream")
+
+
+# NO PART THAT DRAWS IS NAMED BY ITS PLACE IN A LOOP (#827). A part's stream is its name's, so a
+# name formatted from a loop's counter -- `enumerate`'s index, or `range`'s -- is an order again: a
+# part inserted early in the loop renumbers every part after it, and each renumbered part draws from
+# a stream it did not draw from before. Such a part is named by hand, or by what it stands on.
+# A name formatted from a POSITION passes even where the position is worked out from the counter,
+# as a groove's is from its pitch, and on purpose: a part added at the end of an evenly spaced row
+# leaves every other part's position, and so its name, as it was. The price is that nudging such a
+# part renames it, and so re-rolls it.
+#
+# IT CANNOT TELL A POSITION FROM A COUNTER UNDER ANOTHER NAME. It sees only the loop's own counter
+# written into the name, so `j = k` or `x = k * pitch` and then `f"Groove{x}"` passes whether `x`
+# is a place or a rank in disguise; that a name is a place is read from source, not held here.
+#
+# What draws is worked out rather than listed, so a new helper is held without an edit here: a
+# function draws when its body calls `stream`, `bevel`, or a function that draws, in rf_parts.py or
+# in the build script itself. A call that passes `bev=0` puts no bevel on and draws nothing.
+#
+# It reads names written in the call. It cannot see one that reaches the call through a variable
+# (`n = f"Rail{k}"; hbeam(n, ...)`), a counter kept by hand (`k += 1`), or a loop over anything but
+# `enumerate` and `range` that numbers its parts some other way.
+def _drawing(trees):
+    defs = {}
+    for tree in trees:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                defs.setdefault(node.name, []).append(node)
+    draws = {"stream", "bevel"}
+    while True:
+        more = {name for name, nodes in defs.items() if name not in draws
+                and any(_callee(c) in draws for n in nodes for c in ast.walk(n) if isinstance(c, ast.Call))}
+        if not more:
+            return draws
+        draws |= more
+
+
+def _callee(call):
+    f = call.func
+    return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+
+
+def _counters(loop):
+    """The names a `for` binds to `enumerate`'s index or to `range`'s value, else none."""
+    it, target = loop.iter, loop.target
+    if not isinstance(it, ast.Call) or not isinstance(it.func, ast.Name):
+        return set()
+    if it.func.id == "enumerate":
+        target = target.elts[0] if isinstance(target, ast.Tuple) else None
+    elif it.func.id != "range":
+        return set()
+    return {n.id for n in ast.walk(target) if isinstance(n, ast.Name)} if target is not None else set()
+
+
+def loop_named(source, kit=""):
+    """Each name a call that draws is given, formatted from a counter of a loop round it."""
+    tree, kit_tree = ast.parse(source), ast.parse(kit)
+    draws = _drawing([tree, kit_tree])
+    found = []
+
+    def visit(node, counters):
+        if isinstance(node, ast.For):
+            counters = counters | _counters(node)
+        if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+            counters = counters.union(*(_counters(g) for g in node.generators))
+        if isinstance(node, ast.Call) and _callee(node) in draws and not any(
+                k.arg == "bev" and isinstance(k.value, ast.Constant) and not k.value.value
+                for k in node.keywords):
+            for arg in list(node.args) + [k.value for k in node.keywords]:
+                if isinstance(arg, ast.JoinedStr) and any(
+                        isinstance(n, ast.Name) and n.id in counters for n in ast.walk(arg)):
+                    found.append(ast.unparse(arg))
+        for child in ast.iter_child_nodes(node):
+            visit(child, counters)
+
+    visit(tree, set())
+    return found
+
+
+_kit_src = "def stream(name): pass\ndef bevel(o, w, name): stream(name)\ndef cyl(name): bevel(0, 0, name)\n"
+# A name formatted from `enumerate`'s index is found, from `range`'s too, and through a helper that
+# draws only by calling one that does.
+assert loop_named("for k, t in enumerate(xs):\n    cyl(f'Ice{k}')", _kit_src) == ["f'Ice{k}'"]
+assert loop_named("for i in range(3):\n    stream(f'Drum{i}')", _kit_src) == ["f'Drum{i}'"]
+assert loop_named("def lump(n): cyl(n)\nfor k, t in enumerate(xs):\n    lump(f'Ice{k}')",
+                  _kit_src) == ["f'Ice{k}'"]
+# A comprehension's counter is a counter.
+assert loop_named("[cyl(f'Tube{k}') for k in range(4)]", _kit_src) == ["f'Tube{k}'"]
+# A name given by hand passes, and so does one formatted from the loop's VALUE rather than its index.
+assert loop_named("for k, (name, t) in enumerate(xs):\n    cyl(f'Ice{name}')", _kit_src) == []
+assert loop_named("for sx in (-1, 1):\n    cyl(f'Post{sx}')", _kit_src) == []
+# A part that draws nothing may keep its number: `bev=0`, or a helper that never reaches `stream`.
+assert loop_named("for i in range(30):\n    box(f'Slat{i}', bev=0)",
+                  _kit_src + "def box(name, bev=0.03): bevel(0, bev, name)\n") == []
+assert loop_named("def rivet(n): pass\nfor i in range(3):\n    rivet(f'Rivet{i}')", _kit_src) == []
+
+_kit = open(os.path.join(_models, "rf_parts.py"), encoding="utf-8").read()
+for _machine in ("heat-exchanger", "isotope-collector"):
+    _found = loop_named(open(os.path.join(_models, _machine, "build.py"), encoding="utf-8").read(), _kit)
+    assert not _found, (_machine, "names a part that draws by its place in a loop", _found)
 
 print("ok")
 

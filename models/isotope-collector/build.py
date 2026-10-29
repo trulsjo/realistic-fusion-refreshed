@@ -397,8 +397,8 @@ else:
     box("ColdBox", (2 * BOX_HALF, 2 * BOX_HALF, BOX_H), (0, 0, SLAB + BOX_H / 2), "body", frost=True)
     for i in range(3):                   # a seam grid: verticals on all four walls, one band round
         t = -BOX_HALF + (i + 1) * (2 * BOX_HALF) / 4
-        seam(f"BoxSeamX{i}", (0.05, 2 * BOX_HALF + 0.02, BOX_H - 0.24), (t, 0, SLAB + BOX_H / 2))
-        seam(f"BoxSeamY{i}", (2 * BOX_HALF + 0.02, 0.05, BOX_H - 0.24), (0, t, SLAB + BOX_H / 2))
+        seam(f"BoxSeamX{t:+.2f}", (0.05, 2 * BOX_HALF + 0.02, BOX_H - 0.24), (t, 0, SLAB + BOX_H / 2))
+        seam(f"BoxSeamY{t:+.2f}", (2 * BOX_HALF + 0.02, 0.05, BOX_H - 0.24), (0, t, SLAB + BOX_H / 2))
     # A BAND ROUND THE BODY, not a groove cut into it, so it is a plate and takes the raised
     # floor -- #335's decision, and the one call that `seam` was doing the wrong kind of work for.
     box("BoxBand", (2 * BOX_HALF + 0.03, 2 * BOX_HALF + 0.03, 0.06), (0, 0, SLAB + BOX_H * 0.62),
@@ -456,19 +456,19 @@ else:
     for sy in (-1, 1):                                     # north and south bays, full width
         d = "north" if sy > 0 else "south"
         cy = sy * (BOX_HALF + BAY / 2)
-        for k, (cx, length) in enumerate(segments(-HALF + 0.05, HALF - 0.05, lanes[d])):
-            box(f"Deck{d}{k}", (length, BAY - 0.06, 0.06), (cx, cy, DECK_Z), "dark", bev=0.01)
+        for cx, length in segments(-HALF + 0.05, HALF - 0.05, lanes[d]):
+            box(f"Deck{d}{cx:+.2f}", (length, BAY - 0.06, 0.06), (cx, cy, DECK_Z), "dark", bev=0.01)
             for i in range(int(length / GROOVE_PITCH)):
-                seam(f"Groove{d}{k}-{i}", (0.05, BAY - 0.06, 0.05),
-                     (cx - length / 2 + (i + 1) * GROOVE_PITCH, cy, DECK_Z + 0.02))
+                gx = cx - length / 2 + (i + 1) * GROOVE_PITCH
+                seam(f"Groove{d}{gx:+.2f}", (0.05, BAY - 0.06, 0.05), (gx, cy, DECK_Z + 0.02))
     for sx in (-1, 1):                                     # east and west bays, between them
         d = "east" if sx > 0 else "west"
         cx = sx * (BOX_HALF + BAY / 2)
-        for k, (cy, length) in enumerate(segments(-BOX_HALF + 0.03, BOX_HALF - 0.03, lanes[d])):
-            box(f"Deck{d}{k}", (BAY - 0.06, length, 0.06), (cx, cy, DECK_Z), "dark", bev=0.01)
+        for cy, length in segments(-BOX_HALF + 0.03, BOX_HALF - 0.03, lanes[d]):
+            box(f"Deck{d}{cy:+.2f}", (BAY - 0.06, length, 0.06), (cx, cy, DECK_Z), "dark", bev=0.01)
             for i in range(int(length / GROOVE_PITCH)):
-                seam(f"Groove{d}{k}-{i}", (BAY - 0.06, 0.05, 0.05),
-                     (cx, cy - length / 2 + (i + 1) * GROOVE_PITCH, DECK_Z + 0.02))
+                gy = cy - length / 2 + (i + 1) * GROOVE_PITCH
+                seam(f"Groove{d}{gy:+.2f}", (BAY - 0.06, 0.05, 0.05), (cx, gy, DECK_Z + 0.02))
 
     # -- two columns on the lid, side by side and of UNEQUAL height: the one thing on the machine
     # that says separation rather than storage. The taller wears tritium's green at its cap and the
@@ -576,11 +576,13 @@ else:
     # first version by name. Fewer, readable fins beat more that vanish -- which is the floor's
     # whole argument, and the reason it is enforced in the build rather than judged in a render.
     for k in range(4):                                  # cooling fins on the motor can
-        seam(f"MotorFin{k}", (0.33, 0.33, 0.05), (SKID[0] - 0.14, SKID[1], SKID[2] + 0.46 + k * 0.05))
+        z = SKID[2] + 0.46 + k * 0.05
+        seam(f"MotorFin{z:.2f}", (0.33, 0.33, 0.05), (SKID[0] - 0.14, SKID[1], z))
     # The condenser: a stack of four horizontal tubes with return bends, which is what a coil looks
     # like from directly above and is the densest thing per tile on the machine.
     for k in range(4):
-        cyl(f"CondenserTube{k}", 0.05, 0.56, (SKID[0] + 0.2, SKID[1] - 0.18 + k * 0.12, SKID[2] + 0.2),
+        dy = -0.18 + k * 0.12
+        cyl(f"CondenserTube{dy:+.2f}", 0.05, 0.56, (SKID[0] + 0.2, SKID[1] + dy, SKID[2] + 0.2),
             "metal", axis="X", verts=16)
     for k in range(3):
         torus(f"CondenserBend{k}", 0.06, 0.05,
@@ -597,7 +599,7 @@ else:
     # to spend one rather than a decoration looking for a home.
     for k in range(3):                                  # the guard over it, read by its own bars
         a = math.pi * k / 3
-        box(f"FanGuard{k}", (0.40, 0.07, 0.07),
+        box(f"FanGuard{round(math.degrees(a))}", (0.40, 0.07, 0.07),
             (SKID[0] + 0.2, SKID[1] + 0.02, SKID[2] + 0.39), "hazard", rot=(0, 0, a), bev=0.01)
     # BOTH CORRUGATED RUNS CARRY A HEAVIER `band` THAN THE DEFAULT, and `rf_parts.pipe` says why in
     # its own docstring: a ring's minor diameter is a fraction of the pipe's radius, so a ring dies
@@ -640,8 +642,8 @@ else:
     # The second marking: a warning plate on the junction box, because that is what is on one.
     box("JunctionPlate", (0.16, 0.07, 0.1), (JBOX[0], JBOX[1] - 0.13, JBOX[2] + 0.02), "hazard",
         bev=0.01, read=0.16)
-    for k, t in enumerate((-0.75, -0.15, 0.45)):        # clamps holding the run to the deck
-        box(f"ConduitClamp{k}", (0.12, 0.1, 0.09), (t, -(HALF - 0.33), DECK_Z + 0.1), "dark", bev=0.01)
+    for n, t in (("A", -0.75), ("B", -0.15), ("C", 0.45)):  # clamps holding the run to the deck
+        box(f"ConduitClamp{n}", (0.12, 0.1, 0.09), (t, -(HALF - 0.33), DECK_Z + 0.1), "dark", bev=0.01)
     # A second, shorter run: cabinet up to the tritium column's instrument band. Two runs going
     # different ways is what stops the first one reading as the machine's only wire.
     pipe("ConduitB", [(cpos[0] - 0.1, cpos[1] + 0.25, cpos[2] + 0.3),
@@ -655,14 +657,16 @@ else:
     # reason, and these are the honest version of that -- they look like plant, and they do not
     # pretend to be a socket, a gauge or anything a player could plumb into.
     for k in range(3):
-        cyl(f"TubeBank{k}", 0.048, 1.5, (-0.15 + k * 0.14, BOX_HALF + 0.86, DECK_Z + 0.12),
+        x = -0.15 + k * 0.14
+        cyl(f"TubeBank{x:+.2f}", 0.048, 1.5, (x, BOX_HALF + 0.86, DECK_Z + 0.12),
             "metal", axis="X", verts=16)
         torus(f"TubeBankFlange{k}", 0.062, 0.05,
               (0.55 + k * 0.02, BOX_HALF + 0.86, DECK_Z + 0.12), "copper", rot=(0, math.pi / 2, 0))
     for k in range(2):
-        cyl(f"Bottle{k}", 0.13, 0.72, (BOX_HALF + 0.22, -0.45 + k * 0.32, DECK_Z + 0.4),
+        y = -0.45 + k * 0.32
+        cyl(f"Bottle{y:+.2f}", 0.13, 0.72, (BOX_HALF + 0.22, y, DECK_Z + 0.4),
             "body", verts=24)
-        cyl(f"BottleNeck{k}", 0.05, 0.12, (BOX_HALF + 0.22, -0.45 + k * 0.32, DECK_Z + 0.82),
+        cyl(f"BottleNeck{y:+.2f}", 0.05, 0.12, (BOX_HALF + 0.22, y, DECK_Z + 0.82),
             "copper", verts=12, read=0.1)
     box("BottleStrap", (0.06, 0.78, 0.07), (BOX_HALF + 0.17, -0.29, DECK_Z + 0.62), "dark", bev=0.01)
 
@@ -715,32 +719,32 @@ else:
     #    outside the box's own silhouette and the outline stops being a straight line. Four on the
     #    south rim, which the camera faces, and two on each of the east and west rims, which it sees
     #    in profile. None on the north rim: the machine's own body is in front of it.
-    for k, t in enumerate((-0.9, -0.3, 0.35, 0.85)):
-        s = stream(f"IceRimS{k}")                # `ice_lump` carries on along it for its scale
-        ice_lump(f"IceRimS{k}", (t + s.jitter(0, 0.06), -LID_ICE, BOX_TOP + 0.02), s.jitter(0.3, 0.06))
+    for n, t in (("A", -0.9), ("B", -0.3), ("C", 0.35), ("D", 0.85)):
+        s = stream(f"IceRimS{n}")                # `ice_lump` carries on along it for its scale
+        ice_lump(f"IceRimS{n}", (t + s.jitter(0, 0.06), -LID_ICE, BOX_TOP + 0.02), s.jitter(0.3, 0.06))
     for sx in (-1, 1):
-        for k, t in enumerate((-0.55, 0.45)):
-            s = stream(f"IceRim{sx}{k}")
-            ice_lump(f"IceRim{sx}{k}", (sx * LID_ICE, t + s.jitter(0, 0.08), BOX_TOP + 0.02),
+        for n, t in (("A", -0.55), ("B", 0.45)):
+            s = stream(f"IceRim{sx}{n}")
+            ice_lump(f"IceRim{sx}{n}", (sx * LID_ICE, t + s.jitter(0, 0.08), BOX_TOP + 0.02),
                      s.jitter(0.26, 0.05))
 
     # 3. Hanging, on SOUTH faces only, where an icicle shows against the wall behind it instead of
     #    behind the thing it hangs from. The lid's south rim and both drums' south flanks are the
     #    only three places on this machine where that is true.
-    for k, t in enumerate((-0.62, -0.05, 0.5, 0.95)):
-        s = stream(f"IceDripLid{k}")
-        icicle(f"IceDripLid{k}", (t + s.jitter(0, 0.05), -LID_ICE - 0.02, BOX_TOP - 0.03),
+    for n, t in (("A", -0.62), ("B", -0.05), ("C", 0.5), ("D", 0.95)):
+        s = stream(f"IceDripLid{n}")
+        icicle(f"IceDripLid{n}", (t + s.jitter(0, 0.05), -LID_ICE - 0.02, BOX_TOP - 0.03),
                s.jitter(0.26, 0.07))
-    for k, t in enumerate((-0.62, -0.18, 0.3, 0.66)):
-        icicle(f"IceDrumT{k}", (T_DRUM[0] + t, T_DRUM[1] - 0.28, T_DRUM[2] - 0.02),
-               stream(f"IceDrumT{k}").jitter(0.28, 0.07))
-    for k, t in enumerate((-0.8, -0.2, 0.5)):
-        icicle(f"IceDrumHe{k}", (H_DRUM[0] + t, H_DRUM[1] - 0.24, H_DRUM[2] - 0.02),
-               stream(f"IceDrumHe{k}").jitter(0.2, 0.05))
+    for n, t in (("A", -0.62), ("B", -0.18), ("C", 0.3), ("D", 0.66)):
+        icicle(f"IceDrumT{n}", (T_DRUM[0] + t, T_DRUM[1] - 0.28, T_DRUM[2] - 0.02),
+               stream(f"IceDrumT{n}").jitter(0.28, 0.07))
+    for n, t in (("A", -0.8), ("B", -0.2), ("C", 0.5)):
+        icicle(f"IceDrumHe{n}", (H_DRUM[0] + t, H_DRUM[1] - 0.24, H_DRUM[2] - 0.02),
+               stream(f"IceDrumHe{n}").jitter(0.2, 0.05))
     # And on the suction line, which is the coldest thing on the lid and the reason the skid is here.
-    for k, t in enumerate((0.3, 0.62)):
-        ice_lump(f"IceSuction{k}", (SKID[0] - 0.05 + k * 0.16, SKID[1] + t, BOX_TOP + 0.2),
-                 stream(f"IceSuction{k}").jitter(0.2, 0.04))
+    for n, dx, t in (("A", 0.0, 0.3), ("B", 0.16, 0.62)):
+        ice_lump(f"IceSuction{n}", (SKID[0] - 0.05 + dx, SKID[1] + t, BOX_TOP + 0.2),
+                 stream(f"IceSuction{n}").jitter(0.2, 0.04))
 
     # -- sockets: one per declared connection, body to footprint edge, with its fluid's accent
     # band. Placed in the declared frame from geometry.json, so they land where the prototype says.

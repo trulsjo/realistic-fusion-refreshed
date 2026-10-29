@@ -376,3 +376,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   under the system's Python. It also fails when any file under `models/` but
   `models/rf_blender.py` imports `random`, or when that file uses it for anything but
   `random.Random`. It cannot see what a build script draws from one stream, or in what order.
+- 2026-10-29, #827: `models/test_rf_blender.py` also fails when either rendered machine's build
+  script gives a part that draws a name formatted from an `enumerate` or `range` counter. Which
+  calls draw is worked out from `stream` and `bevel` through the helpers that reach them, a call
+  passing `bev=0` excepted. It cannot see a counter that reaches the name through another
+  variable, so it cannot tell a part named for where it stands from one named for its rank.
