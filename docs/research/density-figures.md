@@ -171,7 +171,9 @@ can be, not how wide the spread is. Beside it, the fall after Truls's adjustment
 was 0.0109 and 0.0125 on the exchanger. The normal-pass fall is three to four times what this
 re-roll moved that figure, and the pixel fall over ten times what it moved that one, so most of
 it was probably the change itself and not the reshuffle. That is *inferred* from one sample of
-the re-roll and was not tested further.
+the re-roll and was not tested further. #827's re-roll, below, moved the exchanger's pixel
+figure by 0.0049, so on that figure the fall is only about twice what one re-roll can do, and
+the claim holds for the normal-pass figure more than for the pixel one.
 
 **The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
 others, as #824's reshuffle had, *measured* by a mesh-overlap test on the built model before and
@@ -184,6 +186,38 @@ not 0.12, *read from source*.
 |---|---:|---:|
 | the re-roll, from above | 0.2757 | 0.5231 |
 | after the fixes | 0.2772 | 0.5206 |
+
+## The re-roll of #827
+
+Measured 2026-10-29 with the same two commands, after
+[#827](https://github.com/trulsjo/realistic-fusion-refreshed/issues/827) renamed every part that
+draws and was named by its place in a loop. A part draws from the stream of its name, so each
+renamed part drew again, and the loom's wander between clamps moved to a stream of each span's
+own. No part moved on purpose in that change, *read from source*. The "before" is each machine as
+#825 left it, from the tables above, on sheets `main` still carried. Blender 5.2.0, 64 samples for
+the sheet and 16 for the normal pass.
+
+| sheet | pixel figure, before | after | normal-pass figure, before | after |
+|---|---:|---:|---:|---:|
+| `rf-heat-exchanger`, north | 0.2772 | 0.2723 | 0.5206 | 0.5172 |
+| `rf-isotope-collector`, north | 0.3475 | 0.3465 | 0.4995 | 0.4995 |
+
+**This re-roll moved the exchanger's two figures by 0.0049 and 0.0034 and the collector's by 0.0010
+and nothing**, *measured*. The exchanger's pixel figure moved further than #825's re-roll moved
+either machine's, so one draw's spread on that figure is at least 0.005, not under 0.001 as the
+section above found. That is *inferred* from two samples.
+
+**It also landed two contacts of the kind #824 and #825 fixed**, *measured* by the same
+mesh-overlap test: the middle drum's handwheel stood on the plates of the bay beside it, and the
+south drum's weld seam stood in the cabinet. Both were fixed on the same branch (Truls,
+2026-10-29), the wheel and its gauges kept 0.07 clear of a bay's plates and the weld stopped 0.03
+short of the cabinet, *read from source*. That moved the middle drum's wheel onto a post's
+flange, the contact between a handwheel and the frame that #806 is left to settle.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| the re-roll, from above | 0.2723 | 0.5172 |
+| after the fixes | 0.2726 | 0.5169 |
 
 ## What the "before" says, and how far it goes
 
