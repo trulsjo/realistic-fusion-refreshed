@@ -53,12 +53,13 @@ loop is an order again: a part inserted early renumbers every part after it, and
 stream it did not draw from before. A part in a list written out by hand carries a name given by
 hand, as the collector's ice does; one whose place is worked out is named for what it stands on, as
 the exchanger's guard-rail lengths are for the post line each starts at, or for where it stands, as
-a bottle is. A part added at the end of a row of evenly spaced ones leaves the others' names, and
-so their values, as they were; a part named for where it stands is renamed, and so re-rolled, when
-it is nudged. And no build script draws from one stream once per pass of a loop for one thing and
-then for another: the exchanger's loom draws each span's wander from a stream named for that span,
-and keeps its own for the winding. The helpers here still number a part's own pieces -- a panel
-set's plates, a casing's segments -- from `enumerate`: those are the part's grid, fixed by the call.
+a bottle is. A part added at the end of a row laid at a fixed pitch leaves the others' names, and
+so their values, as they were, though not one whose pitch is a length shared out among its members;
+a part named for where it stands is renamed, and so re-rolled, when it is nudged. And no build
+script draws from one stream once per pass of a loop for one thing and then for another: the
+exchanger's loom draws each span's wander from a stream named for that span, and keeps its own for
+the winding. The helpers here still number a part's own pieces -- a panel set's plates, a casing's
+segments, a fan stack's discs -- from `enumerate`: those are the part's grid, fixed by the call.
 
 models/test_rf_blender.py holds that one name's stream is independent of the others, that no file
 under models/ but models/rf_blender.py imports the global `random`, which that one uses only for
