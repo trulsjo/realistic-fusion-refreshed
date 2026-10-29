@@ -42,12 +42,12 @@ THE GRID IS HERE AND IS COMMITTED, so the next engine version can be asked the s
 get an answer comparable with this one. Changing it is fine and changes the answer's coverage;
 changing it silently makes two runs incomparable.
 
-Deterministic: one seed, and rf_parts' bevels are the only draw.
+Deterministic: one seed, and rf_parts' bevels, each from its own cylinder's stream, are the only
+draw.
 """
 import json
 import math
 import os
-import random
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -91,8 +91,6 @@ TEST_FLUID = "rf-test"
 # tools/measure-socket-parts.py -- it then demands `--z` instead of defaulting to SOCKET_Z and
 # measuring every row about the wrong axis.
 TEST_CATEGORY = "rf-test"
-
-random.seed(367)                 # rf_parts' bevels draw from `random`; same grid, same model
 
 
 def fail(message):
@@ -202,7 +200,7 @@ def mat(name, **flags):
     return _MATERIALS[name]
 
 
-rf_parts.use(mat, geo)
+rf_parts.use(mat, geo, seed=367)  # each bevel: its cylinder's name and this; same grid, same model
 
 for item in cylinders:
     radius, z = item["radius"], item["z"]

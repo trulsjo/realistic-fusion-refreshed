@@ -18,7 +18,6 @@ lines, procedural grime, and the energy channel on top of the manifold where the
 import json
 import math
 import os
-import random
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,14 +39,13 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import (bolts, box, casing, cyl, dent, fan_discs, hbeam, hose, jitter, loom, panels,  # noqa: E402,F401
-                      pipe, rivets, seam, torus)
+from rf_parts import (bolts, box, casing, cyl, dent, fan_discs, hbeam, hose, loom, panels,  # noqa: E402,F401
+                      pipe, rivets, seam, stream, torus)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
 out = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
 variant = args[1] if len(args) > 1 else "machine"
-random.seed(7)  # imperfections are deterministic: same script, same model
 
 geo_path = os.path.join(HERE, "geometry.json")
 geo = json.load(open(geo_path, encoding="utf-8"))
@@ -210,7 +208,7 @@ def mat(name, glow=False, corrode=False):
     return m
 
 
-rf_parts.use(mat, geo)
+rf_parts.use(mat, geo, seed=7)  # each part's imperfections: its name and this, nothing else
 
 # ---- the machine --------------------------------------------------------------------------
 if variant == "cube":
@@ -232,7 +230,7 @@ else:
     # two or three pixels of lean over the full length, read as a fabrication that is out rather
     # than as a bend. Everything sitting on the manifold takes the SAME yaw and the x offset that
     # goes with it (-y * yaw), or the channel and its grille would slide off the panel they sit on.
-    MAN_YAW = jitter(0, 0.006)
+    MAN_YAW = stream("Manifold").jitter(0, 0.006)
 
     def on_manifold(y):
         return MX - y * MAN_YAW
@@ -286,9 +284,7 @@ else:
     # 0.02, so together they close it by at most 0.04. The first starts at the cabinet's north
     # face, and the length under the steam outlet is cut round its descent, whose rings reach past
     # the rail's inner flange. RailE2 is still the rail's name; its
-    # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known; nothing
-    # but comments and the OUTLET constants stood between its old place and this one, so the move
-    # shifted no imperfection.
+    # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
     RAIL_STOP, OUTLET_GAP = 0.16, 0.6
     spans = []
@@ -322,8 +318,8 @@ else:
     #
     # THE BACKING IS DARK AND THE PAINT IS IN INSET PANELS ON IT (#802), so each bay is six plates
     # with dark seams rather than one off-white slab: the seams read against paint where they would
-    # vanish into body steel. Placed with the kit below; the yaw is drawn here, in the order it
-    # always was, so nothing after it moves.
+    # vanish into body steel. Placed with the kit below; the yaw is drawn here, from the bay's
+    # own stream, and the plates take it.
     #
     # SET BACK BEHIND THE GUARD RAIL (the branch's pre-PR review). The rail runs across both bays
     # at RailE2's height, and with the plates standing proud of a backing on the post line they
@@ -334,7 +330,7 @@ else:
     bays = []
     for i, k in enumerate((2, 5)):
         y0, y1 = post_ys[k], post_ys[k + 1]
-        yaw = jitter(0, 0.008)
+        yaw = stream(f"BayPanel{i}").jitter(0, 0.008)
         box(f"BayPanel{i}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
             "dark", rot=(0, 0, yaw))
         bays.append(((EX - 0.015 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
@@ -361,12 +357,13 @@ else:
     cap_tops = []                   # (y, z) of each drum's cap, for the header to clear and collect
     drums = []                      # where each drum's valve and gauges landed, for the kit below
     for i, y in enumerate(drum_ys):
-        r = jitter(1.05, 0.04)
-        h = jitter(DRUM_H, 0.08)
+        s = stream(f"Drum{i}")
+        r = s.jitter(1.05, 0.04)
+        h = s.jitter(DRUM_H, 0.08)
         z0 = SLAB + 0.5
         cap_tops.append((y, z0 + h + 0.18))
         d = cyl(f"Drum{i}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
-        d.scale = (1.0, jitter(1.0, 0.03), 1.0)
+        d.scale = (1.0, s.jitter(1.0, 0.03), 1.0)
         ribs = [torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
                 for k, frac in enumerate((0.3, 0.7))]
         if i == DENTED:
@@ -390,13 +387,13 @@ else:
             dent(d, strike, 0.62, 0.42)
             for rib in ribs:                     # already 48x12; a few cuts is plenty
                 dent(rib, strike, 0.62, 0.42, cuts=4)
-        seam(f"Drum{i}Weld", (0.05, 2 * r + 0.02, 0.05), (DX + r - 0.02, y, z0 + h * 0.4), rot=(0, 0, jitter(0, 0.2)))
+        seam(f"Drum{i}Weld", (0.05, 2 * r + 0.02, 0.05), (DX + r - 0.02, y, z0 + h * 0.4),
+             rot=(0, 0, stream(f"Drum{i}Weld").jitter(0, 0.2)))
         cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
         # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
         # what the camera sees most of, and they were bare (#252).
         torus(f"Drum{i}CapFlange", r * 0.62, 0.05, (DX, y, z0 + h + 0.01), "metal")
-        # The ring of bolts is the kit's (#804), on the spots the hand-placed ones stood; a bolt
-        # draws nothing from `random`, so nothing after it moved.
+        # The ring of bolts is the kit's (#804), on the spots the hand-placed ones stood.
         bolts(f"Drum{i}CapBolt", ring((DX, y, z0 + h + 0.025), r * 0.62, 10))
         # relief valve: a stub, a body and a little cap, off-centre so rotations differ.
         # BARE METAL WITH A STEAM BAND, not a steam-coloured body. The accent is near white, and a
@@ -409,7 +406,7 @@ else:
         cyl(f"Drum{i}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
         # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
         # it: the deck between the drums read as empty.
-        gx, gy = DX + r + 0.32, y + jitter(0.55, 0.15)
+        gx, gy = DX + r + 0.32, y + stream(f"Drum{i}Gauges").jitter(0.55, 0.15)
         box(f"Drum{i}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
         for k in range(2):
             cyl(f"Drum{i}Gauge{k}", 0.13, 0.06, (gx + 0.15, gy - 0.17 + k * 0.34, SLAB + 0.95),
@@ -424,8 +421,9 @@ else:
         torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
               rot=(math.pi / 2, 0, 0))
         # glowing feed line from the manifold to the foot of the drum, under the deck
-        pipe(f"Feed{i}", [(MX + MAN_W / 2, y + jitter(0, 0.3), SLAB + 0.42),
-                          (jitter(-0.7, 0.15), y + jitter(0, 0.2), SLAB + jitter(0.4, 0.03)),
+        s = stream(f"Feed{i}")
+        pipe(f"Feed{i}", [(MX + MAN_W / 2, y + s.jitter(0, 0.3), SLAB + 0.42),
+                          (s.jitter(-0.7, 0.15), y + s.jitter(0, 0.2), SLAB + s.jitter(0.4, 0.03)),
                           (DX - r * 0.7, y, SLAB + 0.45)], 0.1, "energy", glow=True)
 
     # -- steam: three corrugated hose runs, each one BENDING DOWN ONTO A DRUM CAP (Truls, #275).
@@ -478,7 +476,8 @@ else:
         land = (DX - 0.29, mid_y - toward * 0.17)
         # A hose slung between two nozzles hangs below them, and there is nothing under this span
         # but open frame.
-        sag = (DX + jitter(0.3 * toward, 0.06), (y + mid_y) / 2 + jitter(0, 0.15), SAG_Z)
+        s = stream(f"Header{i}")             # `hose` carries on along it for the rings
+        sag = (DX + s.jitter(0.3 * toward, 0.06), (y + mid_y) / 2 + s.jitter(0, 0.15), SAG_Z)
         hose(f"Header{i}", [start, (start[0], start[1], RUN_Z), sag,
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
              HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
@@ -565,10 +564,11 @@ else:
     # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
     # collision box. Here, by the arithmetic, that edge is 0.004 inside it and the inner edge 0.003
     # clear of the rings' nominal reach. Where the bundle's cables lie at that point turns with the
-    # loom's random winding. The build is seeded, so the margin is the same on every build of one
-    # script and moves only when a change to the script moves the draws before it: it was 0.006,
-    # then 0.016, then 0.013 as this branch changed. The overlap test found no ring touched on any
-    # of those three scripts.
+    # loom's random winding, which is drawn from the loom's own stream (#825), so the margin is the
+    # same on every build and moves only when the loom itself, or the outlet, changes. Before #825
+    # every draw came from one stream in build order and the margin moved with any change before
+    # the loom: it was 0.006, then 0.016, then 0.013 as #824 changed. The overlap test found no
+    # ring touched on any of those three scripts.
     #
     # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
     # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
@@ -604,7 +604,7 @@ else:
             lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, x=JOG_X),
                     on_rail(OUTLET_Y + 0.5)]
         else:
-            lie += [on_rail(a), on_rail((a + b) / 2, dx=jitter(-0.02, 0.03))]
+            lie += [on_rail(a), on_rail((a + b) / 2, dx=stream("Loom").jitter(-0.02, 0.03))]
     cab_top, cab_n = cpos[2] + CAB[2] / 2, cpos[1] + CAB[1] / 2
     loom("Loom", [(DROP_X + 0.15, cpos[1], cab_top + 0.02), (DROP_X + 0.1, cpos[1] + 0.3, LOOM_Z),
                   (DROP_X + 0.2, cab_n + 0.1, LOOM_Z + 0.06), on_rail(cab_n + 0.5)]
@@ -753,7 +753,8 @@ else:
     water = [c for c in geo["connections"] if c["fluid"] == "water"]
     if len(water) == 2:
         a, b = inboard(water[0], back=0.9, z=HEADER_Z), inboard(water[1], back=0.9, z=HEADER_Z)
-        mid = ((a[0] + b[0]) / 2 + jitter(0, 0.1), (a[1] + b[1]) / 2 + jitter(0, 0.1), 0.5)
+        s = stream("WaterHeader")
+        mid = ((a[0] + b[0]) / 2 + s.jitter(0, 0.1), (a[1] + b[1]) / 2 + s.jitter(0, 0.1), 0.5)
         # Stacked control points in z at both ends, so the tube meets the floor square instead of
         # glancing into it and showing a slanted open mouth.
         pipe("WaterHeader", [(a[0], a[1], SLAB - 0.02), a, mid, b, (b[0], b[1], SLAB - 0.02)],
@@ -788,8 +789,9 @@ else:
             continue
         start = inboard(c, back=0.45)
         end = into_manifold(start[0], start[1])
-        mid = ((start[0] + end[0]) / 2 + jitter(0, 0.08),
-               (start[1] + end[1]) / 2 + jitter(0, 0.08),
+        s = stream(f"EnergyFeed-{c['direction']}")
+        mid = ((start[0] + end[0]) / 2 + s.jitter(0, 0.08),
+               (start[1] + end[1]) / 2 + s.jitter(0, 0.08),
                (start[2] + end[2]) / 2)
         pipe(f"EnergyFeed-{c['direction']}", [start, mid, end], 0.13, "energy", glow=True)
 
