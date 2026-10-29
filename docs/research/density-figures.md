@@ -227,8 +227,9 @@ beam or the slab; the pieces of one drum or one hose meeting each other, and the
 land together on the middle drum's cap; and a part meeting what it is joined to, as a hose its cap,
 a vent hose its valve and the deck, a gauge loom the main loom, the loom the cabinet it climbs off,
 and a conduit clamp its post. On the collector it found
-five new contacts and lost four, all of ice against what it hangs from or sits on or against other
-ice, *measured*.
+five new contacts and lost four, *measured*, all of ice: against what it hangs from or sits on,
+against other ice, or, for two icicles hung from the tritium drum, their tips against the deck
+below, *read from source*.
 
 ## What the "before" says, and how far it goes
 
