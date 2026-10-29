@@ -342,8 +342,9 @@ def bundle(points, n, spread, twist=0.0, phase=0.0):
 
     THE RUN'S DIRECTION AT A POINT is the chord from the point before it to the point after it, so a
     bend is split between its two legs. The "side" a strand is offset along is that direction
-    crossed with up, and a vertical stretch, which has no such side, takes east instead; so a loom
-    that climbs straight up a post still spreads, round the post's axis."""
+    crossed with up, and a vertical stretch, which has no such side, is crossed with east instead,
+    which lays its side north-south; so a loom that climbs straight up a post still spreads, round
+    the post's axis."""
     if n == 1:
         return [list(points)]
     strands = [[] for _ in range(n)]
