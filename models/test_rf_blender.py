@@ -3,9 +3,10 @@ exits 0 or raises. What needs Blender -- that the camera really lands a tile on 
 renders give the same bytes -- was measured by hand for #249 on the calibration cube and is recorded
 in its resolution; this only pins the numbers the sheets are declared from, the detail floors,
 the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pieces go and how
-its floors are checked, and since #825 that every draw comes from a stream seeded from a name and
-that no file here draws from the global `random`. It renders nothing, so it cannot see whether a
-part reads, and it cannot see what a build script draws from one stream or in what order."""
+its floors are checked, and since #825 the named streams parts draw from and that no file here
+imports the global `random`. It renders nothing, so it cannot see whether a part reads; it cannot
+see what a build script draws from one stream or in what order, nor a draw from anything but
+`random`, such as `mathutils.noise`."""
 import math
 import os
 import sys

@@ -26,9 +26,8 @@ about whether a change is safe. What each proves, in a line:
 
 - **`tests/test-*.lua`** cover the pure simulation outside Factorio.
 - **`models/test_rf_blender.py`** pins the arithmetic the rendered sheets are declared from,
-  #800's footprint-edge check, since #803 the kit's arithmetic, and since #825 that every draw
-  comes from a stream seeded from a name and none from the global `random`, without Blender
-  (#810).
+  #800's footprint-edge check, since #803 the kit's arithmetic, and since #825 the named streams
+  parts draw from and that no model draws from the global `random`, without Blender (#810).
 - **`scripts/load-check.ps1`** creates a real map and asserts against it, and is where the
   invariants tying the simulation to the prototypes are enforced. It also fails when a rendered
   machine's `manifest.json` or any committed `models/*/geometry.json` disagrees with the live
