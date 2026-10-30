@@ -59,8 +59,8 @@ a bottle is. A part added at the end of a row laid at a fixed pitch leaves the o
 so their values, as they were, though not one whose pitch is a length shared out among its members;
 a part named for where it stands is renamed, and so re-rolled, when it is nudged. And no build
 script draws from one stream once per pass of a loop for one thing and then for another: the
-exchanger's loom draws each span's wander from a stream named for that span, and keeps its own for
-the winding. The helpers here still number a part's own pieces -- a panel set's plates, a casing's
+exchanger's drums each place their gauges from a stream named for the drum, as `Drum<name>Gauges`,
+and none from a stream shared between them. The helpers here still number a part's own pieces -- a panel set's plates, a casing's
 segments, a fan stack's discs -- from `enumerate`: those are the part's grid, fixed by the call.
 
 models/test_rf_blender.py holds that one name's stream is independent of the others, that no file
@@ -717,7 +717,8 @@ def seam(name, size, loc, rot=(0, 0, 0)):
 # - It is held to the detail floor on the dimension that carries ITS read, checked here by name,
 #   whatever the pieces' own checks say.
 # - Anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge check holds it at save
-#   with no extra call.
+#   with no extra call, or is handed to the same check at save by appending its span to `_RUNS`, as
+#   `valve` and `cable_tray` do.
 # - It takes its material by role name and never by colour. A colour a part brings with it -- a
 #   loom's sheaths -- is a row in models/rf_blender.py that the machine's palette takes in whole.
 # - Whatever it draws comes from `stream(name)` and the streams of its pieces' names, never from

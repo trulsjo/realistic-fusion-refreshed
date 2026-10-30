@@ -656,7 +656,8 @@ else:
     # little, so the rail's top is not at one height: `on_rail` reads it off the top flange, and the
     # tray's brackets rest on it there. A bracket stands at each end and between each two post
     # lines, never on one, where a cross rail's own jitter and tilt can lift its top 0.03 over the
-    # rail's (#825); the tray's rungs stand a bracket's height clear of that.
+    # rail's (#825); the tray's rungs stand a bracket's height, 0.06, over the rail's top, so 0.03
+    # clear of a cross rail lifted that far.
     #
     # TRAY_X IS SET ABSOLUTELY rather than off the rail, which is jittered: the tray's outer rail
     # stands 0.015 inside the collision box by the arithmetic. Its inner rail's outer face, at 1.965,
@@ -668,8 +669,9 @@ else:
     # its clamps under it, and the bays' rivets. The main loom leaves by the tray's open north end
     # and goes down at END_Y, between the deck's last two slats and past the north gauges, and comes
     # in by its open south end from the cabinet, climbing off it inboard of the conduit. Each gauge
-    # loom climbs over the tray's inner rail on its way out. No loom carries ties: a tie round a
-    # loom lying in a tray passes through the rungs.
+    # loom climbs over the tray's inner rail on its way out. The main loom carries no ties, since a
+    # tie round a loom lying in a tray passes through the rungs. The gauge looms keep theirs, which
+    # stand at their points outside the tray.
     LOOM_HALF = rf.loom_spread(3, 0.035) + 0.035         # the bundle's half-width
     GAUGE_HALF = rf.loom_spread(2, 0.035) + 0.035
     TRAY_W, TRAY_X, DROP_X = 0.22, HALF_W - 0.15, EX - 0.43
@@ -747,8 +749,10 @@ else:
                         if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
     for d in drums:
         # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
-        # loom's wobble moves the point up to 0.03 each way, so it is set well inboard of the rail
-        # and above it, clear of the rail's top and of the main loom.
+        # loom's wobble moves the point up to 0.03 each way, so it is set 0.05 inboard of the
+        # rail, where the bundle's own edge still stands over it. What keeps the tie clear of the
+        # rail's top and of the main loom is height: its centre stands the bundle's half-width and
+        # 0.12 more over the rail's top.
         over = TRAY_X - TRAY_W / 2 - rf.TRAY_RAIL_T - 0.05
         loom(f"GaugeLoom{d['name']}", [in_tray(d["gy"] + 0.1, GAUGE_HALF),
                                (over, d["gy"] + 0.08, RAIL_TOP + GAUGE_HALF + 0.12),

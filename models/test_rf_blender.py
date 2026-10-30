@@ -441,10 +441,12 @@ except SystemExit as e:
     _wide = str(e)
 assert _wide is not None and "T" in _wide and "wider" in _wide, _wide
 # A tray that points out of an undeclared east tile is refused by the edge check on its own run, and
-# one along the edge passes.
+# one along the north edge passes on its direction: at y = 2.2 its outer face, 0.125 off, stands
+# past the collision edge at 2.25, so it is not passing on reach.
 _out_t = rf.tray_layout("T", [(5.0, 0.0, 1.0), (7.3, 0.0, 1.0)], 0.2)
 assert "(7, 0)" in (edge_refusal(*_out_t["run"]) or "")
-_along = rf.tray_layout("T", [(-6.0, 2.1, 1.0), (6.0, 2.1, 1.0)], 0.2)
+_along = rf.tray_layout("T", [(-6.0, 2.2, 1.0), (6.0, 2.2, 1.0)], 0.2)
+assert _along["run"][0][0][1] + _along["run"][1] > 2.25
 assert edge_refusal(*_along["run"]) is None
 
 # ---- each part's own random stream (#825) ----
