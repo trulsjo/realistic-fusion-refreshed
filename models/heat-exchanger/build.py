@@ -126,11 +126,11 @@ RUST_TEXTURE = "rust_coarse_01_diff_1k.jpg"
 RUST_TEXTURE_MEAN = (0.129, 0.0436, 0.0152)
 RUST_TEXTURE_TILES = 2.0               # one repeat of the image: it is about 2.2 m of steel
 # AND THE PAINT IS WEATHERED BY THE SAME PHOTOGRAPH (Truls, #805): on the manifold alone it moved
-# about 550 pixels of the sheet, a strip under the energy band, which is too little to judge a
-# texture by. The paint takes the photograph's value and not its hue -- its luminance over its own
+# about 530 pixels of the north sheet by more than 3 of 255, which is too little to judge a texture
+# by. The paint takes the photograph's value and not its hue -- its luminance over its own
 # mean, measured off the file (2026-10-30) -- so a panel keeps its colour on average and gains the
 # mottling of old paint. PAINT_GRAIN is how much of that it takes: at 1 the photograph's own spread,
-# a twentieth of it under half the mean and a twentieth over 1.8 times it.
+# a fourteenth of it under half the mean and a twentieth over 1.8 times it.
 RUST_TEXTURE_LUMA = 0.0597
 PAINT_GRAIN = 1.0
 
