@@ -348,22 +348,32 @@ _out = [(p["centre"][2] - 3) for p in (_v["bonnet"], _v["stem"], _v["wheel"])]
 assert _out == sorted(_out) and all(_close(p["centre"][:2], (1, 2)) for p in (_v["bonnet"], _v["stem"], _v["wheel"]))
 assert _close(_v["wheel"]["normal"], (0, 0, 1))
 assert _out[2] - _v["wheel"]["minor"] > _v["body"]["radius"]
-# `reach` is how far the valve stands out along its facing, the wheel's far face, and `span` how
-# far the wheel reaches across it, for a caller to keep the valve clear of what is near.
-assert abs(_v["reach"] - (_out[2] + _v["wheel"]["minor"])) < 1e-9
+# `reach` is how far the valve stands out along its facing, the far face of the wheel's hub, which
+# stands past the rim, and `span` how far the wheel reaches across it, for a caller to keep the
+# valve clear of what is near.
+assert _close(_v["hub"]["centre"], _v["wheel"]["centre"])
+assert abs(_v["reach"] - (_out[2] + _v["hub"]["length"] / 2)) < 1e-9
+assert _v["hub"]["length"] / 2 > _v["wheel"]["minor"]
 assert abs(_v["span"] - (_v["wheel"]["major"] + _v["wheel"]["minor"])) < 1e-9
 # A facing along the run has no square part and is refused, naming the part.
 assert "V" in (valve_refusal("V", (0, 0, 0), (1, 0, 0), 0.19, (2, 0, 0)) or "")
 # The handwheel's rim and the stem scale with the run but are never drawn under the raised floor
-# (Truls, triage of #833): on the water header's 0.13 the valve is not refused, and its rim and stem
-# stand at the floor while the rest is the run's proportion. On the steam header's 0.19 the rim is
-# its own proportion, over the floor.
+# (Truls, 2026-10-30, while #833 was implemented): on the water header's 0.13 the valve is not
+# refused, and its rim and stem stand at the floor while the body is the run's proportion. On the
+# steam header's 0.19 the rim is its own proportion, over the floor. The stem leaves its proportion
+# at a thinner run than the rim does: at 0.16 the rim is floored and the stem is not.
 _t = rf.valve_layout("V", (0, 0, 0), (1, 0, 0), 0.13, (0, 0, 1))
 assert abs(2 * _t["wheel"]["minor"] - rf.RAISED_DETAIL_FLOOR) < 1e-9
 assert abs(2 * _t["stem"]["radius"] - rf.RAISED_DETAIL_FLOOR) < 1e-9
 assert abs(_t["body"]["radius"] - rf.VALVE_BODY[0] * 0.13) < 1e-9
 assert abs(_v["wheel"]["minor"] - rf.VALVE_WHEEL[1] * 0.19) < 1e-9
 assert 2 * _v["wheel"]["minor"] > rf.RAISED_DETAIL_FLOOR
+_m = rf.valve_layout("V", (0, 0, 0), (1, 0, 0), 0.16, (0, 0, 1))
+assert abs(2 * _m["wheel"]["minor"] - rf.RAISED_DETAIL_FLOOR) < 1e-9
+assert abs(_m["stem"]["radius"] - rf.VALVE_STEM[0] * 0.16) < 1e-9
+# A facing within about 11.5 degrees of the run is refused as facing along it.
+assert "V" in (valve_refusal("V", (0, 0, 0), (1, 0, 0), 0.19, (1, 0, 0.15)) or "")
+assert valve_refusal("V", (0, 0, 0), (1, 0, 0), 0.19, (1, 0, 0.3)) is None
 
 # ---- each part's own random stream (#825) ----
 #

@@ -492,16 +492,18 @@ def casing_arc(n, radius, gap):
 # wider than its pipe and bolted to it between two flanges; its bonnet and stem carry the
 # handwheel out along the facing.
 #
-# THE RIM AND THE STEM ARE NEVER DRAWN UNDER THE RAISED FLOOR (Truls, triage of #833). In
-# proportion, both fall under it on any run thinner than VALVE_THIN_RUN, which takes in the water
-# header's 0.13. So on a thin run the two are drawn at the floor, and the wheel reads chunkier for
-# its size. The alternative was refusing the valve on every run thinner than that.
+# THE RIM AND THE STEM ARE NEVER DRAWN UNDER THE RAISED FLOOR (Truls, 2026-10-30, while #833 was
+# implemented). In proportion the rim falls under it on a run thinner than VALVE_THIN_RUN, a sixth
+# of a tile, and the stem on one thinner than 0.15; the water header's 0.13 is under both. So on a
+# thin run the two are drawn at the floor, and the wheel's hub and spokes, sized from the rim, with
+# them: the wheel reads chunkier for its size. The alternative was refusing the valve on every run
+# thinner than a sixth of a tile.
 VALVE_BODY = (1.6, 2.4)          # radius, length along the run
 VALVE_FLANGE = (1.9, 0.35)       # radius, thickness
 VALVE_BONNET = (0.75, 2.4)       # radius, how far out along the facing its far end stands
 VALVE_STEM = (0.2, 1.2)          # radius, length past the bonnet
 VALVE_WHEEL = (1.9, 0.18)        # the wheel's major and minor radius; the minor carries the read
-VALVE_THIN_RUN = RAISED_DETAIL_FLOOR / (2 * min(VALVE_WHEEL[1], VALVE_STEM[0]))
+VALVE_THIN_RUN = RAISED_DETAIL_FLOOR / (2 * VALVE_WHEEL[1])     # where the rim leaves proportion
 
 
 def valve_layout(name, at, direction, radius, facing):
@@ -510,13 +512,13 @@ def valve_layout(name, at, direction, radius, facing):
 
     THE FACING IS MADE SQUARE TO THE RUN: its component along the run is taken out, so a caller
     can pass the way the camera looks and get the nearest facing a wheel on that run can have. One
-    with no square part, along the run, is refused.
+    within about 11.5 degrees of the run, whose square part is under a fifth of it, is refused.
 
     THE HANDWHEEL'S RIM CARRIES THE READ, on the raised floor by its minor diameter. It and the
     stem are drawn at the floor where the run's proportion would put them under it (VALVE_THIN_RUN,
     above), and the rim is held to the floor here all the same. Returns each piece's centre, axis
-    and size, the facing, `reach`, how far the valve stands out along the facing, and `span`, how
-    far the wheel reaches across it."""
+    and size, the facing, `reach`, how far the valve stands out along the facing, which is the far
+    face of the wheel's hub, and `span`, how far the wheel reaches across it."""
     d = _unit(direction)
     if d is None:
         sys.exit(f"valve: {name} is given no direction along its run.")
@@ -549,7 +551,9 @@ def valve_layout(name, at, direction, radius, facing):
                  "length": stem_len},
         "wheel": {"centre": off(at, f, wheel_out), "normal": f, "major": VALVE_WHEEL[0] * radius,
                   "minor": minor},
-        "reach": wheel_out + minor,
+        # The hub is sized from the rim, so it is never under the floor either, and stands past it.
+        "hub": {"centre": off(at, f, wheel_out), "axis": f, "radius": 2 * minor, "length": 3 * minor},
+        "reach": wheel_out + 1.5 * minor,
         "span": VALVE_WHEEL[0] * radius + minor,
     }
 
