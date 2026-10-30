@@ -286,9 +286,11 @@ be lenient by up to the spacing of a part's points.
 
 **A valve sits on a run and covers it** (#833). The run is not cut: the valve's body and flanges
 are wider than the tube and hide it. Every piece is sized from the run's radius, except that the
-handwheel's rim and the stem are drawn at the raised floor where that would put them under it.
-That happens on any run thinner than `rf_blender.VALVE_THIN_RUN`, a sixth of a tile, so a valve
-fits the water header's 0.13 with a chunkier wheel (Truls, triage of #833). Its handwheel faces a
+handwheel's rim and the stem are drawn at the raised floor where that would put them under it, and
+the wheel's hub and spokes are sized from the rim. The rim leaves its proportion on a run thinner
+than `rf_blender.VALVE_THIN_RUN`, a sixth of a tile, and the stem on one thinner than 0.15, so a
+valve fits the water header's 0.13 with a chunkier wheel (Truls, 2026-10-30, while #833 was
+implemented). Its body and flanges are held to the footprint edge as a run is. Its handwheel faces a
 way the caller gives, made square to the run, so a model passes the way to the camera. The wheel is
 a part that could move later (Moving parts, below), so it stands clear on its stem.
 

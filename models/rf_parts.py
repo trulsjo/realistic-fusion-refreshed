@@ -17,8 +17,8 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs` and `casing` take no flags either, and name their
-materials by role. Passing `frost=True` to one of those is a TypeError rather than a
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing` and `valve` take no flags either, and name
+their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
 forwards to the tube and its ribs, and chooses the accent and the rim itself. `texture` builds no
@@ -268,8 +268,9 @@ def texture(nt, model_dir, filename, tiles=2.0, gain=(1.0, 1.0, 1.0)):
 
 def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     """A box with NO detail-floor check, for a caller that has already made the check on its own
-    behalf. `hbeam` is the only one: a beam is checked once on its flange width, and its web and
-    two flanges then go in as the parts of a feature rather than as features."""
+    behalf. `hbeam` is one: a beam is checked once on its flange width, and its web and two flanges
+    then go in as the parts of a feature rather than as features. The kit's `panels`, `fan_discs`
+    and `valve` are the others."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
@@ -946,16 +947,25 @@ def valve(name, at, direction, radius, facing, material="metal", wheel="dark", s
     turns the wheel towards it.
 
     THE HANDWHEEL'S RIM CARRIES THE READ, by its minor diameter on the raised floor, checked in
-    `rf_blender.valve_layout`. On a run thinner than `rf_blender.VALVE_THIN_RUN` the rim and the
-    stem are drawn at the floor rather than in proportion, so the water header's 0.13 takes one.
+    `rf_blender.valve_layout`. On a thin run the rim and the stem are drawn at the floor rather
+    than in proportion, the rim under `rf_blender.VALVE_THIN_RUN` and the stem under 0.15, so the
+    water header's 0.13 takes one.
+
     The wheel is `wheel`, dark or metal, and never an accent or a marking. It is a part
     that could move later (`models/house-style.md`, Moving parts), so it stands clear on its stem
     where an animation could turn it.
 
+    ITS BODY AND FLANGES ARE HELD TO THE FOOTPRINT EDGE as a run is, on the flanges' radius: the
+    run under them is checked on its own, narrower one, and a valve placed near an edge could
+    stand past it where the run does not. The span between the flanges goes into `_RUNS` on the
+    body's object, so it is read at save through the turn, as every `pipe` is.
+
     Returns the layout, whose `reach` and `span` say how much room the valve takes."""
     v = rf.valve_layout(name, at, direction, radius, facing)
     b = v["body"]
-    cyl(f"{name}-body", b["radius"], b["length"], b["centre"], material, rot=_facing(b["axis"]))
+    body = cyl(f"{name}-body", b["radius"], b["length"], b["centre"], material, rot=_facing(b["axis"]))
+    half = (b["length"] + v["flanges"][0]["thickness"]) / 2     # the flanges' centres, on its own Z
+    _RUNS.append((body, [(0.0, 0.0, -half), (0.0, 0.0, half)], v["flanges"][0]["radius"]))
     for k, fl in enumerate(v["flanges"]):
         cyl(f"{name}-flange{k}", fl["radius"], fl["thickness"], fl["centre"], material,
             rot=_facing(fl["axis"]), read=2 * fl["radius"])
@@ -966,8 +976,11 @@ def valve(name, at, direction, radius, facing, material="metal", wheel="dark", s
     w = v["wheel"]
     rot = _facing(w["normal"])
     torus(f"{name}-wheel", w["major"], w["minor"], w["centre"], wheel, rot=rot)
-    pieces = [cyl(f"{name}-hub", w["minor"] * 2, w["minor"] * 3, (0, 0, 0), wheel, verts=16,
-                  read=4 * w["minor"])]
+    h = v["hub"]
+    pieces = [cyl(f"{name}-hub", h["radius"], h["length"], (0, 0, 0), wheel, verts=16,
+                  read=2 * h["radius"])]
+    # Unchecked here: a spoke is the rim's minor diameter wide, and the rim has just been held to
+    # the raised floor on that.
     for s in range(spokes):
         a = 2 * math.pi * s / spokes
         pieces.append(_plate(f"{name}-spoke{s}", (w["major"], 2 * w["minor"], w["minor"]),
