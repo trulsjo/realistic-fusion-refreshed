@@ -258,6 +258,29 @@ from #825's streams, since every part draws from a stream of its own name. The m
 on the built model agrees, *measured*: it found every pair it found on `main`, and no other but
 the valves' own pieces and the hoses they sit on.
 
+## The cable tray of #834
+
+Measured 2026-10-30 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#834](https://github.com/trulsjo/realistic-fusion-refreshed/issues/834) put the kit's
+cable tray along the top of the exchanger's east rail, the south side once the body is turned, with
+the loom from the cabinet laid in it. The "before" is #833's sheet, taken again from the same
+command on `main` the same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #833 | 0.2747 | 0.5188 |
+| after, #834 | 0.2809 | 0.5228 |
+
+**Both rose**, *measured*: the pixel figure by 0.0062 and the normal-pass figure by 0.0040. The
+pixel figure's rise is about thirty times the valves'. The tray need not be all of it, which is
+*inferred*: the loom no longer wanders across the rail between the posts or steps out round the
+steam outlet, and lies higher, in the tray. The placing re-rolled nothing else, which is
+*inferred* from #825's streams.
+The mesh-overlap test on the built model agrees, *measured*: the only pairs it found that `main`
+did not are the tray's rails, rungs and brackets against each other and against the rail they rest
+on, the gauge looms against their own ties, and the gauge looms' cables against the main loom's,
+where they branch from it, as on `main`.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

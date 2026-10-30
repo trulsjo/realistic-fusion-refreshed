@@ -17,7 +17,7 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing` and `valve` take no flags either, and name
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `valve` and `cable_tray` take no flags either, and name
 their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
@@ -96,7 +96,7 @@ def MATERIAL(name, **flags):                      # replaced by use(); a clear e
 
 GEOMETRY = None                                   # replaced by use(); `pipe` refuses without it
 SEED = None                                       # replaced by use(); `stream` refuses without it
-_RUNS = []                                        # (object, points, radius) of each pipe, valve
+_RUNS = []                                        # (object, points, radius) of each pipe, valve, tray
 _STREAMS = {}                                     # name -> the stream `stream` handed out for it
 
 
@@ -136,8 +136,9 @@ def stream(name):
 
 
 def _check_edges(*_):
-    """Hold every `pipe` run, and every `valve`'s span, against the footprint edge, where it ENDED
-    UP, before the model is saved. A save_pre handler, so no build script has to remember to call it.
+    """Hold every `pipe` run, every `valve`'s span and every `cable_tray`'s bed against the footprint
+    edge, where it ENDED UP, before the model is saved. A save_pre handler, so no build script has
+    to remember to call it.
 
     WHY AT SAVE AND NOT WHEN THE RUN IS DRAWN: rf-heat-exchanger is built long axis north-south and
     turned a quarter turn afterwards, so the points `pipe` is handed are in the body's own frame and
@@ -154,9 +155,9 @@ def _check_edges(*_):
     tools/render-machine.py reads. `os._exit` skips the atexit hooks, so the detail-floor audit is
     reported here first rather than lost.
 
-    SO A `pipe` OBJECT, OR A `valve`'S BODY, CANNOT BE REMOVED, OR JOINED INTO ANOTHER OBJECT,
-    before the save: its run
-    is still held here, reading it raises ReferenceError, and the build stops. Converting one to a
+    SO A `pipe` OBJECT, A `valve`'S BODY OR A `cable_tray`'S FIRST RAIL CANNOT BE REMOVED, OR JOINED
+    INTO ANOTHER OBJECT, before the save: its run is still held here, reading it raises
+    ReferenceError, and the build stops. Converting one to a
     mesh in place keeps the object, and its run is still checked from the points it was drawn from
     (measured on 5.2.0 reviewing #800). Nothing does either today. A build that needs to remove or
     join one has to take the run out of `_RUNS` first, and a run skipped silently instead would be a
@@ -271,7 +272,7 @@ def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     """A box with NO detail-floor check, for a caller that has already made the check on its own
     behalf. `hbeam` is one: a beam is checked once on its flange width, and its web and two flanges
     then go in as the parts of a feature rather than as features. `box` is another, which makes its
-    own check first, and the kit's `panels`, `fan_discs` and `valve` are the rest."""
+    own check first, and the kit's `panels`, `fan_discs`, `valve` and `cable_tray` are the rest."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
@@ -989,6 +990,58 @@ def valve(name, at, direction, radius, facing, material="metal", wheel="dark", s
                              rot=(0, 0, a), bev=0.008))
     _place(pieces, (w["centre"], rot))
     return v
+
+
+# ---- parts a run lies in (#834) ------------------------------------------------------------------
+
+def cable_tray(name, points, width, rung_pitch=None, material="dark"):
+    """A ladder cable tray running straight between `points`, its bed, with a bracket under it at
+    each point: two side rails with rungs between them, mitred at a bend (`rf_blender.tray_layout`).
+    A loom laid in it follows `rf_blender.tray_lie(tray, half_width)`; the caller passes those
+    points to `loom`, with no ties, since a tie round a loom in a tray passes through the rungs.
+
+    THE READ IS THE GAP BETWEEN RUNGS, on the cut floor, and THE RAIL'S HEIGHT, on the raised floor,
+    both checked in `rf_blender.tray_layout`. The rungs and brackets go in unchecked: a rung's
+    width along the run is the raised floor, and its thickness is edge-on.
+
+    ITS RUN IS HELD TO THE FOOTPRINT EDGE as a pipe's is, on half its outer width: a tray may run
+    along an edge but never out of one (`models/house-style.md`, Only a socket meets a footprint
+    edge). Each rail is one mesh with its vertices where they stand, so its object's matrix is the
+    turn alone, and the bed goes into `_RUNS` on the first rail's object, read at save.
+
+    Returns the layout."""
+    import bmesh
+    t = rf.tray_layout(name, points, width, rung_pitch)
+    rails = []
+    for side, sections in zip("RL", t["rails"]):
+        bm = bmesh.new()
+        rings = [[bm.verts.new(v) for v in sec] for sec in sections]
+        for a, b in zip(rings, rings[1:]):
+            for i in range(4):
+                bm.faces.new((a[i], a[(i + 1) % 4], b[(i + 1) % 4], b[i]))
+        bm.faces.new(rings[0][::-1])
+        bm.faces.new(rings[-1])
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        mesh = bpy.data.meshes.new(f"{name}-rail{side}")
+        bm.to_mesh(mesh)
+        bm.free()
+        o = bpy.data.objects.new(f"{name}-rail{side}", mesh)
+        bpy.context.scene.collection.objects.link(o)
+        o.data.materials.append(MATERIAL(material))
+        bevel(o, 0.008, f"{name}-rail{side}")
+        rails.append(o)
+    _RUNS.append((rails[0], list(t["run"][0]), t["run"][1]))  # held to the edge at save, `_check_edges`
+
+    def lay(piece, label):
+        d = piece["along"]
+        rot = (0.0, -math.atan2(d[2], math.hypot(d[0], d[1])), math.atan2(d[1], d[0]))
+        _plate(label, piece["size"], piece["centre"], material, rot=rot, bev=0.006)
+
+    for k, r in enumerate(t["rungs"]):
+        lay(r, f"{name}-rung{k}")
+    for k, b in enumerate(t["brackets"]):
+        lay(b, f"{name}-bracket{k}")
+    return t
 
 
 def _ties(name, points, inner):

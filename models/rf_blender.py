@@ -272,9 +272,9 @@ def check_edge(name, points, radius, geo):
     and the ones a player's map uses, so Blender's y is negated before it is printed.
 
     WHAT IT CANNOT SEE: the middle of a run. A tube that bows out past an edge and comes back is not
-    read, nor is anything that is not handed over as a run -- a horizontal `cyl` or a `box`, which is
-    what a cable tray is likely to be built from. A kit part that is pipe-shaped and not built by
-    `rf_parts.pipe` hands its span to `rf_parts`' save-time check, as `rf_parts.valve` does, or
+    read, nor is anything that is not handed over as a run -- a horizontal `cyl` or a `box`. A kit
+    part that is pipe-shaped and not built by `rf_parts.pipe` hands its span to `rf_parts`'
+    save-time check, as `rf_parts.valve` and `rf_parts.cable_tray` do, or
     calls this itself with its points in the DECLARED frame: rf-heat-exchanger is built in another
     one and turned, which is why `rf_parts` checks its runs at save.
     """
@@ -557,6 +557,108 @@ def valve_layout(name, at, direction, radius, facing):
         "reach": wheel_out + 1.5 * minor,
         "span": VALVE_WHEEL[0] * radius + minor,
     }
+
+
+# THE CABLE TRAY'S PIECES (#834): a ladder tray, two side rails with rungs between them, resting on
+# a bracket at each point it is given. The rail stands TRAY_RAIL_H of the tray's width tall, from
+# the rungs' underside, and TRAY_RAIL_T thick; a rung is TRAY_RUNG (width along the run, thickness)
+# and a bracket TRAY_BRACKET (width along the run, height). A loom lies TRAY_CLEAR above the bed.
+TRAY_RAIL_H = 0.4
+TRAY_RAIL_T = 0.025
+TRAY_RUNG = (0.06, 0.025)
+TRAY_BRACKET = (0.06, 0.06)
+TRAY_CLEAR = 0.005
+
+
+def tray_layout(name, points, width, rung_pitch=None):
+    """Where a ladder cable tray's pieces go, running straight between `points`, which are its
+    bed: the rungs' top face, where a loom lies, along the middle of the tray. `width` is the
+    clear width between the rails.
+
+    STRAIGHT LENGTHS, BENDS MITRED, which is how a ladder tray is put together: a bend is a fitting
+    between two straight lengths. Each rail is a section at each point -- inner bottom, outer
+    bottom, outer top, inner top -- and at an inner point the section stands on the bisector of the
+    two lengths' sides, so the rail's faces meet there. The rungs restart on each length, each in
+    the middle of its own share of it as `row` spaces them, at the pitch the length divides into
+    nearest `rung_pitch`; the tray's width when it is not given. A length that climbs straight up
+    has no side for the rails to stand on and is refused.
+
+    THE READ IS THE GAP BETWEEN RUNGS, on the cut floor, since it is the open ladder that tells a
+    tray from a trough, and THE RAIL'S HEIGHT, on the raised floor, since the rails are its edges.
+    Both are checked here, by name. Returns the rails, the rungs and brackets with their centres,
+    their directions along and across and their sizes in those two and up, `bed`, the points, the
+    two reads, and `run`, the points and half the tray's outer width, which is what the
+    footprint-edge check reads."""
+    pitch = width if rung_pitch is None else rung_pitch
+    rail_h = TRAY_RAIL_H * width
+    check_detail(f"{name} (rail height)", rail_h)
+    pts = [tuple(p) for p in points]
+    legs = []
+    for a, b in zip(pts, pts[1:]):
+        d = _unit(tuple(b[j] - a[j] for j in range(3)))
+        left = d and _unit(_cross((0.0, 0.0, 1.0), d))
+        if left is None:
+            sys.exit(f"cable tray: {name} has a length from {a} to {b} that runs straight up, or none, "
+                     f"so its rails have no side to stand on.")
+        legs.append((a, b, d, left, _cross(d, left)))
+
+    def mitre(i):
+        """The side and up at point i: a length's own at an end, the bisector's at a bend, the side
+        scaled so each rail face stands its own distance off both lengths."""
+        if i == 0 or i == len(pts) - 1:
+            _, _, _, left, up = legs[min(i, len(legs) - 1)]
+            return left, up
+        l1, l2 = legs[i - 1][3], legs[i][3]
+        m = _unit(tuple(x + y for x, y in zip(l1, l2)))
+        k = sum(x * y for x, y in zip(m, l1))
+        up = _unit(tuple(x + y for x, y in zip(legs[i - 1][4], legs[i][4])))
+        return tuple(c / k for c in m), up
+
+    def at(p, left, up, s, u):
+        return tuple(p[j] + s * left[j] + u * up[j] for j in range(3))
+
+    bot, top = -TRAY_RUNG[1], -TRAY_RUNG[1] + rail_h
+    half = width / 2
+    rails = [[], []]
+    for i, p in enumerate(pts):
+        left, up = mitre(i)
+        for r, sign in zip(rails, (-1, 1)):
+            inner, outer = sign * half, sign * (half + TRAY_RAIL_T)
+            r.append([at(p, left, up, inner, bot), at(p, left, up, outer, bot),
+                      at(p, left, up, outer, top), at(p, left, up, inner, top)])
+
+    rungs, gaps = [], []
+    across = width + 2 * TRAY_RAIL_T
+    for a, b, d, left, up in legs:
+        length = math.dist(a, b)
+        n = max(1, round(length / pitch))
+        gaps.append(length / n - TRAY_RUNG[0])
+        for k in range(n):
+            c = tuple(a[j] + (b[j] - a[j]) * (k + 0.5) / n for j in range(3))
+            rungs.append({"centre": at(c, left, up, 0.0, -TRAY_RUNG[1] / 2), "along": d, "across": left,
+                          "size": (TRAY_RUNG[0], across, TRAY_RUNG[1])})
+    gap = min(gaps)
+    check_detail(f"{name} (gap between rungs)", gap, cut=True)
+
+    brackets = []
+    for i, p in enumerate(pts):
+        a, b, d, left, up = legs[min(i, len(legs) - 1)]
+        inset = TRAY_BRACKET[0] / 2 if i == 0 else -TRAY_BRACKET[0] / 2 if i == len(pts) - 1 else 0.0
+        c = tuple(p[j] + inset * d[j] for j in range(3))
+        brackets.append({"centre": at(c, left, up, 0.0, -TRAY_RUNG[1] - TRAY_BRACKET[1] / 2),
+                         "along": d, "across": left, "size": (TRAY_BRACKET[0], across, TRAY_BRACKET[1])})
+    return {"name": name, "rails": rails, "rungs": rungs, "brackets": brackets, "bed": pts,
+            "gap": gap, "rail_h": rail_h, "width": width, "run": (pts, half + TRAY_RAIL_T)}
+
+
+def tray_lie(tray, half):
+    """The points a loom of half-width `half` follows lying in `tray` from `tray_layout`: its bed
+    lifted by the half-width and TRAY_CLEAR, so the cables rest on the rungs without sharing their
+    face. A loom wider than the tray is refused, naming the tray."""
+    if 2 * half > tray["width"] + 1e-9:
+        sys.exit(f"cable tray: a loom {2 * half:g} wide is wider than {tray['name']}, whose rails stand "
+                 f"{tray['width']:g} apart.")
+    return [(p[0], p[1], p[2] + half + TRAY_CLEAR) for p in tray["bed"]]
 
 
 class Stream(random.Random):

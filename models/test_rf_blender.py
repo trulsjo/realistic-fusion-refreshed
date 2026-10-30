@@ -375,6 +375,78 @@ assert abs(_m["stem"]["radius"] - rf.VALVE_STEM[0] * 0.16) < 1e-9
 assert "V" in (valve_refusal("V", (0, 0, 0), (1, 0, 0), 0.19, (1, 0, 0.15)) or "")
 assert valve_refusal("V", (0, 0, 0), (1, 0, 0), 0.19, (1, 0, 0.3)) is None
 
+# ---- the cable tray (#834) ----
+#
+# A ladder tray runs straight between the points it is given: two side rails with rungs between
+# them and a bracket under it at each point. The points are its bed, the rungs' top face, where a
+# loom lies.
+
+
+def tray_refusal(*args, **kwargs):
+    try:
+        rf.tray_layout(*args, **kwargs)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+_tr = rf.tray_layout("T", [(0.0, 0.0, 1.0), (2.0, 0.0, 1.0)], 0.2)
+_rt, _rh = rf.TRAY_RAIL_T, rf.TRAY_RAIL_H * 0.2
+_bt = rf.TRAY_RUNG[1]
+# Each rail is a section at each point, inner bottom, outer bottom, outer top, inner top: the rails
+# stand either side of the bed from the rungs' underside up, square to the run.
+for _side, _rail in zip((-1, 1), _tr["rails"]):
+    assert len(_rail) == 2
+    for _p, _sec in zip(((0, 0, 1), (2, 0, 1)), _rail):
+        _want = [(_p[0], _side * 0.1, 1 - _bt), (_p[0], _side * (0.1 + _rt), 1 - _bt),
+                 (_p[0], _side * (0.1 + _rt), 1 - _bt + _rh), (_p[0], _side * 0.1, 1 - _bt + _rh)]
+        assert all(_close(a, b) for a, b in zip(_sec, _want)), (_sec, _want)
+# The rungs at the default pitch, the tray's width, are each in the middle of their own share of the
+# length, as a row is spaced, under the bed and across the run from one rail's outer face to the
+# other's.
+assert [round(r["centre"][0], 9) for r in _tr["rungs"]] == [round(0.1 + 0.2 * k, 9) for k in range(10)]
+assert all(_close(r["centre"][1:], (0, 1 - _bt / 2)) for r in _tr["rungs"])
+assert all(_close(r["across"], (0, 1, 0)) and _close(r["along"], (1, 0, 0)) for r in _tr["rungs"])
+assert all(abs(r["size"][1] - (0.2 + 2 * _rt)) < 1e-9 for r in _tr["rungs"])
+# The read: the gap between rungs, here the pitch less a rung's width, and the rail's height.
+assert abs(_tr["gap"] - (0.2 - rf.TRAY_RUNG[0])) < 1e-9 and abs(_tr["rail_h"] - _rh) < 1e-9
+# A bracket under the rungs at each point, the end ones moved in so they stop at the tray's ends.
+_bw = rf.TRAY_BRACKET[0]
+assert [round(b["centre"][0], 9) for b in _tr["brackets"]] == [_bw / 2, 2 - _bw / 2]
+assert all(abs(b["centre"][2] - (1 - _bt - rf.TRAY_BRACKET[1] / 2)) < 1e-9 for b in _tr["brackets"])
+# What the footprint-edge check reads: the bed's points, with the tray's half-width to the outer face.
+assert _tr["run"] == ([(0.0, 0.0, 1.0), (2.0, 0.0, 1.0)], 0.1 + _rt)
+# A bend is mitred: at a quarter turn the rail's inner face meets itself on the bisector, half the
+# width out times the square root of two.
+_bend = rf.tray_layout("T", [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0)], 0.2)
+_corner = _bend["rails"][1][1][0]
+assert _close(_corner, (0.9, 0.1, -_bt)), _corner
+# The rungs restart on each straight length, so no rung stands across the bend.
+assert len(_bend["rungs"]) == 10 and all(r["centre"][0] < 1 - 0.05 or r["centre"][1] > 0.05
+                                         for r in _bend["rungs"])
+# Rungs closer than the cut floor apart are refused, naming the part, and so is a rail under the
+# raised floor, which a tray too narrow for its proportion has.
+assert "T" in (tray_refusal("T", [(0, 0, 0), (1, 0, 0)], 0.2, rung_pitch=0.1) or "")
+assert tray_refusal("T", [(0, 0, 0), (1, 0, 0)], 0.2, rung_pitch=0.12) is None
+assert "rail" in (tray_refusal("T", [(0, 0, 0), (1, 0, 0)], 0.14) or "")
+# A length straight up has no side for its rails, and is refused; a sloped one is laid.
+assert "T" in (tray_refusal("T", [(0, 0, 0), (0, 0, 1)], 0.2) or "")
+assert tray_refusal("T", [(0, 0, 0), (1, 0, 1)], 0.2) is None
+# A loom lies in the tray on its bed, its half-width up, and one wider than the tray is refused.
+assert _close(rf.tray_lie(_tr, 0.08)[1], (2.0, 0.0, 1.08 + rf.TRAY_CLEAR))
+try:
+    rf.tray_lie(_tr, 0.11)
+    _wide = None
+except SystemExit as e:
+    _wide = str(e)
+assert _wide is not None and "T" in _wide and "wider" in _wide, _wide
+# A tray that points out of an undeclared east tile is refused by the edge check on its own run, and
+# one along the edge passes.
+_out_t = rf.tray_layout("T", [(5.0, 0.0, 1.0), (7.3, 0.0, 1.0)], 0.2)
+assert "(7, 0)" in (edge_refusal(*_out_t["run"]) or "")
+_along = rf.tray_layout("T", [(-6.0, 2.1, 1.0), (6.0, 2.1, 1.0)], 0.2)
+assert edge_refusal(*_along["run"]) is None
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,
