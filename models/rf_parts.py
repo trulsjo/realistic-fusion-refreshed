@@ -1063,8 +1063,7 @@ def access_ladder(name, foot, top, facing, pitch=rf.LADDER_PITCH, cage_from=None
 
     THE CAGE IS A GUARD, so its hoops and bars are hazard yellow unless `hoops` names another role
     (`models/house-style.md`, Palette); the stiles, rungs and brackets are `material`, dark or bare
-    metal.
-    The hoops and bars are drawn by `pipe`, so the footprint-edge check holds them at save.
+    metal. The hoops and bars are drawn by `pipe`, so the footprint-edge check holds them at save.
 
     Returns the layout."""
     d = rf.ladder_layout(name, foot, top, facing, pitch=pitch, cage_from=cage_from, standoff=standoff)
