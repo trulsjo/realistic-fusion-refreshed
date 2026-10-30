@@ -96,7 +96,7 @@ def MATERIAL(name, **flags):                      # replaced by use(); a clear e
 
 GEOMETRY = None                                   # replaced by use(); `pipe` refuses without it
 SEED = None                                       # replaced by use(); `stream` refuses without it
-_RUNS = []                                        # (object, points, radius) for every `pipe`
+_RUNS = []                                        # (object, points, radius) of each pipe, valve
 _STREAMS = {}                                     # name -> the stream `stream` handed out for it
 
 
@@ -136,8 +136,8 @@ def stream(name):
 
 
 def _check_edges(*_):
-    """Hold every `pipe` run against the footprint edge, where it ENDED UP, before the model is
-    saved. A save_pre handler, so no build script has to remember to call it.
+    """Hold every `pipe` run, and every `valve`'s span, against the footprint edge, where it ENDED
+    UP, before the model is saved. A save_pre handler, so no build script has to remember to call it.
 
     WHY AT SAVE AND NOT WHEN THE RUN IS DRAWN: rf-heat-exchanger is built long axis north-south and
     turned a quarter turn afterwards, so the points `pipe` is handed are in the body's own frame and
@@ -154,7 +154,8 @@ def _check_edges(*_):
     tools/render-machine.py reads. `os._exit` skips the atexit hooks, so the detail-floor audit is
     reported here first rather than lost.
 
-    SO A `pipe` OBJECT CANNOT BE REMOVED, OR JOINED INTO ANOTHER OBJECT, before the save: its run
+    SO A `pipe` OBJECT, OR A `valve`'S BODY, CANNOT BE REMOVED, OR JOINED INTO ANOTHER OBJECT,
+    before the save: its run
     is still held here, reading it raises ReferenceError, and the build stops. Converting one to a
     mesh in place keeps the object, and its run is still checked from the points it was drawn from
     (measured on 5.2.0 reviewing #800). Nothing does either today. A build that needs to remove or
@@ -269,8 +270,8 @@ def texture(nt, model_dir, filename, tiles=2.0, gain=(1.0, 1.0, 1.0)):
 def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     """A box with NO detail-floor check, for a caller that has already made the check on its own
     behalf. `hbeam` is one: a beam is checked once on its flange width, and its web and two flanges
-    then go in as the parts of a feature rather than as features. The kit's `panels`, `fan_discs`
-    and `valve` are the others."""
+    then go in as the parts of a feature rather than as features. `box` is another, which makes its
+    own check first, and the kit's `panels`, `fan_discs` and `valve` are the rest."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
