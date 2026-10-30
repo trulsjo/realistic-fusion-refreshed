@@ -135,7 +135,7 @@
     the two dumps are the same dump, and there is no question to answer.
 
 .PARAMETER With
-    Bundled mods to enable, closed over their hard dependencies. The `seablock` lane runs
+    Bundled mods to enable, closed over their hard and `+` dependencies. The `seablock` lane runs
     `-With quality` in ADR 0007.
 
 .PARAMETER KeepTemp
