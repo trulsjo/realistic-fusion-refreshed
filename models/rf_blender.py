@@ -274,8 +274,9 @@ def check_edge(name, points, radius, geo):
     WHAT IT CANNOT SEE: the middle of a run. A tube that bows out past an edge and comes back is not
     read, nor is anything that is not handed over as a run -- a horizontal `cyl` or a `box`, which is
     what a cable tray is likely to be built from. A kit part that is pipe-shaped and not built by
-    `rf_parts.pipe` calls this itself, with its points in the DECLARED frame: rf-heat-exchanger is
-    built in another one and turned, which is why `rf_parts` checks its runs at save.
+    `rf_parts.pipe` hands its span to `rf_parts`' save-time check, as `rf_parts.valve` does, or
+    calls this itself with its points in the DECLARED frame: rf-heat-exchanger is built in another
+    one and turned, which is why `rf_parts` checks its runs at save.
     """
     half = (geo["tiles"][0] / 2, geo["tiles"][1] / 2)
     (cx0, cy0), (cx1, cy1) = geo["collision_box"]

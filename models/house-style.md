@@ -258,7 +258,8 @@ effects actually mean: how far the surface faces up. `mat` in
 places one with one call that says where: a curve, a face, a centre. The part decides its own
 pieces. Where those pieces go is arithmetic in `models/rf_blender.py`, pinned without Blender by
 `models/test_rf_blender.py`. Each part is checked on the floor by the dimension that carries its
-read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge rule below holds it.
+read, and anything pipe-shaped in it is drawn by `pipe` or handed to the same check, so the
+footprint-edge rule below holds it.
 `models/rf_parts.py` states the shape in full.
 
 **A part with a natural bend is never placed as an exact copy** (Truls, 2026-10-29: three vent hoses
@@ -692,10 +693,13 @@ socket, but neither drop reaches the edge today, so both pass because they stop 
   refusal leaves before the `.blend` is written.
 - **Every `rf_parts.socket` is checked** when it is drawn, so a socket on an undeclared tile is
   refused too.
+- **A `rf_parts.valve`'s body and flanges are checked** at save as a run is, on the flanges'
+  radius (#833).
 - **Nothing else is checked.** A `box` or a horizontal `cyl` is not a run, and a cable tray is
-  likely to be built from one. A kit part that is pipe-shaped and not built by `pipe` calls
-  `check_edge` itself. The middle of a run is not read either: a tube that bows out past an edge
-  and comes back passes.
+  likely to be built from one. A kit part that is pipe-shaped and not built by `pipe` hands its
+  span to the same check at save, as `valve` does, or calls `check_edge` itself in the declared
+  frame. A valve's bonnet, stem and wheel are not held. The middle of a run is not read either: a
+  tube that bows out past an edge and comes back passes.
 
 ## Camera, light, output
 
