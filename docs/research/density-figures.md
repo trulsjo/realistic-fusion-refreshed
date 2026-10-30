@@ -300,10 +300,10 @@ command on `main` the same day. Blender 5.2.0, 64 samples for the sheet and 16 f
 the deck stands behind the drums from this camera, so little of it reaches the sheet, *inferred*
 from crops of the north sheet before and after, at zoom 1 and 4×, which the pull request for #835
 describes and which are not in the tree. With dark toe boards first, the pixel figure was 0.2776,
-*measured* the same day. The dark board stood on the yellow bar's top face, along its outer edge,
-and those crops showed the yellow line thinner; that the board hid part of it is *inferred* from
-them. The placing re-rolled
-nothing else, which is *inferred* from #825's streams. The mesh-overlap test on the built model
+*measured* the same day. The dark board stood on the yellow bar's top face, along its outer edge.
+Crops of that render against `main`'s, made in the session and put to Truls before the boards were
+made yellow, showed the yellow line thinner; that the board hid part of it is *inferred* from them.
+The placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on the built model
 agrees, *measured*: every pair a slat made on `main` the bar in its place makes, but the cabinet's
 and its seam's, which the cabinet's opening removes, and the only new pairs are each toe board
 against its end bar.
