@@ -393,8 +393,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `.blend`, which `models/render.py` refuses. `models/test_rf_blender.py` also holds
   `rf_blender.texture_record`, which the build and the render call, to the same record.
 - 2026-10-30, #833: `models/test_rf_blender.py` also pins `rf_blender.valve_layout`: a valve's
-  facing made square to its run, its body and flanges on the run, its bonnet, stem, handwheel and
-  hub in order out along the facing, `reach` at the hub's far face, the rim and stem held at the
-  raised floor on a thin run, and a facing within about 11.5° of the run refused. It renders
-  nothing, so it cannot see whether a valve reads, and it does not hold the body and flanges to
-  the footprint edge, which `models/rf_parts.py` hands to the save-time check.
+  facing made square to its run, its body and flanges on the run, its bonnet, stem and handwheel
+  in order out along the facing, the hub at the wheel's centre, `reach` at the hub's far face, the
+  rim and stem held at the raised floor on a thin run, and a facing within about 11.5° of the run
+  refused. It renders nothing, so it cannot see whether a valve reads, and it does not hold the
+  body and flanges to the footprint edge, which `models/rf_parts.py` hands to the save-time check.
