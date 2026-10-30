@@ -666,7 +666,7 @@ else:
     # A CABLE TRAY ALONG THE TOP OF THE EAST RAIL (#834), the open side the camera looks down on
     # once the body is turned, and the loom from the cabinet lying in it, with a drop from it to
     # each drum's gauges. The loom used to lie on the rail's flange itself; in the tray it is
-    # carried the way a plant carries one, and the tray's ladder is a detail of its own.
+    # carried the way a plant carries one, and the tray's rungs are a detail of their own.
     #
     # THE TRAY STANDS ON THE RAIL AS THE RAIL WAS BUILT. `hbeam` shifts and tilts every beam a
     # little, so the rail's top is not at one height: `on_rail` reads it off the top flange, and the
@@ -769,13 +769,17 @@ else:
     # the body's south, still on the side the camera sees once the body is turned. Its foot stands
     # LADDER_OFF off the drum's skin, so its stiles stand clear of the ribs, of the shoulder casing,
     # which stands 0.09 proud, and of the weld seam, which is a straight box turned off the drum's
-    # tangent and stands out from the skin on this side: at 0.15 off, a stile ran through it.
+    # tangent and stands out from the skin on this side: at 0.15 off, a stile ran through it. Its
+    # brackets run back from each stile into the drum: a stile stands off the axis's line by half
+    # the access ladder's width, so the skin behind it is about 0.02 further than LADDER_OFF, and
+    # the drum is stretched by up to 3% across the body by its own jitter, so they run 0.08 past
+    # it. At 0.03 past, those on one side stopped short of the skin.
     LADDER_TURN, LADDER_OFF = math.radians(-50), 0.25
     mid = next(d for d in drums if d["name"] == "Mid")
     ladder_out = (math.cos(LADDER_TURN), math.sin(LADDER_TURN), 0.0)
     reach = mid["r"] + LADDER_OFF
     access_ladder("DrumMidLadder", (DX + reach * ladder_out[0], mid["y"] + reach * ladder_out[1], SLAB + 0.53),
-                  mid["z0"] + mid["h"] + 0.18, ladder_out)
+                  mid["z0"] + mid["h"] + 0.18, ladder_out, standoff=LADDER_OFF + 0.08)
     for d in drums:
         # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
         # loom's wobble moves the point up to 0.03 each way, so it is set 0.05 inboard of the

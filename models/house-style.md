@@ -298,7 +298,7 @@ implemented). Its body and flanges are held to the footprint edge as a run is. I
 way the caller gives, made square to the run, so a model passes the way to the camera. The wheel is
 a part that could move later (Moving parts, below), so it stands clear on its stem.
 
-**A cable tray is a ladder a loom lies in** (#834): two side rails with rungs between them, in
+**A cable tray is a ladder tray a loom lies in** (#834): two side rails with rungs between them, in
 straight lengths between the points it is given, mitred at a bend, and resting on a bracket at each
 point. The points are its bed, the rungs' top face, and `rf_blender.tray_lie` gives the points a loom
 lying on it follows; a loom wider than the tray is refused. The rails stand four tenths of the
@@ -315,10 +315,13 @@ bar's top face along its outer edge, hid part of the yellow from the camera (Tru
 while #835 was implemented, recorded on #835).
 
 **An access ladder's cage is a guard** (#836), so its hoops and bars are hazard yellow unless the
-model names another role, and its stiles and rungs are dark or bare metal. The cage starts a
-height above the foot, its hoops each midway between two rungs, so no hoop stands on a rung. It is
-an access ladder in every name and sentence, never a ladder alone, which is a run of technologies
-(`GLOSSARY.md`).
+model names another role, and its stiles, rungs and brackets are dark or bare metal. The cage
+starts a height above the foot, its hoops each midway between two rungs, so no hoop stands on a
+rung, and its bars run between its first hoop and its last. Where it stands off what it climbs, a
+bracket runs back to it from each stile every few rungs. In prose and as a kit part it is an
+access ladder, never a ladder alone, which `GLOSSARY.md` gives to the research ladders; the
+arithmetic that lays one out, `rf_blender.ladder_layout` and its `LADDER_` constants, and the
+names a model gives its pieces may say ladder.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

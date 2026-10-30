@@ -319,14 +319,15 @@ sheet and 16 for the normal pass.
 | `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
 |---|---:|---:|
 | before, #835 | 0.2794 | 0.5230 |
-| after, #836 | 0.2851 | 0.5305 |
+| after, #836 | 0.2854 | 0.5302 |
 
-**Both rose**, *measured*: the pixel figure by 0.0057 and the normal-pass figure by 0.0075. The
+**Both rose**, *measured*: the pixel figure by 0.0060 and the normal-pass figure by 0.0072. The
 access ladder stands between the middle drum and its neighbour from this camera, where the frame
 behind it is dark, and its yellow cage meets that dark on every hoop and bar; that this is where
 the rise comes from is *inferred*. The placing re-rolled nothing else, which is *inferred* from
 #825's streams. The mesh-overlap test on the built model agrees, *measured*: it found every pair it
-found on `main`, and no other but the access ladder's own pieces against each other.
+found on `main`, and no other but the access ladder's own pieces against each other and its
+brackets against the middle drum and, the top two, its shoulder casing.
 
 ## What the "before" says, and how far it goes
 

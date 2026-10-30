@@ -1048,23 +1048,25 @@ def cable_tray(name, points, width, rung_pitch=None, material="dark"):
 
 # ---- access (#836) -------------------------------------------------------------------------------
 
-def access_ladder(name, foot, top, facing, pitch=rf.LADDER_PITCH, cage_from=None, material="dark",
-                  hoops="hazard"):
+def access_ladder(name, foot, top, facing, pitch=rf.LADDER_PITCH, cage_from=None, standoff=0.0,
+                  material="dark", hoops="hazard"):
     """An access ladder straight up from `foot`, the middle of its base, to the height `top`,
-    facing out along `facing` from what it stands against: two stiles, a rung each `pitch`, and
-    above `cage_from` a cage of hoops and bars on the side it faces (`rf_blender.ladder_layout`).
-    Not a research ladder (GLOSSARY.md, Access ladder).
+    facing out along `facing` from what it stands against: two stiles, a rung each `pitch`, from
+    `cage_from` over the foot a cage of hoops and bars on the side it faces, and where it stands
+    `standoff` off what it is against, brackets back to it (`rf_blender.ladder_layout`). Not a
+    research ladder (GLOSSARY.md, Access ladder).
 
     THE READ IS THE RUNG'S THICKNESS, on the raised floor, and THE GAP BETWEEN RUNGS, on the cut
     floor, both checked in `rf_blender.ladder_layout`; the cage's tube is held to the raised floor
-    there and again by `pipe`. The stiles go in unchecked: their face is the raised floor.
+    there and again by `pipe`. The stiles and brackets go in unchecked: their face is the raised
+    floor.
 
     THE CAGE IS A GUARD, so its hoops and bars are hazard yellow unless `hoops` names another role
     (`models/house-style.md`, Palette); the stiles and rungs are `material`, dark or bare metal.
     The hoops and bars are drawn by `pipe`, so the footprint-edge check holds them at save.
 
     Returns the layout."""
-    d = rf.ladder_layout(name, foot, top, facing, pitch=pitch, cage_from=cage_from)
+    d = rf.ladder_layout(name, foot, top, facing, pitch=pitch, cage_from=cage_from, standoff=standoff)
     for side, s in zip("RL", d["stiles"]):
         _plate(f"{name}-stile{side}", (s["size"][0], s["size"][1], s["height"]), s["centre"], material,
                rot=(0, 0, s["yaw"]), bev=0.008)
@@ -1076,6 +1078,9 @@ def access_ladder(name, foot, top, facing, pitch=rf.LADDER_PITCH, cage_from=None
         pipe(f"{name}-hoop{k}", h, tube, hoops)
     for k, (a, b) in enumerate(d["bars"]):
         pipe(f"{name}-bar{k}", [a, b], tube, hoops)
+    for k, b in enumerate(d["brackets"]):
+        _plate(f"{name}-bracket{k}", (b["length"], rf.LADDER_STILE[0], rf.LADDER_STILE[1]), b["centre"],
+               material, rot=(0, 0, math.atan2(b["axis"][1], b["axis"][0])), bev=0.006)
     return d
 
 

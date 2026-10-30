@@ -73,8 +73,10 @@ does. Not "part" alone, which the house style also uses loosely for any piece of
 
 **Access ladder** — the kit part a person climbs: two stiles, rungs and, above a height, a cage
 (`rf_parts.access_ladder`, #836). **Not a research ladder**: "ladder" alone already names a run of
-technologies, as the **confinement ladder** below does, so call this one an access ladder and never
-just a ladder.
+technologies, as the **confinement ladder** below does, so in prose call this one an access ladder
+and never just a ladder. Its rungs are its steps, as a research ladder's are its technologies:
+name the ladder a rung is on wherever both could be meant. A *ladder* cable tray is the kind of
+tray, with rungs between its rails, and is not an access ladder either.
 
 **Socket** — the drawn fitting where a pipe connection meets a machine: a bare-metal stub running
 from the body to the footprint edge on the connection's tile, carrying one **accent** band of the

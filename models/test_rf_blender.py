@@ -533,7 +533,7 @@ def ladder_refusal(*args, **kwargs):
     return None
 
 
-_ld = rf.ladder_layout("L", (1.0, 2.0, 0.5), 2.0, (2.0, 0.0, 0.7), pitch=0.25, cage_from=1.2)
+_ld = rf.ladder_layout("L", (1.0, 2.0, 0.5), 2.0, (2.0, 0.0, 0.7), pitch=0.25, cage_from=0.7)
 _hw = rf.LADDER_WIDTH / 2
 # The facing loses its rise, and the side is square to it, level: here it faces east, so
 # its stiles stand north and south of the foot, from the foot up to the top.
@@ -546,9 +546,10 @@ assert all(_close(r["centre"][:2], (1.0, 2.0)) and abs(r["length"] - rf.LADDER_W
 # The read: the gap between rungs, the pitch less a rung's thickness.
 assert abs(_ld["gap"] - (0.25 - rf.LADDER_RUNG)) < 1e-9
 # The cage: a hoop midway between two rungs, the first such height at or over where the cage
-# starts, and then every LADDER_CAGE_EVERY rungs up to the top, so no hoop stands on a rung. Each
-# hoop runs from one stile, out round the facing side, to the other, so its ends are the stiles and
-# its middle the far point. Here: midway heights 0.625 + 0.25k; the first at or over 1.2 is 1.375.
+# starts, `cage_from` over the foot, and then every LADDER_CAGE_EVERY rungs up to the top, so no
+# hoop stands on a rung. Each hoop runs from one stile, out round the facing side, to the other, so
+# its ends are the stiles and its middle the far point. Here: midway heights 0.625 + 0.25k; the
+# first at or over 0.5 + 0.7 is 1.375.
 _cr = rf.LADDER_CAGE[0]
 assert [round(h[0][2], 9) for h in _ld["hoops"]] == [1.375, 1.875]
 assert rf.LADDER_CAGE_EVERY == 2
@@ -556,14 +557,25 @@ _h = _ld["hoops"][0]
 assert _close(_h[0], (1.0, 2 - _hw, 1.375)) and _close(_h[-1], (1.0, 2 + _hw, 1.375)), (_h[0], _h[-1])
 _far = max(_h, key=lambda p: p[0])
 assert abs(_far[0] - (1.0 + math.sqrt(_cr ** 2 - _hw ** 2) + _cr)) < 1e-3 and abs(_far[1] - 2.0) < 1e-3
-# The cage's bars run from its first hoop to the top, on the hoop.
-assert _ld["bars"] and all(abs(b[0][2] - 1.375) < 1e-9 and abs(b[1][2] - 2.0) < 1e-9 for b in _ld["bars"])
+# The cage's bars run from its first hoop to its last, on the hoop, so none ends past a hoop.
+assert _ld["bars"] and all(abs(b[0][2] - 1.375) < 1e-9 and abs(b[1][2] - 1.875) < 1e-9 for b in _ld["bars"])
 assert all(abs(math.dist(b[0][:2], (1.0 + math.sqrt(_cr ** 2 - _hw ** 2), 2.0)) - _cr) < 1e-9 for b in _ld["bars"])
 # No cage when it would start above the top; and by default it starts LADDER_CAGE_FROM up.
-assert rf.ladder_layout("L", (0, 0, 0), 1.0, (1, 0, 0), cage_from=1.5)["hoops"] == []
+assert rf.ladder_layout("L", (0, 0, 0.5), 1.5, (1, 0, 0), cage_from=1.5)["hoops"] == []
 _first = rf.ladder_layout("L", (0, 0, 0), 3.0, (1, 0, 0))["hoops"][0][0][2]
 assert rf.LADDER_CAGE_FROM <= _first < rf.LADDER_CAGE_FROM + rf.LADDER_PITCH
 assert abs((_first / rf.LADDER_PITCH) % 1 - 0.5) < 1e-9
+# A cage with a single hoop has no bars, since a bar runs between two.
+assert rf.ladder_layout("L", (0, 0, 0), 1.2, (1, 0, 0))["bars"] == []
+# No brackets unless it stands off something; given a standoff, a bracket runs from each stile back
+# against the facing by that much, at every LADDER_BRACKET_EVERY rungs, midway between two.
+assert _ld["brackets"] == []
+_br = rf.ladder_layout("L", (1.0, 2.0, 0.5), 2.0, (1, 0, 0), standoff=0.25)["brackets"]
+assert rf.LADDER_BRACKET_EVERY == 4
+assert sorted({round(b["centre"][2], 9) for b in _br}) == [0.625, 1.625]
+assert all(_close(b["centre"][:1], (1.0 - 0.125,)) and abs(b["length"] - 0.25) < 1e-9
+           and _close(b["axis"], (-1, 0, 0)) for b in _br)
+assert sorted(round(b["centre"][1], 9) for b in _br) == [round(2 - _hw, 9)] * 2 + [round(2 + _hw, 9)] * 2
 # Rungs closer than the cut floor apart are refused, naming the part, as is a rung under the raised
 # floor, a top not above the foot, and a facing straight up.
 assert "L" in (ladder_refusal("L", (0, 0, 0), 2.0, (1, 0, 0), pitch=0.1) or "")
