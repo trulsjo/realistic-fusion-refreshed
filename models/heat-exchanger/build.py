@@ -39,8 +39,8 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import (bolts, box, cable_tray, casing, cyl, dent, fan_discs, grating_deck, hbeam,  # noqa: E402,F401
-                      hose, loom, panels, pipe, rivets, seam, stream, torus, valve)
+from rf_parts import (access_ladder, bolts, box, cable_tray, casing, cyl, dent, fan_discs,  # noqa: E402,F401
+                      grating_deck, hbeam, hose, loom, panels, pipe, rivets, seam, stream, torus, valve)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -104,10 +104,12 @@ PALETTE = {
     # the hazard yellow or the cable sheaths below.
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
     # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
-    # walkway edges, each an end bar and the toe board on it (#835), and the guard rail along the
-    # open side and nowhere else -- three elements, counting each edge as one though it is two
-    # pieces and the rail as one though it is laid in lengths, none of them a panel, and never a
-    # fluid accent.
+    # walkway edges, each an end bar and the toe board on it (#835), the guard rail along the open
+    # side, and the cage of the access ladder up the middle drum (#836), and nowhere else -- four
+    # elements, counting each edge as one though it is two pieces, the rail as one though it is
+    # laid in lengths and the cage as one though it is hoops and bars, none of them a panel, and
+    # never a fluid accent. Truls judged the cage within the house style's few small elements
+    # (2026-10-30, recorded on #836).
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,
@@ -761,6 +763,19 @@ else:
     kerb = row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36)
     bolts("SlabBolts", [p for p in kerb
                         if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
+    # AN ACCESS LADDER UP THE MIDDLE DRUM TO ITS CAP (#836), from the deck, its cage yellow as a
+    # guard is. The drum's flank due east is taken: its vent hose, its gauge cluster and handwheel,
+    # the weld seam and, outboard, the cable tray. So it stands LADDER_TURN round from east towards
+    # the body's south, still on the side the camera sees once the body is turned. Its foot stands
+    # LADDER_OFF off the drum's skin, so its stiles stand clear of the ribs, of the shoulder casing,
+    # which stands 0.09 proud, and of the weld seam, which is a straight box turned off the drum's
+    # tangent and stands out from the skin on this side: at 0.15 off, a stile ran through it.
+    LADDER_TURN, LADDER_OFF = math.radians(-50), 0.25
+    mid = next(d for d in drums if d["name"] == "Mid")
+    ladder_out = (math.cos(LADDER_TURN), math.sin(LADDER_TURN), 0.0)
+    reach = mid["r"] + LADDER_OFF
+    access_ladder("DrumMidLadder", (DX + reach * ladder_out[0], mid["y"] + reach * ladder_out[1], SLAB + 0.53),
+                  mid["z0"] + mid["h"] + 0.18, ladder_out)
     for d in drums:
         # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
         # loom's wobble moves the point up to 0.03 each way, so it is set 0.05 inboard of the

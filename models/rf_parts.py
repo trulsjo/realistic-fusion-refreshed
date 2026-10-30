@@ -17,7 +17,7 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `valve`, `cable_tray` and `grating_deck` take no flags either, and name
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
 their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
@@ -272,8 +272,8 @@ def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     """A box with NO detail-floor check, for a caller that has already made the check on its own
     behalf. `hbeam` is one: a beam is checked once on its flange width, and its web and two flanges
     then go in as the parts of a feature rather than as features. `box` is another, which makes its
-    own check first, and the kit's `panels`, `fan_discs`, `valve`, `cable_tray` and `grating_deck` are
-    the rest."""
+    own check first, and the kit's `panels`, `fan_discs`, `valve`, `cable_tray`, `grating_deck` and
+    `access_ladder` are the rest."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
@@ -1044,6 +1044,39 @@ def cable_tray(name, points, width, rung_pitch=None, material="dark"):
     for k, b in enumerate(t["brackets"]):
         lay(b, f"{name}-bracket{k}")
     return t
+
+
+# ---- access (#836) -------------------------------------------------------------------------------
+
+def access_ladder(name, foot, top, facing, pitch=rf.LADDER_PITCH, cage_from=None, material="dark",
+                  hoops="hazard"):
+    """An access ladder straight up from `foot`, the middle of its base, to the height `top`,
+    facing out along `facing` from what it stands against: two stiles, a rung each `pitch`, and
+    above `cage_from` a cage of hoops and bars on the side it faces (`rf_blender.ladder_layout`).
+    Not a research ladder (GLOSSARY.md, Access ladder).
+
+    THE READ IS THE RUNG'S THICKNESS, on the raised floor, and THE GAP BETWEEN RUNGS, on the cut
+    floor, both checked in `rf_blender.ladder_layout`; the cage's tube is held to the raised floor
+    there and again by `pipe`. The stiles go in unchecked: their face is the raised floor.
+
+    THE CAGE IS A GUARD, so its hoops and bars are hazard yellow unless `hoops` names another role
+    (`models/house-style.md`, Palette); the stiles and rungs are `material`, dark or bare metal.
+    The hoops and bars are drawn by `pipe`, so the footprint-edge check holds them at save.
+
+    Returns the layout."""
+    d = rf.ladder_layout(name, foot, top, facing, pitch=pitch, cage_from=cage_from)
+    for side, s in zip("RL", d["stiles"]):
+        _plate(f"{name}-stile{side}", (s["size"][0], s["size"][1], s["height"]), s["centre"], material,
+               rot=(0, 0, s["yaw"]), bev=0.008)
+    for k, r in enumerate(d["rungs"]):
+        cyl(f"{name}-rung{k}", rf.LADDER_RUNG / 2, r["length"], r["centre"], material, rot=_facing(r["axis"]),
+            verts=12, read=rf.LADDER_RUNG)
+    tube = rf.LADDER_CAGE[1] / 2
+    for k, h in enumerate(d["hoops"]):
+        pipe(f"{name}-hoop{k}", h, tube, hoops)
+    for k, (a, b) in enumerate(d["bars"]):
+        pipe(f"{name}-bar{k}", [a, b], tube, hoops)
+    return d
 
 
 # ---- floors (#835) -------------------------------------------------------------------------------

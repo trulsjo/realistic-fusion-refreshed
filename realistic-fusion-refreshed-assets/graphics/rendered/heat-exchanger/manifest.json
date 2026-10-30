@@ -175,7 +175,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "76f2e44b2e8686bd0b2161fbd7674b9220d9032a9f0061bfbb4ed4255b4ee6de",
+  "model_sha256": "9fe41fec66e863e705bbf1636ebcca0c60416ce485ff46f15de058ece6c9fc36",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",

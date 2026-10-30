@@ -71,6 +71,11 @@ one machine at a time. **Not a socket**: a socket is drawn because a connection 
 kit part declares nothing, so nothing pipe-shaped in the kit leaves a machine where no connection
 does. Not "part" alone, which the house style also uses loosely for any piece of a model.
 
+**Access ladder** — the kit part a person climbs: two stiles, rungs and, above a height, a cage
+(`rf_parts.access_ladder`, #836). **Not a research ladder**: "ladder" alone already names a run of
+technologies, as the **confinement ladder** below does, so call this one an access ladder and never
+just a ladder.
+
 **Socket** — the drawn fitting where a pipe connection meets a machine: a bare-metal stub running
 from the body to the footprint edge on the connection's tile, carrying one **accent** band of the
 fluid it names. **A socket is a drawing and a connection is a declaration** — the prototype declares
