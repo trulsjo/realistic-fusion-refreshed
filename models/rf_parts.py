@@ -934,6 +934,49 @@ def casing(name, placements, radius, arc, height, thick=0.07, material="dark"):
         _place([o], p)
 
 
+# ---- parts that sit on a run (#833) --------------------------------------------------------------
+
+def valve(name, at, direction, radius, facing, material="metal", wheel="dark", spokes=4):
+    """An inline gate valve on a run: a body wider than the run between two flanges, a bonnet and a
+    stem out along `facing`, and a handwheel on the stem, square to it.
+
+    `at` is a point on the run and `direction` the run's direction there; `radius` is the run's,
+    and every piece is sized from it (`rf_blender.valve_layout`). The run is not cut: the body and
+    the flanges cover it. `facing` is made square to the run, so passing the way the camera looks
+    turns the wheel towards it.
+
+    THE HANDWHEEL'S RIM CARRIES THE READ, by its minor diameter on the raised floor, checked in
+    `rf_blender.valve_layout`. On a run thinner than `rf_blender.VALVE_THIN_RUN` the rim and the
+    stem are drawn at the floor rather than in proportion, so the water header's 0.13 takes one.
+    The wheel is `wheel`, dark or metal, and never an accent or a marking. It is a part
+    that could move later (`models/house-style.md`, Moving parts), so it stands clear on its stem
+    where an animation could turn it.
+
+    Returns the layout, whose `reach` and `span` say how much room the valve takes."""
+    v = rf.valve_layout(name, at, direction, radius, facing)
+    b = v["body"]
+    cyl(f"{name}-body", b["radius"], b["length"], b["centre"], material, rot=_facing(b["axis"]))
+    for k, fl in enumerate(v["flanges"]):
+        cyl(f"{name}-flange{k}", fl["radius"], fl["thickness"], fl["centre"], material,
+            rot=_facing(fl["axis"]), read=2 * fl["radius"])
+    for piece in ("bonnet", "stem"):
+        p = v[piece]
+        cyl(f"{name}-{piece}", p["radius"], p["length"], p["centre"], material, rot=_facing(p["axis"]),
+            verts=24)
+    w = v["wheel"]
+    rot = _facing(w["normal"])
+    torus(f"{name}-wheel", w["major"], w["minor"], w["centre"], wheel, rot=rot)
+    pieces = [cyl(f"{name}-hub", w["minor"] * 2, w["minor"] * 3, (0, 0, 0), wheel, verts=16,
+                  read=4 * w["minor"])]
+    for s in range(spokes):
+        a = 2 * math.pi * s / spokes
+        pieces.append(_plate(f"{name}-spoke{s}", (w["major"], 2 * w["minor"], w["minor"]),
+                             (w["major"] / 2 * math.cos(a), w["major"] / 2 * math.sin(a), 0), wheel,
+                             rot=(0, 0, a), bev=0.008))
+    _place(pieces, (w["centre"], rot))
+    return v
+
+
 def _ties(name, points, inner):
     """A dark tie round a bundle at every inner control point of `points`, `inner` off the centre."""
     for i in range(1, len(points) - 1):

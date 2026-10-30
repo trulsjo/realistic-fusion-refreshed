@@ -238,6 +238,26 @@ rust and the paint's weathering from a CC0 photograph. The texture moved the
 pixel figure by 0.0010, a fifth of what #827's first renaming moved it by, and left the normal-pass
 figure where it was, as no material can move it. On the manifold alone it moved it by 0.0002.
 
+## The valve of #833
+
+Measured 2026-10-30 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#833](https://github.com/trulsjo/realistic-fusion-refreshed/issues/833) put the kit's
+first inline valve on each of the exchanger's two drum-to-drum steam runs, at the run's sag. The
+"before" is #805's sheet, taken again from the same command on `main` the same day. Blender 5.2.0,
+64 samples for the sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #805 | 0.2745 | 0.5180 |
+| after, #833 | 0.2747 | 0.5188 |
+
+**Both rose a little**, *measured*: the pixel figure by 0.0002, well inside what a re-roll moves
+it ([The re-roll of #827](#the-re-roll-of-827)), and the normal-pass figure by 0.0008. Two valves
+are a small share of a fifteen-tile sheet. The placing re-rolled nothing else, which is *inferred*
+from #825's streams, since every part draws from a stream of its own name. The mesh-overlap test
+on the built model agrees, *measured*: it found every pair it found on `main`, and no other but
+the valves' own pieces and the hoses they sit on.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level
