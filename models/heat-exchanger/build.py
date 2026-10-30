@@ -5,10 +5,9 @@
 Reads geometry.json beside this file for the collision box and the connections, so the sockets
 land where the prototype declares them, and stamps the scene with that file's hash so render.py
 can refuse a model whose geometry has moved on. Every shape is a primitive or a curve: no mesh is
-imported (ADR 0030). The materials are procedural but for one CC0 image texture, the rust photograph
-under the manifold's broad rust (ADR 0043, #805), kept beside this file with its record in
-textures.json. `cube` builds a 1x1x1
-calibration cube for measuring the camera. Written to heat-exchanger.blend beside this file
+imported (ADR 0030). The materials are procedural but for one CC0 image texture, a rust
+photograph under the manifold's broad rust and the paint's weathering (ADR 0043, #805), kept
+beside this file with its record in textures.json. `cube` builds a 1x1x1 calibration cube for measuring the camera. Written to heat-exchanger.blend beside this file
 unless a path is given.
 
 Drafts 2 and 3 follow Truls's reactions of 2026-09-04: imperfect drums (rib bands, weld seam,
@@ -126,6 +125,14 @@ VERDIGRIS = (0.14, 0.28, 0.20)
 RUST_TEXTURE = "rust_coarse_01_diff_1k.jpg"
 RUST_TEXTURE_MEAN = (0.129, 0.0436, 0.0152)
 RUST_TEXTURE_TILES = 2.0               # one repeat of the image: it is about 2.2 m of steel
+# AND THE PAINT IS WEATHERED BY THE SAME PHOTOGRAPH (Truls, #805): on the manifold alone it moved
+# about 550 pixels of the sheet, a strip under the energy band, which is too little to judge a
+# texture by. The paint takes the photograph's value and not its hue -- its luminance over its own
+# mean, measured off the file (2026-10-30) -- so a panel keeps its colour on average and gains the
+# mottling of old paint. PAINT_GRAIN is how much of that it takes: at 1 the photograph's own spread,
+# a twentieth of it under half the mean and a twentieth over 1.8 times it.
+RUST_TEXTURE_LUMA = 0.0597
+PAINT_GRAIN = 1.0
 
 
 def mat(name, glow=False, corrode=False):
@@ -207,6 +214,21 @@ def mat(name, glow=False, corrode=False):
                 nt.links.new(r.outputs["Color"], mx.inputs["Factor"])
                 nt.links.new(out, mx.inputs["A"])
                 out = mx.outputs["Result"]
+        if name == "paint":
+            luma = nt.nodes.new("ShaderNodeRGBToBW")
+            nt.links.new(rf_parts.texture(nt, HERE, RUST_TEXTURE, RUST_TEXTURE_TILES), luma.inputs[0])
+            grain = nt.nodes.new("ShaderNodeMath")
+            grain.operation = "MULTIPLY_ADD"            # 1 on average, whatever PAINT_GRAIN is
+            grain.inputs[1].default_value = PAINT_GRAIN / RUST_TEXTURE_LUMA
+            grain.inputs[2].default_value = 1.0 - PAINT_GRAIN
+            nt.links.new(luma.outputs["Val"], grain.inputs[0])
+            weathered = nt.nodes.new("ShaderNodeMix")
+            weathered.data_type = "RGBA"
+            weathered.blend_type = "MULTIPLY"
+            weathered.inputs["Factor"].default_value = 1.0
+            nt.links.new(out, weathered.inputs["A"])
+            nt.links.new(grain.outputs["Value"], weathered.inputs["B"])
+            out = weathered.outputs["Result"]
         nt.links.new(out, b.inputs["Base Color"])
         rmix = nt.nodes.new("ShaderNodeMath")
         rmix.operation = "MULTIPLY_ADD"

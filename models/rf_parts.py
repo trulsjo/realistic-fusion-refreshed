@@ -218,8 +218,12 @@ def texture(nt, model_dir, filename, tiles=2.0, gain=(1.0, 1.0, 1.0)):
     """
     import os
     rf.texture_record(model_dir, filename)
-    img = bpy.data.images.load(os.path.join(model_dir, filename), check_existing=True)
-    img.filepath = "//" + filename
+    # Found by its stored path, not by `load`'s check_existing: that matches the absolute path it is
+    # handed, which the first call's image no longer carries, so a second call loaded it again.
+    img = next((i for i in bpy.data.images if i.filepath == "//" + filename), None)
+    if img is None:
+        img = bpy.data.images.load(os.path.join(model_dir, filename))
+        img.filepath = "//" + filename
     geom = nt.nodes.new("ShaderNodeNewGeometry")
     scaled = nt.nodes.new("ShaderNodeVectorMath")
     scaled.operation = "SCALE"
