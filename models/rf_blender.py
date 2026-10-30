@@ -761,6 +761,81 @@ def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", open
     return {"bars": bars, "toe_boards": toes, "gap": gap, "pitch": step}
 
 
+# THE ACCESS LADDER'S PIECES (#836): stiles LADDER_WIDTH apart between centres, each LADDER_STILE
+# (width across the access ladder, depth along its facing); rungs LADDER_RUNG thick at a pitch; a cage
+# LADDER_CAGE (hoop radius, the diameter of a hoop's and a bar's tube) from LADDER_CAGE_FROM above
+# the foot, a hoop every LADDER_CAGE_EVERY rungs, with a bar at each of LADDER_CAGE_BARS, angles
+# from the facing.
+LADDER_WIDTH = 0.4
+LADDER_STILE = (0.06, 0.04)
+LADDER_RUNG = 0.06
+LADDER_PITCH = 0.25
+LADDER_CAGE = (0.3, 0.06)
+LADDER_CAGE_FROM = 1.0
+LADDER_CAGE_EVERY = 2
+LADDER_CAGE_BARS = (-math.pi / 2, 0.0, math.pi / 2)
+LADDER_HOOP_POINTS = 13
+
+
+def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG, cage_from=None):
+    """Where an access ladder's pieces go: straight up from `foot`, the middle of its base between
+    the stiles, to the height `top`, facing out along `facing` from what it stands against.
+
+    The facing loses any rise; one straight up is refused, since it leaves no side to face. The
+    stiles stand either side, square to it. A rung stands at each `pitch` above the foot up to the
+    top, from stile to stile. From `cage_from`, LADDER_CAGE_FROM over the foot unless it is given,
+    a hoop stands midway between two rungs, the first such height at or over it and then every
+    LADDER_CAGE_EVERY rungs up to the top, so no hoop stands on a rung whatever the pitch: an arc
+    from one stile out round the facing side to the other, on a circle through both stiles. Bars on
+    that circle run from the first hoop to the top. No hoop stands above the top, so an access
+    ladder shorter than its cage height has none.
+
+    THE READ IS THE RUNG'S THICKNESS, on the raised floor, and THE GAP BETWEEN RUNGS, on the cut
+    floor, since an evenly broken run of bars is what tells an access ladder from a plate; a hoop's and a
+    bar's tube is held to the raised floor too. Returns the facing and side, the stiles, the rungs,
+    each hoop as its points from the first stile to the second, each bar as its bottom and top,
+    and the gap."""
+    f = _unit((facing[0], facing[1], 0.0))
+    if f is None:
+        sys.exit(f"access ladder: {name} faces {tuple(facing)}, straight up or nowhere; an access ladder faces out "
+                 f"level from what it stands against.")
+    if top <= foot[2] + 1e-9:
+        sys.exit(f"access ladder: {name}'s top, {top:g}, is not above its foot, {foot[2]:g}.")
+    check_detail(f"{name} (rung)", rung)
+    check_detail(f"{name} (gap between rungs)", pitch - rung, cut=True)
+    radius, tube = LADDER_CAGE
+    check_detail(f"{name} (cage)", tube)
+    side = (-f[1], f[0], 0.0)
+    hw = LADDER_WIDTH / 2
+
+    def at(along, across, z):
+        return (foot[0] + along * f[0] + across * side[0], foot[1] + along * f[1] + across * side[1], z)
+
+    height = top - foot[2]
+    stiles = [{"centre": at(0.0, s * hw, foot[2] + height / 2), "height": height,
+               "size": (LADDER_STILE[1], LADDER_STILE[0]), "yaw": math.atan2(f[1], f[0])} for s in (-1, 1)]
+    n = int(height / pitch + 1e-9)
+    rungs = [{"centre": at(0.0, 0.0, foot[2] + k * pitch), "length": LADDER_WIDTH, "axis": side}
+             for k in range(1, n + 1)]
+
+    base = foot[2] + LADDER_CAGE_FROM if cage_from is None else cage_from
+    d = math.sqrt(radius ** 2 - hw ** 2)
+    end = math.pi - math.atan2(hw, d)
+    hoops = []
+    z = foot[2] + (math.ceil((base - foot[2]) / pitch - 0.5 - 1e-9) + 0.5) * pitch
+    while z <= top + 1e-9:
+        hoops.append([at(d + radius * math.cos(t), radius * math.sin(t), z)
+                      for t in (-end + 2 * end * k / (LADDER_HOOP_POINTS - 1) for k in range(LADDER_HOOP_POINTS))])
+        z += LADDER_CAGE_EVERY * pitch
+    bars = []
+    if hoops:
+        for t in LADDER_CAGE_BARS:
+            u, v = d + radius * math.cos(t), radius * math.sin(t)
+            bars.append((at(u, v, hoops[0][0][2]), at(u, v, top)))
+    return {"facing": f, "side": side, "stiles": stiles, "rungs": rungs, "hoops": hoops, "bars": bars,
+            "gap": pitch - rung}
+
+
 class Stream(random.Random):
     """One part's own random stream: `random.Random` with the one draw the models make most."""
 

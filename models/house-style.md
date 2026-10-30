@@ -286,6 +286,7 @@ be lenient by up to the spacing of a part's points.
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 | `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |
+| `access_ladder` | a foot, a top height and the way it faces | the rung's thickness, and the cage's tube, on the raised floor; the gap between rungs, on the cut floor | #836 |
 
 **A valve sits on a run and covers it** (#833). The run is not cut: the valve's body and flanges
 are wider than the tube and hide it. Every piece is sized from the run's radius, except that the
@@ -312,6 +313,12 @@ The marking is never a body, so a deck spends its machine's few small yellow ele
 edges the caller names. The toe board took the marking because a dark one, standing on the marked
 bar's top face along its outer edge, hid part of the yellow from the camera (Truls, 2026-10-30,
 while #835 was implemented, recorded on #835).
+
+**An access ladder's cage is a guard** (#836), so its hoops and bars are hazard yellow unless the
+model names another role, and its stiles and rungs are dark or bare metal. The cage starts a
+height above the foot, its hoops each midway between two rungs, so no hoop stands on a rung. It is
+an access ladder in every name and sentence, never a ladder alone, which is a run of technologies
+(`GLOSSARY.md`).
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

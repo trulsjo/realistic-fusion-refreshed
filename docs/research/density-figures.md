@@ -308,6 +308,26 @@ agrees, *measured*: every pair a slat made on `main` the bar in its place makes,
 and its seam's, which the cabinet's opening removes, and the only new pairs are each toe board
 against its end bar.
 
+## The access ladder of #836
+
+Measured 2026-10-30 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#836](https://github.com/trulsjo/realistic-fusion-refreshed/issues/836) put the kit's access
+ladder up the exchanger's middle drum to its cap, its cage in hazard yellow. The "before" is #835's
+sheet, taken again from the same command on `main` the same day. Blender 5.2.0, 64 samples for the
+sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #835 | 0.2794 | 0.5230 |
+| after, #836 | 0.2851 | 0.5305 |
+
+**Both rose**, *measured*: the pixel figure by 0.0057 and the normal-pass figure by 0.0075. The
+access ladder stands between the middle drum and its neighbour from this camera, where the frame
+behind it is dark, and its yellow cage meets that dark on every hoop and bar; that this is where
+the rise comes from is *inferred*. The placing re-rolled nothing else, which is *inferred* from
+#825's streams. The mesh-overlap test on the built model agrees, *measured*: it found every pair it
+found on `main`, and no other but the access ladder's own pieces against each other.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

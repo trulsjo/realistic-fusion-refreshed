@@ -519,6 +519,59 @@ assert "bar" in (deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, pitch=0.25, bar=(0.0
 assert "D" in (deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, open_edges=("+Z",)) or "")
 assert "D" in (deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, along="Z") or "")
 
+# ---- the access ladder (#836) ----
+#
+# An access ladder straight up from a foot to a top height, facing out from what it stands against: two
+# stiles, rungs at a pitch, and above a height a cage of hoops and bars on the side it faces.
+
+
+def ladder_refusal(*args, **kwargs):
+    try:
+        rf.ladder_layout(*args, **kwargs)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+_ld = rf.ladder_layout("L", (1.0, 2.0, 0.5), 2.0, (2.0, 0.0, 0.7), pitch=0.25, cage_from=1.2)
+_hw = rf.LADDER_WIDTH / 2
+# The facing loses its rise, and the side is square to it, level: here it faces east, so
+# its stiles stand north and south of the foot, from the foot up to the top.
+assert _close(_ld["facing"], (1, 0, 0)) and _close(_ld["side"], (0, 1, 0))
+assert sorted(round(s["centre"][1], 9) for s in _ld["stiles"]) == [round(2 - _hw, 9), round(2 + _hw, 9)]
+assert all(abs(s["centre"][2] - 1.25) < 1e-9 and abs(s["height"] - 1.5) < 1e-9 for s in _ld["stiles"])
+# A rung each pitch above the foot, up to the top and no further, from stile to stile.
+assert [round(r["centre"][2], 9) for r in _ld["rungs"]] == [0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+assert all(_close(r["centre"][:2], (1.0, 2.0)) and abs(r["length"] - rf.LADDER_WIDTH) < 1e-9 for r in _ld["rungs"])
+# The read: the gap between rungs, the pitch less a rung's thickness.
+assert abs(_ld["gap"] - (0.25 - rf.LADDER_RUNG)) < 1e-9
+# The cage: a hoop midway between two rungs, the first such height at or over where the cage
+# starts, and then every LADDER_CAGE_EVERY rungs up to the top, so no hoop stands on a rung. Each
+# hoop runs from one stile, out round the facing side, to the other, so its ends are the stiles and
+# its middle the far point. Here: midway heights 0.625 + 0.25k; the first at or over 1.2 is 1.375.
+_cr = rf.LADDER_CAGE[0]
+assert [round(h[0][2], 9) for h in _ld["hoops"]] == [1.375, 1.875]
+assert rf.LADDER_CAGE_EVERY == 2
+_h = _ld["hoops"][0]
+assert _close(_h[0], (1.0, 2 - _hw, 1.375)) and _close(_h[-1], (1.0, 2 + _hw, 1.375)), (_h[0], _h[-1])
+_far = max(_h, key=lambda p: p[0])
+assert abs(_far[0] - (1.0 + math.sqrt(_cr ** 2 - _hw ** 2) + _cr)) < 1e-3 and abs(_far[1] - 2.0) < 1e-3
+# The cage's bars run from its first hoop to the top, on the hoop.
+assert _ld["bars"] and all(abs(b[0][2] - 1.375) < 1e-9 and abs(b[1][2] - 2.0) < 1e-9 for b in _ld["bars"])
+assert all(abs(math.dist(b[0][:2], (1.0 + math.sqrt(_cr ** 2 - _hw ** 2), 2.0)) - _cr) < 1e-9 for b in _ld["bars"])
+# No cage when it would start above the top; and by default it starts LADDER_CAGE_FROM up.
+assert rf.ladder_layout("L", (0, 0, 0), 1.0, (1, 0, 0), cage_from=1.5)["hoops"] == []
+_first = rf.ladder_layout("L", (0, 0, 0), 3.0, (1, 0, 0))["hoops"][0][0][2]
+assert rf.LADDER_CAGE_FROM <= _first < rf.LADDER_CAGE_FROM + rf.LADDER_PITCH
+assert abs((_first / rf.LADDER_PITCH) % 1 - 0.5) < 1e-9
+# Rungs closer than the cut floor apart are refused, naming the part, as is a rung under the raised
+# floor, a top not above the foot, and a facing straight up.
+assert "L" in (ladder_refusal("L", (0, 0, 0), 2.0, (1, 0, 0), pitch=0.1) or "")
+assert ladder_refusal("L", (0, 0, 0), 2.0, (1, 0, 0), pitch=0.12) is None
+assert "rung" in (ladder_refusal("L", (0, 0, 0), 2.0, (1, 0, 0), rung=0.05) or "")
+assert "L" in (ladder_refusal("L", (0, 0, 1), 1.0, (1, 0, 0)) or "")
+assert "L" in (ladder_refusal("L", (0, 0, 0), 2.0, (0, 0, 1)) or "")
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,

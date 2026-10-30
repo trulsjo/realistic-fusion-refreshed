@@ -414,3 +414,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   shorter than a bar is wide left out; and the gap between bars and the bar's width refused under
   their floors, and an edge or a bar direction that is not one refused. It renders nothing, so it
   cannot see whether a deck reads.
+- 2026-10-30, #836: `models/test_rf_blender.py` also pins `rf_blender.ladder_layout`: an access
+  ladder's facing made level, its stiles either side of the foot from the foot to the top, a rung
+  each pitch up to the top, its cage's hoops each midway between two rungs from where the cage
+  starts, each an arc from one stile out round the facing side to the other, its bars on the hoops'
+  circle, no cage above the top; and the gap between rungs and the rung refused under their
+  floors, as are a top not above the foot and a facing straight up. It renders nothing, so it
+  cannot see whether an access ladder reads.
