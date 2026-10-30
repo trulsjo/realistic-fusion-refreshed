@@ -730,7 +730,8 @@ def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", open
 
     bar_z = z - bd / 2
     bars = []
-    # A bar stops at a nosing bar's inner face, so the two never share a face.
+    # A bar stops at a nosing bar's inner face, so the two meet end to end and no face of one lies
+    # in a face of the other.
     lo = -su / 2 + (bw if f"-{'XY'[iu]}" in marked_edges else 0.0)
     hi = su / 2 - (bw if f"+{'XY'[iu]}" in marked_edges else 0.0)
     for k in range(n):
