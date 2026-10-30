@@ -792,7 +792,8 @@ def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG,
     that circle run from the first hoop to the last, so none ends in the air; a cage of one hoop
     has none. No hoop stands above the top, so an access ladder shorter than its cage height has
     none. Where it stands `standoff` off what it is against, a bracket runs back that far from each
-    stile, midway between two rungs from the first, every LADDER_BRACKET_EVERY rungs.
+    stile, the first midway between the foot and the first rung, then every LADDER_BRACKET_EVERY
+    rungs, midway between two.
 
     THE READ IS THE RUNG'S THICKNESS, on the raised floor, and THE GAP BETWEEN RUNGS, on the cut
     floor, since an evenly broken run of bars is what tells an access ladder from a plate; a hoop's

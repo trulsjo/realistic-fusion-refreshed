@@ -420,6 +420,5 @@ One line for each change to a gate, newest last, with its date and its ticket.
   starts, each an arc from one stile out round the facing side to the other, its bars on the hoops'
   circle from the first hoop to the last and none with one hoop, no cage above the top, and a
   bracket back from each stile every few rungs where it stands off; and the gap between rungs and
-  the rung refused under their
-  floors, as are a top not above the foot and a facing straight up. It renders nothing, so it
+  the rung refused under their floors, as are a top not above the foot and a facing straight up. It renders nothing, so it
   cannot see whether an access ladder reads.
