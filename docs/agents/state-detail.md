@@ -412,4 +412,5 @@ One line for each change to a gate, newest last, with its date and its ticket.
   bars, and a nosing bar across them that the bars stop at; a toe board on each open edge, marked
   on a walkway edge; an opening cutting only the bars and toe boards it crosses, and a piece
   shorter than a bar is wide left out; and the gap between bars and the bar's width refused under
-  their floors, and an edge or a bar direction that is not one refused. It renders nothing, so it cannot see whether a deck reads.
+  their floors, and an edge or a bar direction that is not one refused. It renders nothing, so it
+  cannot see whether a deck reads.
