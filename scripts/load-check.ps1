@@ -249,7 +249,8 @@
 
 .PARAMETER With
     Bundled mods to enable, e.g. -With space-age. Dependencies are pulled in automatically --
-    space-age requires elevated-rails and quality, so naming it alone is enough. Unknown names
+    space-age requires elevated-rails and recycler and recommends quality (`+`), which the
+    harness follows as the game does, so naming it alone is enough. Unknown names
     are rejected rather than silently ignored, because a typo would otherwise produce a base-only
     run reported as an expansion pass. Used to discharge ADR 0003's obligation.
 
