@@ -284,6 +284,7 @@ be lenient by up to the spacing of a part's points.
 | `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
+| `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 
 **A valve sits on a run and covers it** (#833). The run is not cut: the valve's body and flanges
 are wider than the tube and hide it. Every piece is sized from the run's radius, except that the
@@ -294,6 +295,12 @@ valve fits the water header's 0.13 with a chunkier wheel (Truls, 2026-10-30, whi
 implemented). Its body and flanges are held to the footprint edge as a run is. Its handwheel faces a
 way the caller gives, made square to the run, so a model passes the way to the camera. The wheel is
 a part that could move later (Moving parts, below), so it stands clear on its stem.
+
+**A cable tray is a ladder a loom lies in** (#834): two side rails with rungs between them, in
+straight lengths between the points it is given, mitred at a bend, and resting on a bracket at each
+point. The points are its bed, the rungs' top face, and `rf_blender.tray_lie` gives the points a loom
+lying on it follows; a loom wider than the tray is refused. The rails stand four tenths of the
+tray's width tall, so a tray narrower than 0.15 is refused on its rails.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes
@@ -695,11 +702,13 @@ socket, but neither drop reaches the edge today, so both pass because they stop 
   refused too.
 - **A `rf_parts.valve`'s body and flanges are checked** at save as a run is, on the flanges'
   radius (#833).
-- **Nothing else is checked.** A `box` or a horizontal `cyl` is not a run, and a cable tray is
-  likely to be built from one. A kit part that is pipe-shaped and not built by `pipe` hands its
-  span to the same check at save, as `valve` does, or calls `check_edge` itself in the declared
-  frame. A valve's bonnet, stem and wheel are not held. The middle of a run is not read either: a
-  tube that bows out past an edge and comes back passes.
+- **A `rf_parts.cable_tray`'s bed is checked** at save as a run is, on half the tray's outer
+  width (#834).
+- **Nothing else is checked.** A `box` or a horizontal `cyl` is not a run. A kit part that is
+  pipe-shaped and not built by `pipe` hands its span to the same check at save, as `valve` and
+  `cable_tray` do, or calls `check_edge` itself in the declared frame. A valve's bonnet, stem and
+  wheel are not held. The middle of a run is not read either: a tube that bows out past an edge and
+  comes back passes.
 
 ## Camera, light, output
 

@@ -398,3 +398,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   rim and stem held at the raised floor on a thin run, and a facing within about 11.5° of the run
   refused. It renders nothing, so it cannot see whether a valve reads, and it does not hold the
   body and flanges to the footprint edge, which `models/rf_parts.py` hands to the save-time check.
+- 2026-10-30, #834: `models/test_rf_blender.py` also pins `rf_blender.tray_layout`: a cable
+  tray's rails standing either side of its bed from the rungs' underside, mitred at a bend, its
+  rungs spaced along each straight length as a row is and restarted on the next, a bracket under
+  each point with the end ones moved in, the gap between rungs and the rail's height refused under
+  their floors, a length straight up refused, and the run the edge check reads, which it refuses
+  out of an undeclared east tile and passes along the north edge. It also pins
+  `rf_blender.tray_lie`, which lays a loom on the bed and refuses one wider than the tray. It
+  renders nothing, so it cannot see whether a tray reads.

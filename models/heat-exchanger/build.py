@@ -39,8 +39,8 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import (bolts, box, casing, cyl, dent, fan_discs, hbeam, hose, loom, panels,  # noqa: E402,F401
-                      pipe, rivets, seam, stream, torus, valve)
+from rf_parts import (bolts, box, cable_tray, casing, cyl, dent, fan_discs, hbeam, hose, loom,  # noqa: E402,F401
+                      panels, pipe, rivets, seam, stream, torus, valve)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -647,72 +647,66 @@ else:
                               (flank, d["vy"] - 0.3, d["z0"] + d["h"] * 0.4),
                               (flank, d["vy"] - 0.3, SLAB + 0.53)],
              0.075, band=(1.3, 0.42), wobble=0.05)
-    # A LOOM FROM THE CABINET ALONG THE TOP OF THE EAST RAIL, the open side the camera looks down
-    # on once the body is turned, with a drop from it to each drum's gauges. Slung under the rail
-    # it hid behind the frame. It lies on the rail rather than sagging -- a sag would pass through
-    # the beam -- and wanders a little across it between the posts, which is what keeps it a loom
-    # and not a fourth rail.
+    # A CABLE TRAY ALONG THE TOP OF THE EAST RAIL (#834), the open side the camera looks down on
+    # once the body is turned, and the loom from the cabinet lying in it, with a drop from it to
+    # each drum's gauges. The loom used to lie on the rail's flange itself; in the tray it is
+    # carried the way a plant carries one, and the tray's ladder is a detail of its own.
     #
-    # IT STEPS OUT ROUND THE STEAM OUTLET, whose rings reach 0.285 from the hose's axis. With the
-    # descent at 1.80 that was 0.31 inboard of the rail line, and on the rail line the loom passed
-    # through them (#824's pre-PR review). Since #825 moved it to 1.52 the step is no longer what
-    # keeps the two apart, and it is kept as it was.
-    # JOG_X is where the loom's axis passes the outlet, set ABSOLUTELY rather than off the rail:
-    # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
-    # collision box. Here, by the arithmetic, that edge is 0.004 inside it. Its inner edge stood
-    # 0.003 clear of the rings' nominal reach with the descent at 1.80, and stands 0.283 clear of
-    # it at 1.52, about 0.21 with the descent's bow, so the rings no longer bound it. Under #824
-    # the cables' margin to the rings moved with every change before the loom, since every draw
-    # came from one stream in build order: it was 0.006, then 0.016, then 0.013, and the overlap
-    # test found no ring touched on any of the three. The loom's winding is drawn from the loom's
-    # own stream since #825.
+    # THE TRAY STANDS ON THE RAIL AS THE RAIL WAS BUILT. `hbeam` shifts and tilts every beam a
+    # little, so the rail's top is not at one height: `on_rail` reads it off the top flange, and the
+    # tray's brackets rest on it there. A bracket stands at each end and between each two post
+    # lines, never on one, where a cross rail's own jitter and tilt can lift its top 0.03 over the
+    # rail's (#825); the tray's rungs stand a bracket's height clear of that.
     #
-    # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
-    # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
-    # passed through the rail and the conduit, and the last through a post and the guard rail too.
-    # The last goes down at END_Y, between the deck's last two slats and past the north gauges, and
-    # the first climbs off the cabinet inboard of the conduit before it steps onto the rail.
+    # TRAY_X IS SET ABSOLUTELY rather than off the rail, which is jittered: the tray's outer rail
+    # stands 0.015 inside the collision box by the arithmetic. Its inner rail's outer face, at 1.965,
+    # stands about 0.09 clear of the steam outlet's rings, which reach 0.285 from the descent's axis
+    # at 1.52 and about 0.07 further with its bow (measured on the built model under #825). The loom
+    # no longer steps out round the outlet: the tray runs straight past it.
     #
-    # IT LIES ON THE RAIL AS THE RAIL WAS BUILT. `hbeam` shifts and tilts every beam a little, so
-    # the rail's top is not at one height: `on_rail` reads it off the top flange where the loom
-    # crosses, and the loom rests on it there. It carries no ties: a tie round a loom lying on a
-    # flange passes through the flange.
+    # EVERY DROP LEAVES THE TRAY INBOARD, at DROP_X, which clears the rail's flange, the conduit and
+    # its clamps under it, and the bays' rivets. The main loom leaves by the tray's open north end
+    # and goes down at END_Y, between the deck's last two slats and past the north gauges, and comes
+    # in by its open south end from the cabinet, climbing off it inboard of the conduit. Each gauge
+    # loom climbs over the tray's inner rail on its way out. No loom carries ties: a tie round a
+    # loom lying in a tray passes through the rungs.
     LOOM_HALF = rf.loom_spread(3, 0.035) + 0.035         # the bundle's half-width
-    JOG_X, DROP_X = HALF_W - LOOM_HALF - 0.004, EX - 0.43
+    GAUGE_HALF = rf.loom_spread(2, 0.035) + 0.035
+    TRAY_W, TRAY_X, DROP_X = 0.22, HALF_W - 0.15, EX - 0.43
     END_Y = HALF_L - 0.73
-    # Resting on the rail, with air for the cross rails: 0.05, since a cross rail's own jitter and
-    # tilt can lift its top 0.03 over the rail's where the loom crosses it (#825).
-    LOOM_R = LOOM_HALF + 0.05
     from mathutils import Vector
     top = bpy.data.objects["RailE-f1"]
     bpy.context.view_layer.update()
 
-    def on_rail(y, dx=-0.02, x=None):
-        """The point resting on the rail's top flange at body y, `dx` across from its centreline,
-        or at `x` exactly when it is given."""
+    def on_rail(y):
+        """The point on the rail's top flange at body y, at TRAY_X."""
         m = top.matrix_world
         ly = (y - m[1][3] - m[1][2] * 0.5) / m[1][1]
-        rx, _, z = m @ Vector((0.0, ly, 0.5))
-        return (rx + dx if x is None else x, y, z + LOOM_R)
+        _, _, z = m @ Vector((0.0, ly, 0.5))
+        return (TRAY_X, y, z)
 
-    LOOM_Z = on_rail(0)[2]
-    #
-    # EACH SPAN'S WANDER IS DRAWN FROM A STREAM OF ITS OWN, named for the post line the span starts
-    # at, as Loom-2.32 (#827). Drawn from the loom's own stream, once a span, a span added to the
-    # rail turned every wander after it and the winding `loom` draws after them; the winding is
-    # all that stream carries now.
     clamps = [(p, y) for p, y in posts.items() if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
-    lie = []
-    for (p, a), (_, b) in zip(clamps, clamps[1:]):
-        if a < OUTLET_Y < b:
-            lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, x=JOG_X),
-                    on_rail(OUTLET_Y + 0.5)]
-        else:
-            lie += [on_rail(a), on_rail((a + b) / 2, dx=stream(f"Loom{p}").jitter(-0.02, 0.03))]
     cab_top, cab_n = cpos[2] + CAB[2] / 2, cpos[1] + CAB[1] / 2
+    # It runs from just past the cabinet to past the north drum's gauges, so each gauge loom
+    # leaves from inside it.
+    TRAY_S, TRAY_N = cab_n + 0.5, max(clamps[-1][1] + 0.3, max(d["gy"] for d in drums) + 0.35)
+    mids = [(a + b) / 2 for a, b in zip(post_ys, post_ys[1:])]
+    held = [TRAY_S] + [y for y in mids if TRAY_S < y < TRAY_N] + [TRAY_N]
+    lift = rf.TRAY_BRACKET[1] + rf.TRAY_RUNG[1]
+    tray = cable_tray("CableTray", [(x, y, z + lift) for x, y, z in map(on_rail, held)], TRAY_W)
+    lie = rf.tray_lie(tray, LOOM_HALF)
+    LOOM_Z = lie[0][2]
+    RAIL_TOP = tray["bed"][0][2] - rf.TRAY_RUNG[1] + tray["rail_h"]
+
+    def in_tray(y, half):
+        """The point a loom of half-width `half` follows lying in the tray at body y."""
+        (ax, ay, az), (bx, by, bz) = tray["bed"][0], tray["bed"][-1]
+        t = (y - ay) / (by - ay)
+        return (TRAY_X, y, az + (bz - az) * t + half + rf.TRAY_CLEAR)
+
     loom("Loom", [(DROP_X + 0.15, cpos[1], cab_top + 0.02), (DROP_X + 0.1, cpos[1] + 0.3, LOOM_Z),
-                  (DROP_X + 0.2, cab_n + 0.1, LOOM_Z + 0.06), on_rail(cab_n + 0.5)]
-         + lie + [on_rail(clamps[-1][1]), (DROP_X, END_Y - 0.5, LOOM_Z + 0.04),
+                  (DROP_X + 0.2, cab_n + 0.05, LOOM_Z + 0.04), (TRAY_X, TRAY_S - 0.25, lie[0][2])]
+         + lie + [(TRAY_X, TRAY_N + 0.15, lie[-1][2]), (DROP_X, END_Y - 0.3, LOOM_Z + 0.04),
                   (DROP_X, END_Y, SLAB + 1.2), (DROP_X, END_Y, SLAB + 0.02)], ties=False)
     # -- kit parts: inset panels (#802). Each on a face the camera sees once the body is turned.
     for p, centre, size, yaw in bays:
@@ -752,7 +746,12 @@ else:
     bolts("SlabBolts", [p for p in kerb
                         if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
     for d in drums:
-        loom(f"GaugeLoom{d['name']}", [on_rail(d["gy"] + 0.1),
+        # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
+        # loom's wobble moves the point up to 0.03 each way, so it is set well inboard of the rail
+        # and above it, clear of the rail's top and of the main loom.
+        over = TRAY_X - TRAY_W / 2 - rf.TRAY_RAIL_T - 0.05
+        loom(f"GaugeLoom{d['name']}", [in_tray(d["gy"] + 0.1, GAUGE_HALF),
+                               (over, d["gy"] + 0.08, RAIL_TOP + GAUGE_HALF + 0.12),
                                (DROP_X, d["gy"] + 0.05, LOOM_Z + 0.04),
                                (DROP_X, d["gy"], SLAB + 1.4),
                                (d["gx"] + 0.04, d["gy"], SLAB + 1.13)],
