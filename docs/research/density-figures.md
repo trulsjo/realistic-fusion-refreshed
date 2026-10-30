@@ -281,6 +281,28 @@ did not are the tray's rails, rungs and brackets against each other and against 
 on, the gauge looms against their own ties, and the gauge looms' cables against the main loom's,
 where they branch from it, as on `main`.
 
+## The grating deck of #835
+
+Measured 2026-10-30 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#835](https://github.com/trulsjo/realistic-fusion-refreshed/issues/835) rebuilt the
+exchanger's deck as the kit's grating deck: the same thirty bars where the hand-placed slats stood,
+an opening cut round the steam outlet's descent and the cabinet, and a toe board on each end, in
+hazard yellow with the end's marked bar. The "before" is #834's sheet, taken again from the same
+command on `main` the same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #834 | 0.2809 | 0.5228 |
+| after, #835 | 0.2794 | 0.5230 |
+
+**The pixel figure fell by 0.0015 and the normal-pass figure rose by 0.0002**, *measured*. Most of
+the deck stands behind the drums from this camera, and about a thousand pixels of the sheet
+changed. With dark toe boards first, the pixel figure was 0.2776, *measured* the same day: the dark
+board stood on the yellow bar's outer face and hid part of it. The placing re-rolled nothing else,
+which is *inferred* from #825's streams. The mesh-overlap test on the built model agrees,
+*measured*: every pair a slat made on `main` the bar in its place makes, but the cabinet's, which
+its opening removes, and the only new pairs are each toe board against its end bar.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

@@ -449,6 +449,73 @@ _along = rf.tray_layout("T", [(-6.0, 2.2, 1.0), (6.0, 2.2, 1.0)], 0.2)
 assert _along["run"][0][0][1] + _along["run"][1] > 2.25
 assert edge_refusal(*_along["run"]) is None
 
+# ---- the grating deck (#835) ----
+#
+# A deck over a rectangle, its top face at z: bars at a pitch with the edge bars flush to the edge,
+# cut round each opening, a toe board on each open edge and a marking on each walkway edge.
+
+
+def deck_refusal(*args, **kwargs):
+    try:
+        rf.deck_layout(*args, **kwargs)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+def _spans(pieces, k):
+    return sorted((round(p["centre"][k] - p["size"][k] / 2, 9), round(p["centre"][k] + p["size"][k] / 2, 9))
+                  for p in pieces)
+
+
+_dk = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25)
+_bw, _bd = rf.DECK_BAR
+# Bars along X, the edge ones flush to the edge, the rest shared out between them nearest the
+# pitch: five here, 0.235 apart, each the deck's length, under the top face.
+assert [round(b["centre"][1], 9) for b in _dk["bars"]] == [-0.47, -0.235, 0.0, 0.235, 0.47]
+assert all(_close(b["size"], (2.0, _bw, _bd)) and abs(b["centre"][2] - (1 - _bd / 2)) < 1e-9 for b in _dk["bars"])
+assert not any(b["marked"] for b in _dk["bars"]) and _dk["toe_boards"] == []
+# The read: the gap between bars and the bar's width.
+assert abs(_dk["gap"] - (0.235 - _bw)) < 1e-9
+# A walkway edge along the bars marks its edge bar; one across them adds a nosing bar there.
+_mk = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25, marked_edges=("-Y", "+X"))
+assert [b["marked"] for b in _mk["bars"]][:5] == [True, False, False, False, False]
+_nose = [b for b in _mk["bars"] if b["marked"] and b["size"][1] > _bw]
+assert len(_nose) == 1 and _close(_nose[0]["centre"], (1 - _bw / 2, 0, 1 - _bd / 2)), _nose
+assert _close(_nose[0]["size"], (_bw, 1.0, _bd))
+# A toe board stands on each open edge, on the top face, flush to the edge.
+_tb, _tt = rf.DECK_TOE
+_toe = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25, open_edges=("+X", "-Y"))["toe_boards"]
+assert sorted((round(t["centre"][0], 9), round(t["centre"][1], 9)) for t in _toe) == \
+    sorted([(round(1 - _tt / 2, 9), 0.0), (0.0, round(-0.5 + _tt / 2, 9))])
+assert all(abs(t["centre"][2] - (1 + _tb / 2)) < 1e-9 for t in _toe)
+# A toe board on a walkway edge is marked with it, and one on an edge that is only open is not.
+_mt = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25, open_edges=("+X", "-Y"),
+                     marked_edges=("-Y",))["toe_boards"]
+assert sorted((round(t["centre"][1], 9), t["marked"]) for t in _mt) == [(round(-0.5 + _tt / 2, 9), True), (0.0, False)]
+# An opening cuts every bar it crosses, and only those, and a toe board it crosses.
+_op = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25, open_edges=("+X",),
+                     openings=[((0.5, 0.0), (0.4, 0.3))])
+assert _spans([b for b in _op["bars"] if abs(b["centre"][1]) < 1e-9], 0) == [(-1.0, 0.3), (0.7, 1.0)]
+assert len(_op["bars"]) == 6 and len(_op["toe_boards"]) == 1
+_edge = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25, open_edges=("+X",),
+                       openings=[((0.9, 0.0), (0.4, 0.3))])
+assert _spans(_edge["toe_boards"], 1) == [(-0.5, -0.15), (0.15, 0.5)]
+assert _spans([b for b in _edge["bars"] if abs(b["centre"][1]) < 1e-9], 0) == [(-1.0, 0.7)]
+# A piece of a cut bar shorter than the bar is wide is left out rather than drawn as a stub.
+_stub = rf.deck_layout("D", (0.0, 0.0), (2.0, 1.0), 1.0, pitch=0.25, openings=[((0.48, 0.0), (1.0, 0.3))])
+assert _spans([b for b in _stub["bars"] if abs(b["centre"][1]) < 1e-9], 0) == [(-1.0, -0.02)]
+# Bars along Y swap the two axes, and the centre moves the whole deck.
+_dy = rf.deck_layout("D", (5.0, 7.0), (1.0, 2.0), 1.0, pitch=0.25, along="Y")
+assert [round(b["centre"][0], 9) for b in _dy["bars"]] == [4.53, 4.765, 5.0, 5.235, 5.47]
+assert all(abs(b["centre"][1] - 7.0) < 1e-9 and _close(b["size"], (_bw, 2.0, _bd)) for b in _dy["bars"])
+# Bars closer than the cut floor apart are refused, naming the part, and so is a bar under the
+# raised floor.
+assert "D" in (deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, pitch=0.1) or "")
+assert deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, pitch=0.12) is None
+assert "bar" in (deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, pitch=0.25, bar=(0.05, 0.06)) or "")
+assert "D" in (deck_refusal("D", (0, 0), (2.0, 1.0), 1.0, open_edges=("+Z",)) or "")
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,

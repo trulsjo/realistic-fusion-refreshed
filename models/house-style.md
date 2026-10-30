@@ -285,6 +285,7 @@ be lenient by up to the spacing of a part's points.
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
+| `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |
 
 **A valve sits on a run and covers it** (#833). The run is not cut: the valve's body and flanges
 are wider than the tube and hide it. Every piece is sized from the run's radius, except that the
@@ -301,6 +302,15 @@ straight lengths between the points it is given, mitred at a bend, and resting o
 point. The points are its bed, the rungs' top face, and `rf_blender.tray_lie` gives the points a loom
 lying on it follows; a loom wider than the tray is refused. The rails stand four tenths of the
 tray's width tall, so a tray narrower than 0.15 is refused on its rails.
+
+**A grating deck is open bars a player can see through** (#835), so what runs under it stays in
+view. The edge bars are flush to its edges and the rest are shared out between them; each opening
+the caller names, where something passes through, cuts the bars and toe boards it crosses. A toe
+board stands on each open edge, and each walkway edge is marked hazard yellow: along the bars the
+edge bar is, across them a nosing bar laid along it, and the edge's toe board where it has one. A
+dark board on a marked bar's outer face hid part of the yellow from the camera (Truls, 2026-10-30,
+while #835 was implemented). That is a marking and never a body, so a deck spends its machine's
+few small yellow elements only on the edges the caller names.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

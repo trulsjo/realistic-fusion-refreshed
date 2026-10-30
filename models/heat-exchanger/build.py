@@ -39,8 +39,8 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import (bolts, box, cable_tray, casing, cyl, dent, fan_discs, hbeam, hose, loom,  # noqa: E402,F401
-                      panels, pipe, rivets, seam, stream, torus, valve)
+from rf_parts import (bolts, box, cable_tray, casing, cyl, dent, fan_discs, grating_deck, hbeam,  # noqa: E402,F401
+                      hose, loom, panels, pipe, rivets, seam, stream, torus, valve)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -313,14 +313,15 @@ else:
     # yellow for the reason one is (#801). The handwheel rims were tried first and hid behind it.
     # It is laid below, once OUTLET_Y is known.
     #
-    # Grating deck under the drums: slats, so the feed lines below stay visible.
+    # Grating deck under the drums, the kit's (#835), laid below once the cabinet stands: open
+    # bars, so the feed lines below stay visible.
     #
     # WITH AN OPENING WHERE THE STEAM OUTLET RUN COMES DOWN (Truls, #275). That run has to get from
     # a drum cap to a socket that lives UNDER this deck, so it crosses the deck's plane somewhere.
     # The only descent that clears the frame's own beams -- RailE2 along the east posts, and the
     # cross rails at the post lines -- is at OUTLET_X, which is inside the deck. So the deck gives
     # it a floor opening, which is what a deck has where a pipe drops through it; the alternative
-    # was a hose visibly cutting a slat.
+    # was a hose visibly cutting a bar.
     #
     # 1.52 AND NOT 1.80, so the descent's rings clear the frame (#825). They stand 0.285 off the
     # hose's axis, and at 1.80 they reached 2.085, past the conduit's inner face at 1.92 and the
@@ -352,15 +353,6 @@ else:
     for p, a, b in spans:
         hbeam(f"RailE2{p}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
               depth=0.12, flange=0.12, material="hazard")
-    #
-    # THE TWO END SLATS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the
-    # things a real plant paints so somebody sees it, and these were already there to paint.
-    for i in range(30):
-        y = -HALF_L + 0.5 + i * (L - 1.0) / 29
-        if abs(y - OUTLET_Y) < 0.30:
-            continue
-        box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.06), (0.35, y, SLAB + 0.5),
-            "hazard" if i in (0, 29) else "dark", bev=0)
     # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
     # because the frame read as an empty crate (Truls, #252): the bays were identical and had
     # nothing in them, so fifteen tiles of machine carried three drums and air.
@@ -629,6 +621,24 @@ else:
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
            (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
 
+    # -- kit parts: the grating deck (#835), in place of the thirty hand-placed slats: the same
+    # span, thirty bars where they stood, and its top face where theirs was.
+    #
+    # ITS TWO ENDS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the things
+    # a real plant paints so somebody sees it. They are its open edges too, and carry its toe
+    # boards, yellow with them. The long east side does not: the gauge clusters and their handwheels stand out over
+    # it, and the guard rail closes it.
+    #
+    # ITS OPENINGS ARE WHERE SOMETHING PASSES THROUGH IT: the steam outlet's descent, its rings
+    # 0.285 off its axis and about 0.07 further east with its bow, and the cabinet, which stands on
+    # the slab through the deck's south-east corner. The slats used to leave out the whole width of
+    # the two that crossed the descent, and run through the cabinet.
+    DECK_SPAN = W - MAN_W - 0.7
+    grating_deck("Deck", (0.35, 0.0), (DECK_SPAN, L - 1.0 + 0.06), SLAB + 0.53, pitch=(L - 1.0) / 29,
+                 openings=[((OUTLET_X + 0.035, OUTLET_Y), (0.8, 0.8)),
+                           ((cpos[0], cpos[1]), (CAB[0] + 0.04, CAB[1] + 0.04))],
+                 open_edges=("-Y", "+Y"), marked_edges=("-Y", "+Y"))
+
     # -- kit parts: hoses and looms (#803). Machinery a plant has "even where there is no clear
     # reason for it" (house style); none of it reaches a footprint edge, and `pipe` holds every
     # tube to that at save.
@@ -667,7 +677,7 @@ else:
     #
     # EVERY DROP LEAVES THE TRAY INBOARD, at DROP_X, which clears the rail's flange, the conduit and
     # its clamps under it, and the bays' rivets. The main loom leaves by the tray's open north end
-    # and goes down at END_Y, between the deck's last two slats and past the north gauges, and comes
+    # and goes down at END_Y, between the deck's last two bars and past the north gauges, and comes
     # in by its open south end from the cabinet, climbing off it inboard of the conduit. Each gauge
     # loom climbs over the tray's inner rail on its way out. The main loom carries no ties, since a
     # tie round a loom lying in a tray passes through the rungs. The gauge looms keep theirs, which
