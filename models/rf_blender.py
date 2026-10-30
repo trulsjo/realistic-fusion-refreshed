@@ -661,6 +661,98 @@ def tray_lie(tray, half):
     return [(p[0], p[1], p[2] + half + TRAY_CLEAR) for p in tray["bed"]]
 
 
+# THE GRATING DECK'S PIECES (#835): bars DECK_BAR (width, depth) at a pitch, and a toe board
+# DECK_TOE (height above the top face, thickness) standing on an open edge.
+DECK_BAR = (0.06, 0.06)
+DECK_TOE = (0.08, 0.02)
+DECK_EDGES = ("+X", "-X", "+Y", "-Y")
+
+
+def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", openings=(), open_edges=(),
+                marked_edges=()):
+    """Where a grating deck's pieces go: a rectangle `size` (x, y) about `centre` (x, y), its top
+    face at `z`, of bars running along `along` and spaced across it.
+
+    THE EDGE BARS ARE FLUSH TO THE EDGES and the rest are shared out between them, at the spacing
+    nearest `pitch` that divides the width evenly. Each OPENING, a rectangle ((x, y), (sx, sy)),
+    cuts every bar and toe board it crosses, and a piece left shorter than a bar is wide is left
+    out rather than drawn as a stub. A TOE BOARD stands on the top face along each edge in
+    `open_edges`, flush to it. A WALKWAY EDGE in `marked_edges` is marked: along the bars, its
+    edge bar is; across them, a nosing bar is laid along it; and its toe board, where it has one,
+    is marked too, since a board standing on the marked bar's outer face hid part of it from the
+    camera (Truls, 2026-10-30, while #835 was implemented). Edges are "+X", "-X", "+Y" and "-Y".
+
+    THE READ IS THE GAP BETWEEN BARS, on the cut floor, since it is the open grating that tells a
+    deck from a plate and keeps what is under it in view, and THE BAR'S WIDTH, on the raised floor.
+    A toe board is held to the raised floor on its height. Returns the bars and the toe boards,
+    each with its centre, its size in x, y and z and whether it is marked, and the gap."""
+    for e in tuple(open_edges) + tuple(marked_edges):
+        if e not in DECK_EDGES:
+            sys.exit(f"grating deck: {name} names an edge {e!r}; an edge is one of {', '.join(DECK_EDGES)}.")
+    bw, bd = bar
+    check_detail(f"{name} (bar width)", bw)
+    if open_edges:
+        check_detail(f"{name} (toe board)", DECK_TOE[0])
+    iu = 0 if along == "X" else 1
+    iv = 1 - iu
+    su, sv = size[iu], size[iv]
+    n = max(2, round((sv - bw) / pitch) + 1)
+    step = (sv - bw) / (n - 1)
+    gap = step - bw
+    check_detail(f"{name} (gap between bars)", gap, cut=True)
+
+    def piece(cu, cv, lu, lv, cz, dz, **extra):
+        """A box in the deck's own (u, v), turned back into x and y and moved to the centre."""
+        c, s = [0.0, 0.0], [0.0, 0.0]
+        c[iu], c[iv], s[iu], s[iv] = cu, cv, lu, lv
+        return dict({"centre": (centre[0] + c[0], centre[1] + c[1], cz), "size": (s[0], s[1], dz)}, **extra)
+
+    holes = []
+    for (ox, oy), (ux, uy) in openings:
+        o, h = (ox - centre[0], oy - centre[1]), (ux / 2, uy / 2)
+        holes.append(((o[iu] - h[iu], o[iu] + h[iu]), (o[iv] - h[iv], o[iv] + h[iv])))
+
+    def cut(lo, hi, across, width, run):
+        """The parts of [lo, hi] along `run` (0 for u, 1 for v) that no opening crosses, for a
+        piece `width` wide centred at `across` on the other axis; none shorter than a bar."""
+        spans = [(lo, hi)]
+        for h in holes:
+            a, b = h[run]
+            c0, c1 = h[1 - run]
+            if across + width / 2 <= c0 or across - width / 2 >= c1:
+                continue
+            spans = [p for s0, s1 in spans for p in ((s0, min(s1, a)), (max(s0, b), s1)) if p[1] > p[0]]
+        return [(a, b) for a, b in spans if b - a >= bw - 1e-9]
+
+    bar_z = z - bd / 2
+    bars = []
+    for k in range(n):
+        v = -sv / 2 + bw / 2 + k * step
+        edge = (k == 0 and f"-{'XY'[iv]}" in marked_edges) or (k == n - 1 and f"+{'XY'[iv]}" in marked_edges)
+        for a, b in cut(-su / 2, su / 2, v, bw, 0):
+            bars.append(piece((a + b) / 2, v, b - a, bw, bar_z, bd, marked=bool(edge)))
+    for sign in (-1, 1):
+        if f"{'+' if sign > 0 else '-'}{'XY'[iu]}" in marked_edges:
+            u = sign * (su / 2 - bw / 2)
+            for a, b in cut(-sv / 2, sv / 2, u, bw, 1):
+                bars.append(piece(u, (a + b) / 2, bw, b - a, bar_z, bd, marked=True))
+
+    th, tt = DECK_TOE
+    toes = []
+    for e in open_edges:
+        sign = 1 if e[0] == "+" else -1
+        m = e in marked_edges
+        if "XY".index(e[1]) == iu:                # an edge across the bars: the board runs along v
+            u = sign * (su / 2 - tt / 2)
+            toes += [piece(u, (a + b) / 2, tt, b - a, z + th / 2, th, marked=m)
+                     for a, b in cut(-sv / 2, sv / 2, u, tt, 1)]
+        else:                                     # along the bars: the board runs along u
+            v = sign * (sv / 2 - tt / 2)
+            toes += [piece((a + b) / 2, v, b - a, tt, z + th / 2, th, marked=m)
+                     for a, b in cut(-su / 2, su / 2, v, tt, 0)]
+    return {"bars": bars, "toe_boards": toes, "gap": gap, "pitch": step}
+
+
 class Stream(random.Random):
     """One part's own random stream: `random.Random` with the one draw the models make most."""
 

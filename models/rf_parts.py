@@ -17,7 +17,7 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `valve` and `cable_tray` take no flags either, and name
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `valve`, `cable_tray` and `grating_deck` take no flags either, and name
 their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
@@ -272,7 +272,8 @@ def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     """A box with NO detail-floor check, for a caller that has already made the check on its own
     behalf. `hbeam` is one: a beam is checked once on its flange width, and its web and two flanges
     then go in as the parts of a feature rather than as features. `box` is another, which makes its
-    own check first, and the kit's `panels`, `fan_discs`, `valve` and `cable_tray` are the rest."""
+    own check first, and the kit's `panels`, `fan_discs`, `valve`, `cable_tray` and `grating_deck` are
+    the rest."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
@@ -1043,6 +1044,35 @@ def cable_tray(name, points, width, rung_pitch=None, material="dark"):
     for k, b in enumerate(t["brackets"]):
         lay(b, f"{name}-bracket{k}")
     return t
+
+
+# ---- floors (#835) -------------------------------------------------------------------------------
+
+def grating_deck(name, centre, size, z, pitch=0.45, along="X", openings=(), open_edges=(),
+                 marked_edges=(), material="dark", marking="hazard"):
+    """A grating deck over the rectangle `size` (x, y) about `centre` (x, y), its top face at `z`:
+    bars along `along` at the spacing nearest `pitch`, the edge ones flush to the edges, cut round
+    each opening ((x, y), (sx, sy)) something passes through, with a toe board on each edge in
+    `open_edges` and a marking on each walkway edge in `marked_edges` (`rf_blender.deck_layout`).
+
+    THE READ IS THE GAP BETWEEN BARS, on the cut floor, and THE BAR'S WIDTH, on the raised floor,
+    both checked in `rf_blender.deck_layout`, with a toe board's height on the raised floor too.
+    The bars and boards go in unchecked after that: a bar's depth and a board's thickness are
+    edge-on.
+
+    A WALKWAY EDGE IS A MARKING, hazard yellow unless `marking` says otherwise (`models/house-style.md`,
+    Palette): along the bars it is the edge bar, across them a nosing bar laid along it, and the
+    edge's toe board where it has one. Nothing in
+    a deck is pipe-shaped, so nothing in it goes to the footprint-edge check.
+
+    Returns the layout."""
+    d = rf.deck_layout(name, centre, size, z, pitch, along=along, openings=openings,
+                       open_edges=open_edges, marked_edges=marked_edges)
+    for k, b in enumerate(d["bars"]):
+        _plate(f"{name}-bar{k}", b["size"], b["centre"], marking if b["marked"] else material, bev=0)
+    for k, t in enumerate(d["toe_boards"]):
+        _plate(f"{name}-toe{k}", t["size"], t["centre"], marking if t["marked"] else material, bev=0.006)
+    return d
 
 
 def _ties(name, points, inner):
