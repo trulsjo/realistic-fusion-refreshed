@@ -81,7 +81,8 @@
     prototype either holds the reference or holds the field that replaced it.
 
 .PARAMETER With
-    Bundled mods to enable (space-age, quality, elevated-rails), with hard dependencies followed.
+    Bundled mods to enable (space-age, quality, elevated-rails), with hard and `+` dependencies
+    followed.
     The `seablock` lane needs `-With quality`; the two lanes this was written for need nothing.
 
 .PARAMETER SelfTest
