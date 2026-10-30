@@ -773,7 +773,7 @@ else:
     # brackets run back from each stile into the drum: a stile stands off the axis's line by half
     # the access ladder's width, so the skin behind it is about 0.02 further than LADDER_OFF, and
     # the drum is stretched by up to 3% across the body by its own jitter, so they run 0.08 past
-    # it. At 0.03 past, those on one side stopped short of the skin.
+    # LADDER_OFF. At 0.03 past, those on one side stopped short of the skin.
     LADDER_TURN, LADDER_OFF = math.radians(-50), 0.25
     mid = next(d for d in drums if d["name"] == "Mid")
     ladder_out = (math.cos(LADDER_TURN), math.sin(LADDER_TURN), 0.0)

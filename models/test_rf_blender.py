@@ -568,7 +568,8 @@ assert abs((_first / rf.LADDER_PITCH) % 1 - 0.5) < 1e-9
 # A cage with a single hoop has no bars, since a bar runs between two.
 assert rf.ladder_layout("L", (0, 0, 0), 1.2, (1, 0, 0))["bars"] == []
 # No brackets unless it stands off something; given a standoff, a bracket runs from each stile back
-# against the facing by that much, at every LADDER_BRACKET_EVERY rungs, midway between two.
+# against the facing by that much, the first midway between the foot and the first rung, then every
+# LADDER_BRACKET_EVERY rungs, midway between two.
 assert _ld["brackets"] == []
 _br = rf.ladder_layout("L", (1.0, 2.0, 0.5), 2.0, (1, 0, 0), standoff=0.25)["brackets"]
 assert rf.LADDER_BRACKET_EVERY == 4
