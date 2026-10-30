@@ -583,7 +583,7 @@ def tray_layout(name, points, width, rung_pitch=None):
     nearest `rung_pitch`; the tray's width when it is not given. A length that climbs straight up
     has no side for the rails to stand on and is refused.
 
-    THE READ IS THE GAP BETWEEN RUNGS, on the cut floor, since it is the open ladder that tells a
+    THE READ IS THE GAP BETWEEN RUNGS, on the cut floor, since it is the open run of rungs that tells a
     tray from a trough, and THE RAIL'S HEIGHT, on the raised floor, since the rails are its edges.
     Both are checked here, by name. Returns the rails, the rungs and brackets with their centres,
     their directions along and across and their sizes in those two and up, `bed`, the points, the
@@ -765,7 +765,8 @@ def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", open
 # (width across the access ladder, depth along its facing); rungs LADDER_RUNG thick at a pitch; a cage
 # LADDER_CAGE (hoop radius, the diameter of a hoop's and a bar's tube) from LADDER_CAGE_FROM above
 # the foot, a hoop every LADDER_CAGE_EVERY rungs, with a bar at each of LADDER_CAGE_BARS, angles
-# from the facing.
+# from the facing; and where it stands off what it is against, a bracket back to it from each stile
+# every LADDER_BRACKET_EVERY rungs.
 LADDER_WIDTH = 0.4
 LADDER_STILE = (0.06, 0.04)
 LADDER_RUNG = 0.06
@@ -775,26 +776,29 @@ LADDER_CAGE_FROM = 1.0
 LADDER_CAGE_EVERY = 2
 LADDER_CAGE_BARS = (-math.pi / 2, 0.0, math.pi / 2)
 LADDER_HOOP_POINTS = 13
+LADDER_BRACKET_EVERY = 4
 
 
-def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG, cage_from=None):
+def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG, cage_from=None, standoff=0.0):
     """Where an access ladder's pieces go: straight up from `foot`, the middle of its base between
     the stiles, to the height `top`, facing out along `facing` from what it stands against.
 
     The facing loses any rise; one straight up is refused, since it leaves no side to face. The
     stiles stand either side, square to it. A rung stands at each `pitch` above the foot up to the
-    top, from stile to stile. From `cage_from`, LADDER_CAGE_FROM over the foot unless it is given,
+    top, from stile to stile. From `cage_from` over the foot, LADDER_CAGE_FROM unless it is given,
     a hoop stands midway between two rungs, the first such height at or over it and then every
     LADDER_CAGE_EVERY rungs up to the top, so no hoop stands on a rung whatever the pitch: an arc
     from one stile out round the facing side to the other, on a circle through both stiles. Bars on
-    that circle run from the first hoop to the top. No hoop stands above the top, so an access
-    ladder shorter than its cage height has none.
+    that circle run from the first hoop to the last, so none ends in the air; a cage of one hoop
+    has none. No hoop stands above the top, so an access ladder shorter than its cage height has
+    none. Where it stands `standoff` off what it is against, a bracket runs back that far from each
+    stile, midway between two rungs from the first, every LADDER_BRACKET_EVERY rungs.
 
     THE READ IS THE RUNG'S THICKNESS, on the raised floor, and THE GAP BETWEEN RUNGS, on the cut
-    floor, since an evenly broken run of bars is what tells an access ladder from a plate; a hoop's and a
-    bar's tube is held to the raised floor too. Returns the facing and side, the stiles, the rungs,
-    each hoop as its points from the first stile to the second, each bar as its bottom and top,
-    and the gap."""
+    floor, since an evenly broken run of bars is what tells an access ladder from a plate; a hoop's
+    and a bar's tube is held to the raised floor too. Returns the facing and side, the stiles, the
+    rungs, each hoop as its points from the first stile to the second, each bar as its bottom and
+    top, the brackets, and the gap."""
     f = _unit((facing[0], facing[1], 0.0))
     if f is None:
         sys.exit(f"access ladder: {name} faces {tuple(facing)}, straight up or nowhere; an access ladder faces out "
@@ -818,7 +822,7 @@ def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG,
     rungs = [{"centre": at(0.0, 0.0, foot[2] + k * pitch), "length": LADDER_WIDTH, "axis": side}
              for k in range(1, n + 1)]
 
-    base = foot[2] + LADDER_CAGE_FROM if cage_from is None else cage_from
+    base = foot[2] + (LADDER_CAGE_FROM if cage_from is None else cage_from)
     d = math.sqrt(radius ** 2 - hw ** 2)
     end = math.pi - math.atan2(hw, d)
     hoops = []
@@ -828,12 +832,20 @@ def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG,
                       for t in (-end + 2 * end * k / (LADDER_HOOP_POINTS - 1) for k in range(LADDER_HOOP_POINTS))])
         z += LADDER_CAGE_EVERY * pitch
     bars = []
-    if hoops:
+    if len(hoops) > 1:
         for t in LADDER_CAGE_BARS:
             u, v = d + radius * math.cos(t), radius * math.sin(t)
-            bars.append((at(u, v, hoops[0][0][2]), at(u, v, top)))
+            bars.append((at(u, v, hoops[0][0][2]), at(u, v, hoops[-1][0][2])))
+    brackets = []
+    if standoff > 0:
+        back = (-f[0], -f[1], 0.0)
+        z = foot[2] + pitch / 2
+        while z <= top + 1e-9:
+            brackets += [{"centre": at(-standoff / 2, s * hw, z), "length": standoff, "axis": back}
+                         for s in (-1, 1)]
+            z += LADDER_BRACKET_EVERY * pitch
     return {"facing": f, "side": side, "stiles": stiles, "rungs": rungs, "hoops": hoops, "bars": bars,
-            "gap": pitch - rung}
+            "brackets": brackets, "gap": pitch - rung}
 
 
 class Stream(random.Random):
