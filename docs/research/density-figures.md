@@ -298,9 +298,11 @@ command on `main` the same day. Blender 5.2.0, 64 samples for the sheet and 16 f
 
 **The pixel figure fell by 0.0015 and the normal-pass figure rose by 0.0002**, *measured*. Most of
 the deck stands behind the drums from this camera, so little of it reaches the sheet, *inferred*
-from the crops. With dark toe boards first, the pixel figure was 0.2776, *measured* the same day.
-The dark board stood on the yellow bar's top face, along its outer edge, and the crops showed the
-yellow line thinner; that the board hid part of it is *inferred* from them. The placing re-rolled
+from crops of the north sheet before and after, at zoom 1 and 4×, which the pull request for #835
+describes and which are not in the tree. With dark toe boards first, the pixel figure was 0.2776,
+*measured* the same day. The dark board stood on the yellow bar's top face, along its outer edge,
+and those crops showed the yellow line thinner; that the board hid part of it is *inferred* from
+them. The placing re-rolled
 nothing else, which is *inferred* from #825's streams. The mesh-overlap test on the built model
 agrees, *measured*: every pair a slat made on `main` the bar in its place makes, but the cabinet's
 and its seam's, which the cabinet's opening removes, and the only new pairs are each toe board

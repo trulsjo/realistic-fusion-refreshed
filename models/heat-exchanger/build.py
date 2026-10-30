@@ -105,7 +105,9 @@ PALETTE = {
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
     # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
     # walkway edges, each an end bar and the toe board on it (#835), and the guard rail along the
-    # open side and nowhere else -- three elements, none of them a panel, and never a fluid accent.
+    # open side and nowhere else -- three elements, counting each edge as one though it is two
+    # pieces and the rail as one though it is laid in lengths, none of them a panel, and never a
+    # fluid accent.
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,

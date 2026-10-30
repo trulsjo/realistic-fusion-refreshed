@@ -483,7 +483,7 @@ assert [b["marked"] for b in _mk["bars"]][:5] == [True, False, False, False, Fal
 _nose = [b for b in _mk["bars"] if b["marked"] and b["size"][1] > _bw]
 assert len(_nose) == 1 and _close(_nose[0]["centre"], (1 - _bw / 2, 0, 1 - _bd / 2)), _nose
 assert _close(_nose[0]["size"], (_bw, 1.0, _bd))
-# ... and the bars stop at its inner face, so no bar shares a face with it.
+# ... and the bars stop at its inner face, so they meet it end to end instead of lying in it.
 assert all(abs(b["centre"][0] + b["size"][0] / 2 - (1 - _bw)) < 1e-9 for b in _mk["bars"] if b is not _nose[0])
 # A toe board stands on each open edge, on the top face, flush to the edge.
 _tb, _tt = rf.DECK_TOE
