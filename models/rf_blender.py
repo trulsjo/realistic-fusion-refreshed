@@ -678,9 +678,11 @@ def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", open
     cuts every bar and toe board it crosses, and a piece left shorter than a bar is wide is left
     out rather than drawn as a stub. A TOE BOARD stands on the top face along each edge in
     `open_edges`, flush to it. A WALKWAY EDGE in `marked_edges` is marked: along the bars, its
-    edge bar is; across them, a nosing bar is laid along it; and its toe board, where it has one,
-    is marked too, since a board standing on the marked bar's outer face hid part of it from the
-    camera (Truls, 2026-10-30, while #835 was implemented). Edges are "+X", "-X", "+Y" and "-Y".
+    edge bar is; across them, a nosing bar is laid along it, and the bars stop at its inner face;
+    and its toe board, where it has one, is marked too, since a dark board standing on the marked
+    bar's top face, along its outer edge, hid part of it from the camera (Truls, 2026-10-30, while
+    #835 was implemented, recorded on #835). Edges are "+X", "-X", "+Y" and "-Y", and the bars run
+    along "X" or "Y"; anything else is refused.
 
     THE READ IS THE GAP BETWEEN BARS, on the cut floor, since it is the open grating that tells a
     deck from a plate and keeps what is under it in view, and THE BAR'S WIDTH, on the raised floor.
@@ -689,6 +691,8 @@ def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", open
     for e in tuple(open_edges) + tuple(marked_edges):
         if e not in DECK_EDGES:
             sys.exit(f"grating deck: {name} names an edge {e!r}; an edge is one of {', '.join(DECK_EDGES)}.")
+    if along not in ("X", "Y"):
+        sys.exit(f"grating deck: {name}'s bars run along {along!r}; a deck's bars run along \"X\" or \"Y\".")
     bw, bd = bar
     check_detail(f"{name} (bar width)", bw)
     if open_edges:
@@ -726,10 +730,13 @@ def deck_layout(name, centre, size, z, pitch=0.45, bar=DECK_BAR, along="X", open
 
     bar_z = z - bd / 2
     bars = []
+    # A bar stops at a nosing bar's inner face, so the two never share a face.
+    lo = -su / 2 + (bw if f"-{'XY'[iu]}" in marked_edges else 0.0)
+    hi = su / 2 - (bw if f"+{'XY'[iu]}" in marked_edges else 0.0)
     for k in range(n):
         v = -sv / 2 + bw / 2 + k * step
         edge = (k == 0 and f"-{'XY'[iv]}" in marked_edges) or (k == n - 1 and f"+{'XY'[iv]}" in marked_edges)
-        for a, b in cut(-su / 2, su / 2, v, bw, 0):
+        for a, b in cut(lo, hi, v, bw, 0):
             bars.append(piece((a + b) / 2, v, b - a, bw, bar_z, bd, marked=bool(edge)))
     for sign in (-1, 1):
         if f"{'+' if sign > 0 else '-'}{'XY'[iu]}" in marked_edges:

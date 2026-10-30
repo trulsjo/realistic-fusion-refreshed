@@ -104,8 +104,8 @@ PALETTE = {
     # the hazard yellow or the cable sheaths below.
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
     # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
-    # walkway edges and the guard rail along the open side and nowhere else -- three elements, none
-    # of them a panel, and never a fluid accent.
+    # walkway edges, each an end bar and the toe board on it (#835), and the guard rail along the
+    # open side and nowhere else -- three elements, none of them a panel, and never a fluid accent.
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,
@@ -621,18 +621,20 @@ else:
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
            (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
 
-    # -- kit parts: the grating deck (#835), in place of the thirty hand-placed slats: the same
-    # span, thirty bars where they stood, and its top face where theirs was.
+    # -- kit parts: the grating deck (#835), in place of the hand-placed slats: the same span, a
+    # bar at each of the thirty places they were spaced at, and its top face where theirs was.
+    # The slats were twenty-eight: the two that crossed the steam outlet's descent were left out.
     #
     # ITS TWO ENDS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the things
     # a real plant paints so somebody sees it. They are its open edges too, and carry its toe
-    # boards, yellow with them. The long east side does not: the gauge clusters and their handwheels stand out over
-    # it, and the guard rail closes it.
+    # boards, yellow with them. The two long sides carry neither: on the east the gauge clusters
+    # and their handwheels stand out over the edge and the guard rail closes it, and the west runs
+    # along the mid-line posts.
     #
     # ITS OPENINGS ARE WHERE SOMETHING PASSES THROUGH IT: the steam outlet's descent, its rings
     # 0.285 off its axis and about 0.07 further east with its bow, and the cabinet, which stands on
-    # the slab through the deck's south-east corner. The slats used to leave out the whole width of
-    # the two that crossed the descent, and run through the cabinet.
+    # the slab through the deck's south-east corner. The slats left out the whole width of the two
+    # that crossed the descent, and ran through the cabinet.
     DECK_SPAN = W - MAN_W - 0.7
     grating_deck("Deck", (0.35, 0.0), (DECK_SPAN, L - 1.0 + 0.06), SLAB + 0.53, pitch=(L - 1.0) / 29,
                  openings=[((OUTLET_X + 0.035, OUTLET_Y), (0.8, 0.8)),

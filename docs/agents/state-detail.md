@@ -409,7 +409,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-10-30, #835: `models/test_rf_blender.py` also pins `rf_blender.deck_layout`: a grating
   deck's bars with the edge ones flush to its edges and the rest at the spacing nearest the pitch,
   under its top face, along either axis and moved with its centre; an edge bar marked along the
-  bars and a nosing bar across them; a toe board on each open edge; an opening cutting only the
-  bars and toe boards it crosses, and a piece shorter than a bar is wide left out; and the gap
-  between bars and the bar's width refused under their floors, and an edge that is not one
-  refused. It renders nothing, so it cannot see whether a deck reads.
+  bars, and a nosing bar across them that the bars stop at; a toe board on each open edge, marked
+  on a walkway edge; an opening cutting only the bars and toe boards it crosses, and a piece
+  shorter than a bar is wide left out; and the gap between bars and the bar's width refused under
+  their floors, and an edge or a bar direction that is not one refused. It renders nothing, so it cannot see whether a deck reads.
