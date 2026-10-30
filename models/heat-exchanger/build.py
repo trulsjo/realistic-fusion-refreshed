@@ -567,8 +567,11 @@ else:
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
              HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
         # A BLOCK VALVE AT THE SAG, the kit's (#833): the low point of the span, where the hose
-        # passes through its control point, so the valve sits on the tube. The tube runs there along
-        # the chord between its two tops, the way a Bezier's auto handles lie. Its wheel turns to
+        # passes through its control point, so the valve sits on the tube. The tube runs there close
+        # to the chord between its two tops, which is what the valve is turned along: a Bezier's
+        # auto handles lie exactly along it only where the two are equally far, and the sag's draws
+        # leave about a degree between them, by the branch's pre-PR review's estimate, which was not
+        # measured. Its wheel turns to
         # the camera, which in the body's frame stands east and above (TURNED; rf_blender's pitch),
         # and with open frame under the span and nothing over it, the wheel has the air it needs.
         valve(f"Header{n}Valve", sag, (land[0] - start[0], land[1] - start[1], 0.0), HEADER_R,
