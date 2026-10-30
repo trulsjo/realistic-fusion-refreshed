@@ -751,8 +751,9 @@ else:
         # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
         # loom's wobble moves the point up to 0.03 each way, so it is set 0.05 inboard of the
         # rail, where the bundle's own edge still stands over it. What keeps the tie clear of the
-        # rail's top and of the main loom is height: its centre stands the bundle's half-width and
-        # 0.12 more over the rail's top.
+        # rail's top is height: its centre stands the bundle's half-width and 0.12 more over it.
+        # What keeps it clear of the main loom is that inboard setting: the tie reaches no further
+        # out than about 1.975, and the main loom starts at 2.021.
         over = TRAY_X - TRAY_W / 2 - rf.TRAY_RAIL_T - 0.05
         loom(f"GaugeLoom{d['name']}", [in_tray(d["gy"] + 0.1, GAUGE_HALF),
                                (over, d["gy"] + 0.08, RAIL_TOP + GAUGE_HALF + 0.12),
