@@ -488,6 +488,72 @@ def casing_arc(n, radius, gap):
     return 2 * math.pi / n - gap / radius
 
 
+# THE INLINE VALVE'S PROPORTIONS, as multiples of the run's radius r (#833). A gate valve's body is
+# wider than its pipe and bolted to it between two flanges; its bonnet and stem carry the
+# handwheel out along the facing.
+#
+# THE RIM AND THE STEM ARE NEVER DRAWN UNDER THE RAISED FLOOR (Truls, triage of #833). In
+# proportion, both fall under it on any run thinner than VALVE_THIN_RUN, which takes in the water
+# header's 0.13. So on a thin run the two are drawn at the floor, and the wheel reads chunkier for
+# its size. The alternative was refusing the valve on every run thinner than that.
+VALVE_BODY = (1.6, 2.4)          # radius, length along the run
+VALVE_FLANGE = (1.9, 0.35)       # radius, thickness
+VALVE_BONNET = (0.75, 2.4)       # radius, how far out along the facing its far end stands
+VALVE_STEM = (0.2, 1.2)          # radius, length past the bonnet
+VALVE_WHEEL = (1.9, 0.18)        # the wheel's major and minor radius; the minor carries the read
+VALVE_THIN_RUN = RAISED_DETAIL_FLOOR / (2 * min(VALVE_WHEEL[1], VALVE_STEM[0]))
+
+
+def valve_layout(name, at, direction, radius, facing):
+    """Where an inline valve's pieces go, on a run of `radius` at the point `at`, running along
+    `direction` there, with its handwheel out along `facing`.
+
+    THE FACING IS MADE SQUARE TO THE RUN: its component along the run is taken out, so a caller
+    can pass the way the camera looks and get the nearest facing a wheel on that run can have. One
+    with no square part, along the run, is refused.
+
+    THE HANDWHEEL'S RIM CARRIES THE READ, on the raised floor by its minor diameter. It and the
+    stem are drawn at the floor where the run's proportion would put them under it (VALVE_THIN_RUN,
+    above), and the rim is held to the floor here all the same. Returns each piece's centre, axis
+    and size, the facing, `reach`, how far the valve stands out along the facing, and `span`, how
+    far the wheel reaches across it."""
+    d = _unit(direction)
+    if d is None:
+        sys.exit(f"valve: {name} is given no direction along its run.")
+    along = sum(a * b for a, b in zip(facing, d))
+    f = _unit(tuple(c - along * k for c, k in zip(facing, d)))
+    if f is None or abs(along) > 0.98 * math.sqrt(sum(c * c for c in facing)):
+        sys.exit(f"valve: {name} faces along its run, {tuple(facing)}, so its handwheel has no side "
+                 f"to stand on. Give a facing square to the run, or near it.")
+    least = RAISED_DETAIL_FLOOR / 2
+    minor = max(VALVE_WHEEL[1] * radius, least)
+    check_detail(f"{name} (handwheel rim)", 2 * minor)
+
+    def off(p, v, k):
+        return tuple(a + k * b for a, b in zip(p, v))
+
+    body_r, body_len = VALVE_BODY[0] * radius, VALVE_BODY[1] * radius
+    fl_r, fl_t = VALVE_FLANGE[0] * radius, VALVE_FLANGE[1] * radius
+    bonnet_r, bonnet_out = VALVE_BONNET[0] * radius, VALVE_BONNET[1] * radius
+    stem_r, stem_len = max(VALVE_STEM[0] * radius, least), VALVE_STEM[1] * radius
+    wheel_out = bonnet_out + stem_len
+    return {
+        "facing": f,
+        "body": {"centre": tuple(at), "axis": d, "radius": body_r, "length": body_len},
+        "flanges": [{"centre": off(at, d, s * (body_len + fl_t) / 2), "axis": d, "radius": fl_r,
+                     "thickness": fl_t} for s in (-1, 1)],
+        # From the run's axis to bonnet_out: it starts inside the body, so the two read as one casting.
+        "bonnet": {"centre": off(at, f, bonnet_out / 2), "axis": f, "radius": bonnet_r,
+                   "length": bonnet_out},
+        "stem": {"centre": off(at, f, bonnet_out + stem_len / 2), "axis": f, "radius": stem_r,
+                 "length": stem_len},
+        "wheel": {"centre": off(at, f, wheel_out), "normal": f, "major": VALVE_WHEEL[0] * radius,
+                  "minor": minor},
+        "reach": wheel_out + minor,
+        "span": VALVE_WHEEL[0] * radius + minor,
+    }
+
+
 class Stream(random.Random):
     """One part's own random stream: `random.Random` with the one draw the models make most."""
 

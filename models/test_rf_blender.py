@@ -313,6 +313,58 @@ assert abs(_slot - 2 * math.sin(0.05 / 2)) < 1e-9, _slot
 # Up a stack 0.4 apart, segments 0.34 tall leave 0.06 between bands.
 assert abs(rf.least_gap(_seg, rf.stack((0, 0, 0), 2, 0.4)) - 0.06) < 1e-9
 
+# ---- the inline valve (#833) ----
+#
+# A valve sits on a run at a point the caller gives, along the run's direction there, and its
+# handwheel stands off the run along a facing the caller gives, made square to the run.
+
+
+def _close(a, b):
+    return all(abs(x - y) < 1e-9 for x, y in zip(a, b))
+
+
+def valve_refusal(*args):
+    try:
+        rf.valve_layout(*args)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+_v = rf.valve_layout("V", (1.0, 2.0, 3.0), (2.0, 0.0, 0.0), 0.19, (0.3, 0.0, 1.0))
+# The facing loses its component along the run, so the wheel's axis is square to the run.
+assert _close(_v["facing"], (0, 0, 1)), _v["facing"]
+# The body is on the run, along it, and wider than it.
+assert _close(_v["body"]["centre"], (1, 2, 3)) and _close(_v["body"]["axis"], (1, 0, 0))
+assert _v["body"]["radius"] > 0.19
+# A flange either side of the body, the same distance off, along the run, wider than the body.
+(_fa, _fb) = (f["centre"] for f in _v["flanges"])
+assert abs(_fa[1] - 2) + abs(_fa[2] - 3) + abs(_fb[1] - 2) + abs(_fb[2] - 3) < 1e-9
+assert abs((_fa[0] - 1) + (_fb[0] - 1)) < 1e-9 and abs(_fa[0] - _fb[0]) > _v["body"]["length"]
+assert all(f["radius"] > _v["body"]["radius"] for f in _v["flanges"])
+# The bonnet, the stem and the wheel stand in that order out along the facing, each past the last,
+# and the wheel's plane is square to it, clear of the body.
+_out = [(p["centre"][2] - 3) for p in (_v["bonnet"], _v["stem"], _v["wheel"])]
+assert _out == sorted(_out) and all(_close(p["centre"][:2], (1, 2)) for p in (_v["bonnet"], _v["stem"], _v["wheel"]))
+assert _close(_v["wheel"]["normal"], (0, 0, 1))
+assert _out[2] - _v["wheel"]["minor"] > _v["body"]["radius"]
+# `reach` is how far the valve stands out along its facing, the wheel's far face, and `span` how
+# far the wheel reaches across it, for a caller to keep the valve clear of what is near.
+assert abs(_v["reach"] - (_out[2] + _v["wheel"]["minor"])) < 1e-9
+assert abs(_v["span"] - (_v["wheel"]["major"] + _v["wheel"]["minor"])) < 1e-9
+# A facing along the run has no square part and is refused, naming the part.
+assert "V" in (valve_refusal("V", (0, 0, 0), (1, 0, 0), 0.19, (2, 0, 0)) or "")
+# The handwheel's rim and the stem scale with the run but are never drawn under the raised floor
+# (Truls, triage of #833): on the water header's 0.13 the valve is not refused, and its rim and stem
+# stand at the floor while the rest is the run's proportion. On the steam header's 0.19 the rim is
+# its own proportion, over the floor.
+_t = rf.valve_layout("V", (0, 0, 0), (1, 0, 0), 0.13, (0, 0, 1))
+assert abs(2 * _t["wheel"]["minor"] - rf.RAISED_DETAIL_FLOOR) < 1e-9
+assert abs(2 * _t["stem"]["radius"] - rf.RAISED_DETAIL_FLOOR) < 1e-9
+assert abs(_t["body"]["radius"] - rf.VALVE_BODY[0] * 0.13) < 1e-9
+assert abs(_v["wheel"]["minor"] - rf.VALVE_WHEEL[1] * 0.19) < 1e-9
+assert 2 * _v["wheel"]["minor"] > rf.RAISED_DETAIL_FLOOR
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,

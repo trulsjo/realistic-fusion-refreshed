@@ -282,6 +282,15 @@ be lenient by up to the spacing of a part's points.
 | `bolts` | a ring, a row or a stack | the head's diameter; the gap between neighbouring bolts on the cut floor | #804 |
 | `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
+| `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
+
+**A valve sits on a run and covers it** (#833). The run is not cut: the valve's body and flanges
+are wider than the tube and hide it. Every piece is sized from the run's radius, except that the
+handwheel's rim and the stem are drawn at the raised floor where that would put them under it.
+That happens on any run thinner than `rf_blender.VALVE_THIN_RUN`, a sixth of a tile, so a valve
+fits the water header's 0.13 with a chunkier wheel (Truls, triage of #833). Its handwheel faces a
+way the caller gives, made square to the run, so a model passes the way to the camera. The wheel is
+a part that could move later (Moving parts, below), so it stands clear on its stem.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

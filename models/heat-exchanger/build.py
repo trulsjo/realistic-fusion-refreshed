@@ -40,7 +40,7 @@ import rf_blender as rf  # noqa: E402
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
 from rf_parts import (bolts, box, casing, cyl, dent, fan_discs, hbeam, hose, loom, panels,  # noqa: E402,F401
-                      pipe, rivets, seam, stream, torus)
+                      pipe, rivets, seam, stream, torus, valve)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -61,6 +61,11 @@ geo = json.load(open(geo_path, encoding="utf-8"))
 W, L = sorted((x1 - x0, y1 - y0))          # 4.5 x 14.5, the body's own frame
 HALF_W, HALF_L = W / 2, L / 2
 TURNED = (x1 - x0) > (y1 - y0)
+# The way to the camera, in the body's frame: it stands south of the declared machine pitched
+# rf.CAMERA_PITCH_DEG down, and the turn maps the declared south onto the body's east.
+_PITCH = math.radians(rf.CAMERA_PITCH_DEG)
+TOWARD_CAMERA = ((math.cos(_PITCH), 0.0, math.sin(_PITCH)) if TURNED
+                 else (0.0, -math.cos(_PITCH), math.sin(_PITCH)))
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -561,6 +566,13 @@ else:
         hose(f"Header{n}", [start, (start[0], start[1], RUN_Z), sag,
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
              HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
+        # A BLOCK VALVE AT THE SAG, the kit's (#833): the low point of the span, where the hose
+        # passes through its control point, so the valve sits on the tube. The tube runs there along
+        # the chord between its two tops, the way a Bezier's auto handles lie. Its wheel turns to
+        # the camera, which in the body's frame stands east and above (TURNED; rf_blender's pitch),
+        # and with open frame under the span and nothing over it, the wheel has the air it needs.
+        valve(f"Header{n}Valve", sag, (land[0] - start[0], land[1] - start[1], 0.0), HEADER_R,
+              TOWARD_CAMERA)
 
     # THE OUTLET RUN, AND ITS ROUTE IS THE POINT. In this file's frame, which is the body's own and
     # not the declared one: down off the middle cap, north around the drum, down outside it at
