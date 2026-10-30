@@ -307,10 +307,11 @@ tray's width tall, so a tray narrower than 0.15 is refused on its rails.
 view. The edge bars are flush to its edges and the rest are shared out between them; each opening
 the caller names, where something passes through, cuts the bars and toe boards it crosses. A toe
 board stands on each open edge, and each walkway edge is marked hazard yellow: along the bars the
-edge bar is, across them a nosing bar laid along it, and the edge's toe board where it has one. A
-dark board on a marked bar's outer face hid part of the yellow from the camera (Truls, 2026-10-30,
-while #835 was implemented). That is a marking and never a body, so a deck spends its machine's
-few small yellow elements only on the edges the caller names.
+edge bar is, across them a nosing bar laid along it, and the edge's toe board where it has one.
+The marking is never a body, so a deck spends its machine's few small yellow elements only on the
+edges the caller names. The toe board took the marking because a dark one, standing on the marked
+bar's top face along its outer edge, hid part of the yellow from the camera (Truls, 2026-10-30,
+while #835 was implemented, recorded on #835).
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

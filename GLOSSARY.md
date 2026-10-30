@@ -64,7 +64,7 @@ never the default: the default is to render the model that exists, so that hand 
 changed on purpose. It happens when the part's name, its machine's seed, or the order of the draws
 within its stream changes. Not "reshuffle" or "re-randomise".
 
-**Kit part** — a modelled piece of plant machinery, such as a valve, a cable tray or a walkway,
+**Kit part** — a modelled piece of plant machinery, such as a valve, a cable tray or a grating deck,
 defined once for the whole set and placed by any machine's model. It is what a look note names when
 it asks for machinery a plant has, which is why the set grows denser as the kit grows rather than
 one machine at a time. **Not a socket**: a socket is drawn because a connection is declared, and a
