@@ -176,7 +176,8 @@ hands `mat` its colour; `gain` scales that colour so the palette keeps its hue a
 image brings only its grain. The build refuses an unrecorded texture, `models/render.py` refuses an
 image a stored model names that is not one, and `scripts/ship-check.ps1` refuses any file in a
 model directory that is not `build.py`, `geometry.json`, `textures.json`, the model's own `.blend`
-or a recorded texture. The exchanger's broad rust is the worked example.
+or a recorded texture. The exchanger is the worked example: its broad rust takes the image's
+grain through `gain`, and its paint only the image's value, through its luminance.
 
 **The range runs from a near-black base to the paint and the lit edges** (#801, 2026-10-28). The
 frame and the slab are the darkest thing on a machine. The highlights are what catches the key

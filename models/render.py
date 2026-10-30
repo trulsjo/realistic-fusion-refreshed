@@ -83,6 +83,8 @@ for img in bpy.data.images:
         sys.exit(f"{machine}: image {img.name!r} is {'packed into the model' if img.packed_file else path}; a "
                  f"texture is a file in {model_dir} with a record in {rf.TEXTURE_RECORDS} (ADR 0043).")
     record = rf.texture_record(model_dir, os.path.basename(path))
+    if any(t["file"] == os.path.basename(path) for t in textures):
+        continue                                      # one file, loaded as two images
     textures.append({"file": os.path.basename(path), "source": record["source"],
                      "licence": record["licence"], "sha256": record["sha256"]})
 tiles_w, tiles_h = (int(v) for v in scene["rf_tiles"])
