@@ -234,7 +234,7 @@ below, *read from source*.
 **The exchanger the branch ships is textured, and that sheet's figures are 0.2745 and 0.5180**,
 *measured* 2026-10-30 with the same command, after
 [#805](https://github.com/trulsjo/realistic-fusion-refreshed/issues/805) drew the manifold's broad
-rust and the paint's weathering from a CC0 photograph on the same branch. The texture moved the
+rust and the paint's weathering from a CC0 photograph on this branch. The texture moved the
 pixel figure by 0.0010, a fifth of what #827's first renaming moved it by, and left the normal-pass
 figure where it was, as no material can move it. On the manifold alone it moved it by 0.0002.
 
