@@ -219,9 +219,9 @@ of that size between two sheets may be chance.
 
 **The renaming landed two contacts of the kind #824 and #825 fixed**, *measured* by the same
 mesh-overlap test: the middle drum's handwheel stood on the plates of the bay beside it, and the
-south drum's weld seam stood in the cabinet. Both were fixed on the same branch, the wheel and its
-gauges kept 0.07 clear of a bay's plates and the weld stopped 0.03 short of the cabinet, *read from
-source*. Every other contact the test found new on the exchanger is of four kinds, *inferred* from
+south drum's weld seam stood in the cabinet. Both were fixed on the same branch, *read from
+source*: the wheel's plane kept 0.07 from a bay's plates, which leaves its rim 0.02 clear, with its
+gauges moved along with it, and the weld stopped 0.03 short of the cabinet. Every other contact the test found new on the exchanger is of four kinds, *inferred* from
 its list of pairs: a handwheel against the frame, which #806 is left to settle; a beam meeting a
 beam or the slab; the pieces of one drum or one hose meeting each other, and the headers where they
 land together on the middle drum's cap; and a part meeting what it is joined to, as a hose its cap,
@@ -230,6 +230,13 @@ and a conduit clamp its post. On the collector it found
 five new contacts and lost four, *measured*, all of ice: against what it hangs from or sits on,
 against other ice, or, for two icicles hung from the tritium drum, their tips against the deck
 below, *read from source*.
+
+**The exchanger the branch ships is textured, and that sheet's figures are 0.2737 and 0.5180**,
+*measured* 2026-10-30 with the same command, after
+[#805](https://github.com/trulsjo/realistic-fusion-refreshed/issues/805) drew the manifold's broad
+rust from a CC0 photograph on the same branch. The texture moved the pixel figure by 0.0002, well
+inside what a re-roll moves it by, and left the normal-pass figure where it was, as no material can
+move it.
 
 ## What the "before" says, and how far it goes
 
