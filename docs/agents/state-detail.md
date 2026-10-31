@@ -435,3 +435,12 @@ One line for each change to a gate, newest last, with its date and its ticket.
   plate refused, naming it, whose stripes are under the raised floor, whose side is longer than
   `rf_blender.WARNING_PLATE_MAX`, or that has no stripe. It renders nothing, so it cannot see
   whether a plate reads.
+- 2026-10-31, #839: `models/test_rf_blender.py` also pins `rf_blender.support_layout` and
+  `rf_blender.along`: a pipe support's saddle width scaled from the run's radius; its inner edge on
+  the run and its outer edge a thickness out, paired along each ray and spanning its cup about
+  straight down; its strap over the top, on the run, thinner than the saddle and lapping into it at
+  each end; its stem from inside the saddle into the pad and the pad on the floor; no gap for
+  one support, two in a row held apart by their pads and overlapping ones refused on the cut floor;
+  a support refused, naming it, whose saddle is under the raised floor or whose floor is above its
+  own saddle; and a run's point and direction where it crosses a coordinate. It renders nothing, so
+  it cannot see whether a support reads.

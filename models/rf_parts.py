@@ -17,7 +17,7 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `lifting_lugs`, `warning_plate`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `lifting_lugs`, `pipe_supports`, `warning_plate`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
 their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
@@ -272,7 +272,7 @@ def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     """A box with NO detail-floor check, for a caller that has already made the check on its own
     behalf. `hbeam` is one: a beam is checked once on its flange width, and its web and two flanges
     then go in as the parts of a feature rather than as features. `box` is another, which makes its
-    own check first, and the kit's `panels`, `fan_discs`, `valve`, `cable_tray`, `grating_deck` and
+    own check first, and the kit's `panels`, `fan_discs`, `pipe_supports`, `valve`, `cable_tray`, `grating_deck` and
     `access_ladder` are the rest."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
@@ -1036,6 +1036,61 @@ def lifting_lugs(name, placements, size=0.2, material="hazard"):
         bevel(o, 0.006, f"{name}-{k}")
         _place([o], p)
     return d
+
+
+def _arc_band(name, inner, outer, w, material):
+    """An open band between two arcs in its own (across, up), `w` wide along its own X: the
+    saddle or the strap of a pipe support."""
+    import bmesh
+    n = len(inner)
+    bm = bmesh.new()
+    back_in, front_in, back_out, front_out = [[bm.verts.new((x, u, z)) for u, z in edge]
+                                              for edge in (inner, outer) for x in (-w / 2, w / 2)]
+    for i in range(n - 1):
+        j = i + 1
+        bm.faces.new((front_in[i], front_out[i], front_out[j], front_in[j]))
+        bm.faces.new((back_in[j], back_out[j], back_out[i], back_in[i]))
+        bm.faces.new((back_out[i], back_out[j], front_out[j], front_out[i]))
+        bm.faces.new((back_in[i], front_in[i], front_in[j], back_in[j]))
+    for i in (0, n - 1):
+        bm.faces.new((back_in[i], back_out[i], front_out[i], front_in[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    o = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(o)
+    o.data.materials.append(MATERIAL(material))
+    bevel(o, 0.006, name)
+    return o
+
+
+def pipe_supports(name, placements, radius, height, material="frame", width=None):
+    """A pipe support at each placement under a run of `radius`: a saddle cupping the run's
+    underside, a strap over its top, a stem and a pad on the floor `height` below the run's axis
+    (`rf_blender.support_layout`). Each placement is a point on the run's axis with the run along
+    the support's own X; `rf_blender.along` finds one on a run's `centreline`.
+
+    THE READ IS THE SADDLE'S WIDTH ALONG THE RUN, on the raised floor, checked in the layout; it
+    scales with the radius unless `width` gives one, and the strap is as wide. A camera looking
+    down on the run sees the strap and little of the saddle. A support is frame steel unless
+    `material` names another role, and never an accent: it carries the run, not what is in it.
+    Nothing in it is pipe-shaped. Returns the layout."""
+    d = rf.support_layout(name, radius, height, placements, width=width)
+    w = d["width"]
+    for k, p in enumerate(placements):
+        pieces = [_arc_band(f"{name}-{k}-saddle", d["inner"], d["outer"], w, material),
+                  _arc_band(f"{name}-{k}-strap", d["strap_inner"], d["strap_outer"], w, material),
+                  _plate(f"{name}-{k}-stem", d["stem"]["size"], (0, 0, d["stem"]["centre"]), material, bev=0.006),
+                  _plate(f"{name}-{k}-pad", d["pad"]["size"], (0, 0, d["pad"]["centre"]), material, bev=0.006)]
+        _place(pieces, p)
+    return d
+
+
+def centreline(o):
+    """The evaluated centreline of a run `pipe` drew, in world space, in order along it: what a
+    model places parts along, such as `pipe_supports` through `rf_blender.along`."""
+    return _centreline(o)
 
 
 # ---- parts that sit on a run (#833) --------------------------------------------------------------

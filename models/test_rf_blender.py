@@ -674,6 +674,69 @@ assert "P" in (plate_refusal("P", (0.3, rf.WARNING_PLATE_MAX + 0.01), 2) or "")
 assert plate_refusal("P", (rf.WARNING_PLATE_MAX, 0.3), 4) is None
 assert "P" in (plate_refusal("P", (0.6, 0.35), 0) or "")
 
+# ---- pipe supports (#839) ----
+#
+# A pipe support is built about the run's axis at its own origin, the run along its own X: a saddle
+# cupping the underside, a stem down from it and a pad on the floor `height` below the axis.
+
+
+def support_refusal(*args, **kwargs):
+    try:
+        rf.support_layout(*args, **kwargs)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+_one = [((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))]
+_sp = rf.support_layout("S", 0.13, 0.3, _one)
+_t = rf.SUPPORT_THICK * 0.13
+# The saddle's width along the run scales with the run's radius; it carries the read.
+assert abs(_sp["width"] - rf.SUPPORT_WIDTH * 0.13) < 1e-9
+# Its inner edge lies on the run and its outer edge a thickness further out, both under the axis,
+# paired along one ray and spanning the cup's angle about straight down.
+assert all(abs(math.hypot(*p) - 0.13) < 1e-9 and p[1] < 0 for p in _sp["inner"])
+assert all(abs(math.hypot(*p) - (0.13 + _t)) < 1e-9 for p in _sp["outer"])
+for a, b in zip(_sp["inner"], _sp["outer"]):
+    assert abs(a[0] * b[1] - a[1] * b[0]) < 1e-9
+_ends = [math.degrees(math.atan2(p[1], p[0])) % 360 for p in (_sp["inner"][0], _sp["inner"][-1])]
+assert abs(_ends[1] - _ends[0] - rf.SUPPORT_CUP) < 1e-6 and abs((_ends[0] + _ends[1]) / 2 - 270) < 1e-6
+# A strap goes over the top of the run from one end of the saddle to the other, a little into each:
+# on the run inside, thinner than the saddle outside, and centred straight up.
+_ts = rf.SUPPORT_STRAP * 0.13
+assert all(abs(math.hypot(*p) - 0.13) < 1e-9 for p in _sp["strap_inner"])
+assert all(abs(math.hypot(*p) - (0.13 + _ts)) < 1e-9 for p in _sp["strap_outer"])
+assert 0 < _ts < _t
+_se = [math.degrees(math.atan2(p[1], p[0])) % 360 for p in (_sp["strap_inner"][0], _sp["strap_inner"][-1])]
+assert abs((_se[1] - _se[0]) % 360 - (360 - rf.SUPPORT_CUP + 2 * rf.SUPPORT_STRAP_LAP)) < 1e-6
+assert max(p[1] for p in _sp["strap_outer"]) > 0.13 and abs(_sp["strap_outer"][len(_sp["strap_outer"]) // 2][0]) < 1e-9
+# The stem runs from inside the saddle's bottom into the pad's middle, and the pad stands on the floor.
+_sz, _sh = _sp["stem"]["centre"], _sp["stem"]["size"][2]
+_pz, _ph = _sp["pad"]["centre"], _sp["pad"]["size"][2]
+assert abs(_pz - _ph / 2 - (-0.3)) < 1e-9
+assert abs(_sz - _sh / 2 - _pz) < 1e-9
+assert -(0.13 + _t) < _sz + _sh / 2 < -0.13
+assert _sp["stem"]["size"][0] == _sp["width"]
+# One support has no neighbour; two along a row half a tile apart stand clear by that less a pad's
+# width, and overlapping ones are refused on the cut floor.
+assert _sp["gap"] is None
+_pw = rf.SUPPORT_PAD[0] * _sp["width"]
+assert abs(rf.support_layout("S", 0.13, 0.3, rf.row((0, 0, 0), (1, 0, 0), 2))["gap"] - (0.5 - _pw)) < 1e-9
+assert "S" in (support_refusal("S", 0.13, 0.3, rf.row((0, 0, 0), (0.05, 0, 0), 2)) or "")
+# A support too narrow to read is refused, naming it, on the raised floor; so is one whose floor is
+# above the bottom of its own saddle.
+assert "S" in (support_refusal("S", 0.08, 0.3, _one) or "")
+assert support_refusal("S", 0.08, 0.3, _one, width=0.06) is None
+assert "S" in (support_refusal("S", 0.13, 0.15, _one) or "")
+
+# A run's point and direction where it crosses a value of one coordinate, from its centreline.
+_run = [(0.0, 0.0, 1.0), (2.0, 0.0, 0.0), (4.0, 2.0, 0.0)]
+_at, _dir = rf.along(_run, 0, 1.0)
+assert _close(_at, (1.0, 0.0, 0.5)) and _close(_dir, (2.0, 0.0, -1.0))
+_at, _dir = rf.along(_run, 0, 3.0)
+assert _close(_at, (3.0, 1.0, 0.0)) and _close(_dir, (2.0, 2.0, 0.0))
+assert rf.along(_run, 0, 5.0) is None
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,
