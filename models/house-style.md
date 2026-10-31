@@ -343,10 +343,11 @@ names another role, and never an accent. A saddle cups the run's underside, a st
 its top, and a stem runs from the saddle to a pad on the floor. The strap is what a camera looking
 down on a run in view sees, since the run hides the saddle beneath it (Truls, 2026-10-31, while
 #839 was implemented, recorded on #839). A support shows only where its run does: on the
-exchanger's north sheet the water header is all but hidden along its length, by the frame, the
-drums, the deck and the cabinet, and its two supports show on the south-facing sheet
-(`docs/research/density-figures.md` has the ray cast and the pixel counts). Each support reaches
-the floor from its own height, so one call supports a run that sags or rises. Its width
+exchanger's north sheet the water header is all but hidden along its length, by the frame's east
+top rail, the conduit, the drums, the deck and the cabinet among others, and its two supports
+show on the south-facing sheet (`docs/research/density-figures.md` has the ray cast and the pixel
+counts). Each support reaches the floor from its own height, so one call supports a run that sags
+or rises. Its width
 along the run scales with the run's radius, so a support under a run whose radius is under a tenth
 of a tile is refused unless the model gives it a width that reads. `rf_blender.along` finds where a
 support stands on a run's centreline.
