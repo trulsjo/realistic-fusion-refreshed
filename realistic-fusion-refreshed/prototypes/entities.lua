@@ -515,85 +515,112 @@ contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 -- never by editing a PNG. load-check fails if the manifest beside the sheets stops agreeing with
 -- the footprint and connections this file declares (#250).
 --
--- THE NOTE'S COMPASS IS THE FRAME IT WAS ACCEPTED IN. It was written when the machine stood five
--- wide by fifteen tall with its energy face WEST; ADR 0031 (#275) declares the same object fifteen
--- wide by five tall with the energy face NORTH, and the model turns with it (models/heat-exchanger/
--- build.py). So read the note's west as north, east as south, and its south end as the west end.
---
--- ONE THING IN THE NOTE FOLLOWS THE CAMERA RATHER THAN THAT MAPPING, and it is the dent. The note
--- puts it on a drum's "south flank" for a stated reason -- the camera stands south looking north,
--- so a hollow struck anywhere else hides behind the drum's own top -- and the reason is about the
--- camera, not the compass. Turning the body would carry note-south onto declared west and hide the
--- dent, so build.py strikes the flank the camera sees instead. The letter of that clause moves; its
--- reason is kept.
---
--- The prose below is the note as accepted in #252 except where a later round of Truls's changed
--- what the machine has: #275 added the short-end energy feeds and rebuilt the steam header, and
--- those sentences are his.
---
--- THE STEAM HEADER'S SHAPE WAS WRITTEN DOWN LATER, and not by him. Rings on a tube, the low
--- sagging drum-to-drum runs, the gooseneck off a cap and the landing inside a cap's ring of bolts
--- were decisions #275 took and left in build.py's comments alone. A model rebuilt from the note by
--- itself came back with three loops arching over the machine -- the exact shape build.py says it
--- was avoiding -- so those sentences are now in the note, describing the object that shipped.
---[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #252, after #246)
-A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
-whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
-channel let into its top under a grille: that face is what butts against the reactor, and it
-should read as one continuous contact, not a socket. The manifold is the one part that has
-CORRODED -- it is hot, wet and outdoors -- in patches and not evenly: rust where water has run,
-a much darker brown pitting inside it, and a little verdigris. Painted access panels break its
-run.
+-- THE NOTE BELOW IS A DRAFT, NOT AN ACCEPTED NOTE (#806). A session wrote it for Truls to rewrite
+-- or accept with a render of it in front of him, and rebuilding from his rewrite is #831. It
+-- replaces the note accepted in #252 and amended by #275, which git keeps. It is written in the
+-- compass this file declares: fifteen wide, five deep, the energy face north. Every kit part it
+-- names in capitals is one in models/rf_parts.py, and what it asks of each is read under
+-- models/house-style.md, The kit; the parts it would use if they existed are listed below it,
+-- outside the marker, each needing a ticket of its own.
+--[[ look: rf-heat-exchanger   (DRAFT for Truls to rewrite or accept, #806; read under models/house-style.md)
+A long, low hall, fifteen wide and five deep, that turns reactor energy into steam, and it should
+read as a piece of a working plant: things a crew climbs, opens, turns and bolts, and not a box with
+three drums in it.
 
-The rest of the body is an open frame of dark H-beams over a grating deck, so the internals show.
-The beams are almost straight and not quite: a rolled beam bolted into a frame is out by a few
-millimetres, and a grid of perfectly parallel ones reads as computer-drawn. Two bays are closed
-with a painted panel and two more carry a diagonal brace, so the bays are not all the same; a
-conduit runs down the east posts on clamps.
+THE NORTH FACE IS THE REACTOR CONTACT: a closed, riveted manifold trough the full fifteen tiles, with
+an energy channel let into its top under a grille, reading as one continuous contact and not as a
+socket. The manifold is the one part that has CORRODED -- it is hot, wet and outdoors -- in patches
+and not evenly: rust where water has run, a much darker brown pitting inside it, and a little
+verdigris. Its inner, south-facing side is a long row of INSET PANELS, twelve by two, in the same
+corroded steel, and the end panel at each end carries a WARNING PLATE.
 
-Down the centreline stand three tall vertical drums, bare metal with two rib bands and a weld
-seam, each capped by a bolted flange with a ring of bolts and a pressure relief valve (a part
-that could move later). The valve body is dark with a steam band, never a white body. ONE DRUM IS
-DENTED, struck on its south flank between the rib bands, and the bands bend into the hollow with
-it -- a straight band across a dent cancels it. At each drum's foot, clear of the drum on the
-east side, a gauge cluster and a handwheel valve.
+South of it the body is an open frame of dark H-beams over a GRATING DECK, so the internals show.
+The beams are almost straight and not quite. Two bays on the south face are closed with a dark
+backing carrying INSET PANELS of paint, three by two, set back behind the guard rail, and two more
+carry a diagonal brace. A conduit runs along the top of the south posts on clamps. THE BAY IN FRONT
+OF THE STEAM SOCKET HAS NO POST: it is the open bay the steam comes out through.
 
-From the manifold, glowing feed lines run east under the grating to the foot of each drum. At each
-short end a glowing feed runs from the socket into the manifold, so every energy connection has a
-run behind it. The steam header is a corrugated hose, and the banding is rings on a tube rather
-than a ripple in it: a ring about every tube-radius along the run, each standing about a quarter
-of the radius proud, with bare tube showing between them -- a gap between rings is what tells a
-corrugated hose from a spring. It is three runs rather than one pipe passing overhead: each end
-drum sends its steam to the middle drum, and the middle drum sends the lot to the single steam
-outlet at the middle of the east face. The two drum-to-drum runs stay LOW AND HANG -- a third of a
-tile of rise off the cap, then a sag that falls below the caps between them -- so they read as
-hoses slung between the drums and not as loops arching over the machine; the outlet run is the one
-that climbs, because it has to cross the middle drum's own shoulder. Every run meets a drum by
-bending down onto its cap -- the two between drums at both ends, the outlet run at its start -- so
-the middle drum carries three, landing inside its ring of bolts and spread around the cap rather
-than stacked on one line. Each leaves and lands vertically with half a tile of straight rise
-before it turns, or the curve overshoots and the hose curls back over itself. The outlet run bends
-around the drum and the frame rather than through them, and drops through an opening in the
-grating.
+Down the centreline stand three tall drums, bare metal with two rib bands and a weld seam, each
+capped by a bolted flange with a ring of BOLTS, a pressure relief valve that is dark with a steam
+band and never a white body, and two LIFTING LUGS on its top. Under each cap the drum wears a
+segmented CASING, an insulation jacket of eight segments with a slot between each. THE EAST DRUM IS
+DENTED, struck on its south flank between the rib bands, and the bands bend into the hollow with it
+-- a straight band across a dent cancels it. Off each relief valve a thin vent HOSE runs down the
+drum's south flank to the deck, no two bent alike. At each drum's foot, on the south side, a painted
+gauge cluster and a handwheel valve; the middle drum's stand east of the outlet run, out of its way.
+
+A SERVICE PLATFORM rides the top of the frame between the middle drum and the east drum: a second
+GRATING DECK laid on the top rails, so a crew can reach the caps, open enough that the bay under it
+still shows. An ACCESS LADDER climbs to it from the deck below, up through a hatch in it, its cage
+standing on past the platform as a guard round the hatch. Both of the platform's open edges that a
+crew could step off, the one over the steam outlet and the one to the south, are marked as walkway
+edges, and each stands on a toe board.
+
+From the manifold, glowing feed lines run south under the grating to the foot of each drum, and at
+each short end a glowing feed runs from the energy socket into the manifold, so every energy
+connection has a run behind it.
+
+THE STEAM HEADER IS A CORRUGATED HOSE: rings on a tube, a ring about every tube-radius along the run,
+each standing about a quarter of the radius proud, with bare tube between them -- the gap is what
+tells a hose from a spring. It is three runs. The west and east drums each send their steam to the
+middle drum in a run that rises a third of a tile off its cap and then hangs in a sag below the
+caps, both swinging north of the drums' line, so they read as hoses slung between the drums and not
+as loops arching over the machine; a VALVE stands at the low point of each, its handwheel turned to
+the camera. Every run leaves or lands a cap vertically with half a tile of straight rise, inside the
+ring of bolts; the middle cap carries three, spread round it, and its relief valve stands clear of
+all three.
+
+THE OUTLET RUN IS THE ONE THAT CLIMBS, and its route is this: up off the middle cap, east over the
+drum's shoulder, down east of the drum inside the frame and clear of the service platform's edge,
+then across in front of the deck, which is cut back where the run passes, and STRAIGHT DOWN ONTO THE
+STEAM SOCKET, landing on a flange with a ring of BOLTS on the socket's crown, just inside the slab
+and short of its accent band. It comes down in the open bay. A VALVE sits on it where it crosses in
+front of the deck, its handwheel lying flat on top, where the camera looks down on it. The guard
+rail stops short of the run on the west at a yellow stanchion and takes up again at the next post
+east, so nothing yellow stands in front of it. It bends around the drum and the frame rather than
+through them, and a band of the steam accent sits on its descent.
 
 THE THREE SOCKETS A PLAYER CAN PLUMB ARE DRAWN LIKE THE PIPE THAT PLUGS INTO THEM, height and
-thickness both -- water on both short ends, steam at the middle of the east face -- so a run into
-one reads as one continuous pipe and not as a step. At that height the stub passes through the
-slab, so each of the three has a modelled opening in it with a rim, rather than a tube clipping
-through solid stone. The three reactor-energy connections do NOT: they meet a machine face and
-never a pipe, so they stay where they were, half a tile higher and a fifth thicker, and the two
-sockets on each short end being drawn differently is this machine working rather than this machine
-wrong. The water header still runs along
-the base between its two sockets, but it turns down into the slab at each end with a collar where
-it goes in, and the outlet run does the same a little short of the steam socket. Neither goes down
-through a modelled hole the way a socket does; the pipe covers what one would show. The south
-end is closed by a painted wall with a vent, and a control cabinet with a blue panel stands at the
-south-east corner: those two are what break the symmetry.
+thickness both -- water on both short ends south of centre, steam at the middle of the south face
+-- each through a modelled, rimmed opening in the slab with a flange pair at its mouth. The three
+reactor-energy connections, at the middle of the north face and on both short ends north of centre,
+are drawn at the same height and thickness and wear neither rim nor flanges, because they meet a
+machine face and never a pipe. No other socket is drawn, and nothing pipe-shaped meets a footprint
+edge anywhere else. The water header runs under the grating between its two sockets, held by a PIPE
+SUPPORT in the span either side of the middle drum, and turns down into the slab short of each
+socket with a collar, and a ring of BOLTS holds each collar down.
+
+A CABLE TRAY runs along the top of the south rail, and a red and green cable LOOM leaves the top of
+the cabinet and lies in it the whole way east, with a drop out of the tray to each gauge cluster and
+a last drop to the deck at the east end. Its cables are a loom's colours and no fluid's.
+
+The west end is closed by a painted wall with a vent, and a control cabinet with a blue panel stands
+at the south-west corner, its top broken into INSET PANELS and a WARNING PLATE on its front under
+the blue panel: those two are what break the symmetry. Past each end drum a cooler stands on the
+deck, a stack of four FAN DISCS on a shaft, the same module at both ends. A row of BOLTS runs along
+the slab's south kerb.
+
+HAZARD YELLOW IS A MARKING HERE AND NOTHING MORE, and it goes on six things: the guard rail along
+the south face, in lengths between the posts, with its one stanchion at the open bay; the walkway
+edges of both decks; the access ladder's cage; the lifting lugs; and the warning plates. Nothing
+else on the machine is yellow.
 
 The manifold channel and its feed lines glow with the energy accent while the machine is working,
 and are DARK when it is not -- they carry the accent as emission, not as their own colour, or a
 stopped machine looks lit. The drums are steam and never glow. Nothing on it moves yet.
 ]]
+-- PROPOSED KIT PARTS, NOT BUILT (#806). The draft above would use these if they existed. Each is a
+-- proposal only and needs a ticket of its own before anything is drawn:
+--
+--   * handrail -- a post-and-rail guard along a walkway edge, yellow as a guard is, so the service
+--     platform's open edges carry one rather than a toe board alone. Proposal; needs its own ticket.
+--   * hatch -- a hinged grating cover standing open beside an access ladder's opening in a deck.
+--     Proposal; needs its own ticket.
+--   * instrument -- a pressure or temperature transmitter, a small box on a stem with a loom drop to
+--     it, so a drum's jacket and the outlet's descent carry one each. Proposal; needs its own
+--     ticket.
+--   * junction box -- a small dark box on a post where a loom leaves its tray. Proposal; needs its
+--     own ticket.
 local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-heat-exchanger", {
   mining_time = 0.5,
 })
