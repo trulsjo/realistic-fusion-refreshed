@@ -945,7 +945,8 @@ def lifting_lugs(name, placements, size=0.2, material="hazard"):
     Round a ring each faces out from the centre, so the lug the camera faces shows its eye.
 
     THE READ IS THE EYE'S DIAMETER, on the cut floor, and THE PLATE'S THICKNESS, on the raised floor,
-    both checked in `rf_blender.lug_layout`, which also holds neighbours apart by the cut floor.
+    both checked in `rf_blender.lug_layout`, which also holds neighbours apart by the cut floor. At
+    the part's proportions the plate binds first, so `size` is 0.2 at the least, and the default.
 
     A LIFTING POINT IS A MARKING, so lugs are hazard yellow unless `material` names another role
     (`models/house-style.md`, Palette). Nothing in a lug is pipe-shaped."""

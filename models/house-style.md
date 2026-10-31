@@ -283,7 +283,7 @@ be lenient by up to the spacing of a part's points.
 | `bolts` | a ring, a row or a stack | the head's diameter; the gap between neighbouring bolts on the cut floor | #804 |
 | `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
-| `lifting_lugs` | a ring, a row or a stack | the eye's diameter, on the cut floor; the plate's thickness, on the raised floor; the gap between neighbouring lugs on the cut floor | #837 |
+| `lifting_lugs` | a ring, a row or a stack | the eye's diameter, on the cut floor; the plate's thickness, on the raised floor, which binds first at its proportions; the gap between neighbouring lugs on the cut floor | #837 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 | `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |

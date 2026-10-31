@@ -624,8 +624,9 @@ assert _lg["gap"] is None
 _two = rf.lug_layout("G", 0.2, rf.ring((0, 0, 0), 0.9, 2))
 assert _two["gap"] is not None and _two["gap"] > 1.5
 assert "G" in (lug_refusal("G", 0.2, rf.row((0, 0, 0), (0.06, 0, 0), 2)) or "")
-# A lug too small for its eye or its plate is refused, naming it: the plate on the raised floor by
-# its thickness, the eye on the cut floor by its diameter.
+# A lug too thin for its plate is refused, naming it, on the raised floor by the plate's thickness.
+# At these proportions the plate binds first: the eye, held to the cut floor, would pass down to
+# about 0.11, so no lug can be refused on its eye alone while LUG_EYE and LUG_THICK stand.
 assert "G" in (lug_refusal("G", 0.18, [((0, 0, 0), (0, 0, 0))]) or "")
 assert lug_refusal("G", 0.2, [((0, 0, 0), (0, 0, 0))]) is None
 

@@ -869,9 +869,12 @@ def lug_layout(name, size, placements):
     plate's own (across, up).
 
     THE READ IS THE EYE'S DIAMETER, on the cut floor, since the eye is the hole that tells a lug from
-    a tab, and THE PLATE'S THICKNESS, on the raised floor. Neighbouring lugs, measured from the lugs
-    as placed by `least_gap`, stand apart by the cut floor, as bolts do. Returns the outline, the
-    eye, the thickness, the height and the gap, None for one lug."""
+    a tab, and THE PLATE'S THICKNESS, on the raised floor. Both scale with the width, and at these
+    proportions the plate's floor is the one that binds: it refuses any lug narrower than 0.2,
+    while the eye would hold down to about 0.11. The eye is checked all the same, so a change to
+    LUG_EYE or LUG_THICK cannot let it under its floor. Neighbouring lugs, measured from the lugs as
+    placed by `least_gap`, stand apart by the cut floor, as bolts do. Returns the outline, the eye,
+    the thickness, the height and the gap, None for one lug."""
     half, eye, thick, ec = size / 2, LUG_EYE * size, LUG_THICK * size, LUG_CENTRE * size
     check_detail(f"{name} (eye)", eye, cut=True)
     check_detail(f"{name} (plate thickness)", thick)
