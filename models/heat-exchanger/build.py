@@ -41,7 +41,7 @@ import rf_blender as rf  # noqa: E402
 import rf_parts  # noqa: E402
 from rf_parts import (access_ladder, bolts, box, cable_tray, casing, cyl, dent, fan_discs,  # noqa: E402,F401
                       grating_deck, hbeam, hose, lifting_lugs, loom, panels, pipe, rivets, seam, stream,
-                      torus, valve)
+                      torus, valve, warning_plate)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -106,12 +106,14 @@ PALETTE = {
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
     # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
     # walkway edges, each an end bar and the toe board on it (#835), the guard rail along the open
-    # side, the cage of the access ladder up the middle drum (#836), and the lifting lugs on the
-    # drums' tops (#837), and nowhere else -- five elements, counting each edge as one though it is
-    # two pieces, the rail as one though it is laid in lengths, the cage as one though it is hoops
-    # and bars and the lugs as one though they are six, none of them a panel, and never a fluid
-    # accent. Truls judged the cage within the house style's few small elements (2026-10-30,
-    # recorded on #836), and chose the lugs yellow, small and few (2026-10-31, recorded on #837).
+    # side, the cage of the access ladder up the middle drum (#836), the lifting lugs on the drums'
+    # tops (#837) and the warning plates at the manifold's ends, striped with dark (#838), and
+    # nowhere else -- six elements, counting each edge as one though it is two pieces, the rail as
+    # one though it is laid in lengths, the cage as one though it is hoops and bars, the lugs as one
+    # though they are six and the plates as one though they are two, none of them a panel, and
+    # never a fluid accent. Truls judged the cage within the house style's few small elements
+    # (2026-10-30, recorded on #836), chose the lugs yellow, small and few (2026-10-31, recorded on
+    # #837), and judged the plates within the budget too (2026-10-31, recorded on #838).
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,
@@ -743,6 +745,14 @@ else:
     # corrosion, since it is the same steel, and turns with its yaw.
     panels("ManifoldPlates", (on_manifold(0) + MAN_W / 2, 0, SLAB + MAN_H / 2), (L - 0.2, MAN_H), "+X",
            (12, 2), "body", yaw=MAN_YAW, corrode=True)
+    # A WARNING PLATE AT EACH END OF THE MANIFOLD (#838), on the upper end plate of the face above,
+    # which the camera sees between the frame's top rail and the end drum. It is placed on the
+    # plates' outermost face, 0.07 proud, and its back is set into them; it takes none of the
+    # manifold's yaw, which moves its ends less than a hundredth of a tile across its width.
+    cells = rf.panel_grid(L - 0.2, MAN_H, 12, 2, 0.05)
+    for end, (y, z, _, _) in (("South", cells[12]), ("North", cells[23])):
+        warning_plate(f"ManifoldWarning{end}", (on_manifold(y) + MAN_W / 2 + 0.07, y, SLAB + MAN_H / 2 + z),
+                      (0.6, 0.35), "+X")
     # -- kit parts: repeated modules (#804).
     #
     # A SEGMENTED CASING ROUND EACH DRUM'S SHOULDER: eight dark segments with a slot between each,

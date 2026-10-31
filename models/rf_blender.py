@@ -897,6 +897,52 @@ def lug_layout(name, size, placements):
     return {"inner": inner, "outer": outer, "eye": eye, "thick": thick, "height": ec + half, "gap": gap}
 
 
+WARNING_PLATE_MAX = 0.8          # the longest side a warning plate may have: a small element
+WARNING_PLATE_DEPTH = (-0.02, 0.02)   # its back and its front, off the face it is placed on
+
+
+def _clip(poly, k, lo):
+    """The part of convex `poly` where coordinate u + v, times `k`, is at least `lo` * `k`."""
+    out = []
+    for a, b in zip(poly, poly[1:] + poly[:1]):
+        fa, fb = k * (a[0] + a[1] - lo), k * (b[0] + b[1] - lo)
+        if fa >= 0:
+            out.append(a)
+        if fa * fb < 0:
+            t = fa / (fa - fb)
+            out.append((a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])))
+    return out
+
+
+def warning_plate_layout(name, size, stripes):
+    """A warning plate's bands: the rectangle `size` (u, v) about its own centre, cut along u + v
+    into `2 * stripes + 1` bands of one width, the plate's role at each end and a stripe between
+    each two, so `stripes` stripes cross it at 45 degrees. Each band is a convex outline in the
+    face's (u, v) and whether it is a stripe.
+
+    THE READ IS A STRIPE'S WIDTH, square to the stripe, on the raised floor: the stripes are what
+    tell a warning plate from a yellow patch. No side may be longer than WARNING_PLATE_MAX, since a
+    marking is a small element and never a panel (`models/house-style.md`, Palette). The plate
+    stands from WARNING_PLATE_DEPTH's back to its front off the face, its back set into the face so
+    it sits on one that is not quite flat. Returns the bands, the stripe's width and the depth."""
+    u, v = size
+    if max(u, v) > WARNING_PLATE_MAX + 1e-9:
+        sys.exit(f"warning plate: {name} is {u:g} by {v:g}, larger than a small element: no side may "
+                 f"be longer than {WARNING_PLATE_MAX:g}. A marking is never a panel. "
+                 f"See models/house-style.md, Palette.")
+    if stripes < 1:
+        sys.exit(f"warning plate: {name} has no stripe, and its stripes are what it reads by.")
+    n = 2 * stripes + 1
+    step = (u + v) / n
+    width = check_detail(f"{name} (stripe width)", step / math.sqrt(2))
+    rect = [(-u / 2, -v / 2), (u / 2, -v / 2), (u / 2, v / 2), (-u / 2, v / 2)]
+    bands = []
+    for k in range(n):
+        lo = -(u + v) / 2 + k * step
+        bands.append({"outline": _clip(_clip(rect, 1, lo), -1, lo + step), "stripe": k % 2 == 1})
+    return {"bands": bands, "stripe_width": width, "depth": WARNING_PLATE_DEPTH}
+
+
 class Stream(random.Random):
     """One part's own random stream: `random.Random` with the one draw the models make most."""
 
