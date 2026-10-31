@@ -422,3 +422,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   bracket back from each stile every few rungs where it stands off; and the gap between rungs and
   the rung refused under their floors, as are a top not above the foot and a facing straight up.
   It renders nothing, so it cannot see whether an access ladder reads.
+- 2026-10-31, #837: `models/test_rf_blender.py` also pins `rf_blender.lug_layout`: a lifting lug's
+  eye, thickness and eye height scaled from its width; its outline traced along rays from the eye's
+  centre, each inner point on the eye and its outer point on the half-disc top, a side or the base
+  along the same ray, the base's corners included; no gap for one lug, neighbours on a ring held
+  apart and overlapping ones refused on the cut floor; and a lug whose plate is under the raised
+  floor refused, naming it. It renders nothing, so it cannot see whether a lug reads.

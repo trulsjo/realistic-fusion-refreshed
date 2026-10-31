@@ -17,7 +17,7 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `lifting_lugs`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
 their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
@@ -937,6 +937,43 @@ def casing(name, placements, radius, arc, height, thick=0.07, material="dark"):
         o.data.materials.append(MATERIAL(material))
         bevel(o, 0.015, f"{name}-{k}")
         _place([o], p)
+
+
+def lifting_lugs(name, placements, size=0.2, material="hazard"):
+    """A lifting lug at each placement: a plate `size` wide standing on the placement, its face
+    square to its own X, with an eye through it below a half-disc top (`rf_blender.lug_layout`).
+    Round a ring each faces out from the centre, so the lug the camera faces shows its eye.
+
+    THE READ IS THE EYE'S DIAMETER, on the cut floor, and THE PLATE'S THICKNESS, on the raised floor,
+    both checked in `rf_blender.lug_layout`, which also holds neighbours apart by the cut floor.
+
+    A LIFTING POINT IS A MARKING, so lugs are hazard yellow unless `material` names another role
+    (`models/house-style.md`, Palette). Nothing in a lug is pipe-shaped."""
+    import bmesh
+    d = rf.lug_layout(name, size, placements)
+    half = d["thick"] / 2
+    n = len(d["inner"])
+    for k, p in enumerate(placements):
+        bm = bmesh.new()
+        rings = [[bm.verts.new((x, u, z)) for u, z in ring] for ring in (d["inner"], d["outer"])
+                 for x in (-half, half)]
+        back_in, front_in, back_out, front_out = rings
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((front_in[i], front_out[i], front_out[j], front_in[j]))
+            bm.faces.new((back_in[j], back_out[j], back_out[i], back_in[i]))
+            bm.faces.new((back_out[i], back_out[j], front_out[j], front_out[i]))
+            bm.faces.new((back_in[i], front_in[i], front_in[j], back_in[j]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        mesh = bpy.data.meshes.new(f"{name}-{k}")
+        bm.to_mesh(mesh)
+        bm.free()
+        o = bpy.data.objects.new(f"{name}-{k}", mesh)
+        bpy.context.scene.collection.objects.link(o)
+        o.data.materials.append(MATERIAL(material))
+        bevel(o, 0.006, f"{name}-{k}")
+        _place([o], p)
+    return d
 
 
 # ---- parts that sit on a run (#833) --------------------------------------------------------------

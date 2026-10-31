@@ -849,6 +849,51 @@ def ladder_layout(name, foot, top, facing, pitch=LADDER_PITCH, rung=LADDER_RUNG,
             "brackets": brackets, "gap": pitch - rung}
 
 
+# A LIFTING LUG'S PROPORTIONS (#837), as fractions of its width: the eye's diameter LUG_EYE, the
+# plate's thickness LUG_THICK and the eye's centre LUG_CENTRE above the base. Its top is a half disc
+# of half the width, concentric with the eye. LUG_POINTS rays from the eye's centre trace it.
+LUG_EYE = 0.45
+LUG_THICK = 0.3
+LUG_CENTRE = 0.8
+LUG_POINTS = 32
+
+
+def lug_layout(name, size, placements):
+    """A lifting lug's outline and how close neighbouring lugs stand: a plate `size` wide standing
+    on its own origin, its face square to its own X, so a ring's outward placements turn each to
+    face out, with an eye through it.
+
+    The outline is traced along rays from the eye's centre: `inner` on the eye, `outer` on the
+    plate's edge along the same ray, a half disc of half the width above the eye's centre and the
+    rectangle's sides and base below it, the base's two corners included. Each pair is in the
+    plate's own (across, up).
+
+    THE READ IS THE EYE'S DIAMETER, on the cut floor, since the eye is the hole that tells a lug from
+    a tab, and THE PLATE'S THICKNESS, on the raised floor. Neighbouring lugs, measured from the lugs
+    as placed by `least_gap`, stand apart by the cut floor, as bolts do. Returns the outline, the
+    eye, the thickness, the height and the gap, None for one lug."""
+    half, eye, thick, ec = size / 2, LUG_EYE * size, LUG_THICK * size, LUG_CENTRE * size
+    check_detail(f"{name} (eye)", eye, cut=True)
+    check_detail(f"{name} (plate thickness)", thick)
+    corners = [math.atan2(-ec, half), math.atan2(-ec, -half) % (2 * math.pi)]
+    angles = sorted({round(2 * math.pi * k / LUG_POINTS, 12) for k in range(LUG_POINTS)}
+                    | {round(a % (2 * math.pi), 12) for a in corners})
+    inner, outer = [], []
+    for t in angles:
+        c, s = math.cos(t), math.sin(t)
+        inner.append((eye / 2 * c, ec + eye / 2 * s))
+        if s >= -1e-12:
+            outer.append((half * c, ec + half * s))
+        else:
+            reach = min(half / abs(c) if abs(c) > 1e-12 else math.inf, ec / -s)
+            outer.append((reach * c, ec + reach * s))
+    pts = [(x, u, z) for u, z in outer for x in (-thick / 2, thick / 2)]
+    gap = least_gap(pts, placements)
+    if gap is not None:
+        check_detail(f"{name} (gap)", gap, cut=True)
+    return {"inner": inner, "outer": outer, "eye": eye, "thick": thick, "height": ec + half, "gap": gap}
+
+
 class Stream(random.Random):
     """One part's own random stream: `random.Random` with the one draw the models make most."""
 

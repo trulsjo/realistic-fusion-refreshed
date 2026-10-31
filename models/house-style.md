@@ -283,6 +283,7 @@ be lenient by up to the spacing of a part's points.
 | `bolts` | a ring, a row or a stack | the head's diameter; the gap between neighbouring bolts on the cut floor | #804 |
 | `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
+| `lifting_lugs` | a ring, a row or a stack | the eye's diameter, on the cut floor; the plate's thickness, on the raised floor; the gap between neighbouring lugs on the cut floor | #837 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 | `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |
@@ -322,6 +323,12 @@ bracket runs back to it from each stile every few rungs. In prose and as a kit p
 access ladder, never a ladder alone, which `GLOSSARY.md` gives to the research ladders; the
 arithmetic that lays one out, `rf_blender.ladder_layout` and its `LADDER_` constants, and the
 names a model gives its pieces may say ladder.
+
+**A lifting lug is a marking** (#837): a plate standing on the surface with an eye through it,
+placed round a ring, along a row or up a stack, and hazard yellow unless the model names another
+role, since lifting points are among the things the yellow is kept for. Round a ring each faces
+out, so the lug the camera faces shows its eye. Its eye, its thickness and its height scale with
+its width.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes
