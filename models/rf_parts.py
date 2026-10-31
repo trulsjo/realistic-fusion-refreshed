@@ -17,7 +17,7 @@ first two go through -- forward whatever keyword flags they are given straight t
 never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
 `rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
 rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
-`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `lifting_lugs`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
+`dark`. The kit's `loom`, `bolts`, `fan_discs`, `casing`, `lifting_lugs`, `warning_plate`, `valve`, `cable_tray`, `grating_deck` and `access_ladder` take no flags either, and name
 their materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
@@ -833,6 +833,67 @@ def panels(name, centre, size, normal, grid, material="body", seam=0.05, depth=0
         # box's smallest side is its depth.
         out.append(_plate(f"{name}-{k}", tuple(dims), loc, material, rot=(0, 0, yaw), bev=0.012, **mat_opts))
     return out
+
+
+def warning_plate(name, centre, size, normal, stripes=4, material="hazard", stripe="dark"):
+    """A warning plate on a face: a rectangle `size` = (u, v) about `centre`, with `stripes`
+    stripes of `stripe` crossing `material` at 45 degrees (`rf_blender.warning_plate_layout`).
+    `normal` and `size` are read as `panels` reads them.
+
+    THE READ IS A STRIPE'S WIDTH, on the raised floor, checked in the layout. NO SIDE MAY BE LONGER
+    THAN `rf_blender.WARNING_PLATE_MAX`, 0.8: a warning plate is a marking, so it is a small element,
+    never a panel, and the layout refuses a larger one. Its stripes are never a fluid accent: the
+    plate is hazard yellow and dark unless the model names other roles (`models/house-style.md`,
+    Palette).
+
+    ONE OBJECT, ONE MATERIAL SLOT PER ROLE, its bands welded where they meet. It stands a little
+    proud of the face, its back set into it, so it sits on a face that is not quite flat, such as
+    plates that stand out from it by different depths. The bevel rounds its outer edges and leaves
+    the flat seams between bands alone. Nothing in it is pipe-shaped. Returns the layout."""
+    import bmesh
+    d = rf.warning_plate_layout(name, size, stripes)
+    axis, sign = normal[1], (1 if normal[0] == "+" else -1)
+    n = "XYZ".index(axis)
+    iu, iv = _FACE_AXES[axis]
+    half = (size[0] / 2, size[1] / 2)
+    bm = bmesh.new()
+    made = {}
+
+    def vert(u, v, w):
+        key = (round(u, 9), round(v, 9), w)
+        if key not in made:
+            p = list(centre)
+            p[iu] += u
+            p[iv] += v
+            p[n] += sign * w
+            made[key] = bm.verts.new(p)
+        return made[key]
+
+    def on_side(a, b):
+        return any(abs(abs(a[i]) - half[i]) < 1e-9 and abs(abs(b[i]) - half[i]) < 1e-9
+                   and a[i] * b[i] > 0 for i in (0, 1))
+
+    back, front = d["depth"]
+    for band in d["bands"]:
+        ring = band["outline"]
+        role = 1 if band["stripe"] else 0
+        faces = [bm.faces.new([vert(u, v, front) for u, v in ring]),
+                 bm.faces.new([vert(u, v, back) for u, v in ring[::-1]])]
+        for a, b in zip(ring, ring[1:] + ring[:1]):
+            if on_side(a, b):
+                faces.append(bm.faces.new((vert(*a, back), vert(*b, back), vert(*b, front), vert(*a, front))))
+        for f in faces:
+            f.material_index = role
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    o = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(o)
+    o.data.materials.append(MATERIAL(material))
+    o.data.materials.append(MATERIAL(stripe))
+    bevel(o, 0.006, name)
+    return d
 
 
 # ---- repeated modules (#804) --------------------------------------------------------------------

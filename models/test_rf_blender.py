@@ -630,6 +630,50 @@ assert "G" in (lug_refusal("G", 0.2, rf.row((0, 0, 0), (0.06, 0, 0), 2)) or "")
 assert "G" in (lug_refusal("G", 0.18, [((0, 0, 0), (0, 0, 0))]) or "")
 assert lug_refusal("G", 0.2, [((0, 0, 0), (0, 0, 0))]) is None
 
+# ---- warning plates (#838) ----
+#
+# A warning plate is a rectangle in its face's own (u, v), cut along u + v into bands that take
+# the plate's role and the stripe's in turn, a plate band at each end.
+
+
+def plate_refusal(*args):
+    try:
+        rf.warning_plate_layout(*args)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+def _area(poly):
+    return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(poly, poly[1:] + poly[:1]))) / 2
+
+
+_wp = rf.warning_plate_layout("P", (0.6, 0.35), 4)
+# Four stripes make nine bands, the plate's at each end and the stripes between.
+assert [b["stripe"] for b in _wp["bands"]] == [False, True] * 4 + [False]
+# Each band is a convex piece of the rectangle between two lines of u + v, the bands in order and
+# each as wide as the next along u + v; together they cover the plate exactly once.
+_step = (0.6 + 0.35) / 9
+for k, b in enumerate(_wp["bands"]):
+    lo, hi = -(0.6 + 0.35) / 2 + k * _step, -(0.6 + 0.35) / 2 + (k + 1) * _step
+    for (u, v) in b["outline"]:
+        assert abs(u) <= 0.3 + 1e-9 and abs(v) <= 0.175 + 1e-9, (k, u, v)
+        assert lo - 1e-9 <= u + v <= hi + 1e-9, (k, u, v)
+    assert _area(b["outline"]) > 0
+assert abs(sum(_area(b["outline"]) for b in _wp["bands"]) - 0.6 * 0.35) < 1e-9
+# The bands lie at 45 degrees, so a stripe is its step along u + v over the square root of two wide.
+assert abs(_wp["stripe_width"] - _step / math.sqrt(2)) < 1e-9
+# It stands a little proud of the face, its back set into it.
+assert _wp["depth"][0] < 0 < _wp["depth"][1]
+# A plate whose stripes are under the raised floor is refused, naming it; so is one larger than a
+# small element on either side, and one with no stripe.
+assert "P" in (plate_refusal("P", (0.3, 0.2), 4) or "")
+assert plate_refusal("P", (0.3, 0.2), 2) is None
+assert "P" in (plate_refusal("P", (rf.WARNING_PLATE_MAX + 0.01, 0.3), 4) or "")
+assert "P" in (plate_refusal("P", (0.3, rf.WARNING_PLATE_MAX + 0.01), 2) or "")
+assert plate_refusal("P", (rf.WARNING_PLATE_MAX, 0.3), 4) is None
+assert "P" in (plate_refusal("P", (0.6, 0.35), 0) or "")
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,

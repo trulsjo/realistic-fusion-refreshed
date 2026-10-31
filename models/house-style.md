@@ -284,6 +284,7 @@ be lenient by up to the spacing of a part's points.
 | `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
 | `lifting_lugs` | a ring, a row or a stack | the eye's diameter, on the cut floor; the plate's thickness, on the raised floor, which binds first at its proportions; the gap between neighbouring lugs on the cut floor | #837 |
+| `warning_plate` | a face | a stripe's width, on the raised floor; no side longer than 0.8 | #838 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 | `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |
@@ -329,6 +330,12 @@ placed round a ring, along a row or up a stack, and hazard yellow unless the mod
 role, since lifting points are among the things the yellow is kept for. Round a ring each faces
 out, so the lug the camera faces shows its eye. Its eye, its thickness and its height scale with
 its width.
+
+**A warning plate is a marking** (#838): a small plate on a face, standing a little proud of it,
+with dark stripes crossing hazard yellow at 45 degrees, a yellow band at each end. It is a small
+element and never a panel, so no side is longer than `rf_blender.WARNING_PLATE_MAX`, 0.8, and a
+model places only a few. Its back is set into the face, so it sits on plates that stand out by
+different depths.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

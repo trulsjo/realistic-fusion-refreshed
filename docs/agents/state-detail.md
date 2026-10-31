@@ -428,3 +428,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   along the same ray, the base's corners included; no gap for one lug, neighbours on a ring held
   apart and overlapping ones refused on the cut floor; and a lug whose plate is under the raised
   floor refused, naming it. It renders nothing, so it cannot see whether a lug reads.
+- 2026-10-31, #838: `models/test_rf_blender.py` also pins `rf_blender.warning_plate_layout`: a
+  warning plate's nine bands for four stripes, a plate band at each end and stripes between; each
+  band inside the rectangle and between its two lines of u + v, the bands covering the plate exactly
+  once by area; the stripe's width across it; its back set into the face and its front proud; and a
+  plate refused, naming it, whose stripes are under the raised floor, whose side is longer than
+  `rf_blender.WARNING_PLATE_MAX`, or that has no stripe. It renders nothing, so it cannot see
+  whether a plate reads.

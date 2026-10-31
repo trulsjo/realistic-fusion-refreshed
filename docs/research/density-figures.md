@@ -347,6 +347,24 @@ placing re-rolled nothing else, which is *inferred* from #825's streams. The mes
 the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
 lug against the drum it stands on.
 
+## The warning plates of #838
+
+Measured 2026-10-31 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#838](https://github.com/trulsjo/realistic-fusion-refreshed/issues/838) put one of the kit's
+warning plates at each end of the exchanger's manifold, on the face the camera sees, in hazard
+yellow striped with dark. The "before" is #837's sheet, taken again from the same command on
+`main` the same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #837 | 0.2876 | 0.5351 |
+| after, #838 | 0.2892 | 0.5367 |
+
+**Both rose**, *measured*: the pixel figure by 0.0016 and the normal-pass figure by 0.0016. The
+placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on
+the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
+plate against the manifold plate it stands on.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level
