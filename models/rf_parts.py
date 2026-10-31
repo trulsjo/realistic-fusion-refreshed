@@ -1065,24 +1065,32 @@ def _arc_band(name, inner, outer, w, material):
     return o
 
 
-def pipe_supports(name, placements, radius, height, material="frame", width=None):
+def pipe_supports(name, placements, radius, floor, material="frame", width=None):
     """A pipe support at each placement under a run of `radius`: a saddle cupping the run's
-    underside, a strap over its top, a stem and a pad on the floor `height` below the run's axis
+    underside, a strap over its top, a stem and a pad on the floor at height `floor`
     (`rf_blender.support_layout`). Each placement is a point on the run's axis with the run along
-    the support's own X; `rf_blender.along` finds one on a run's `centreline`.
+    the support's own X, turned about Z only; `rf_blender.along` finds one on a run's
+    `centreline`. Each support reaches the floor from its own height, so one call supports a run
+    that sags or rises.
+
+    THE FLOOR, NOT A HEIGHT, where #839's brief named `height`: one height for every placement
+    made a model place each support under a sagging run with a call of its own, and the gap
+    between neighbours was then never checked.
 
     THE READ IS THE SADDLE'S WIDTH ALONG THE RUN, on the raised floor, checked in the layout; it
     scales with the radius unless `width` gives one, and the strap is as wide. A camera looking
-    down on the run sees the strap and little of the saddle. A support is frame steel unless
+    down on a run in view sees the strap and little of the saddle. A support is frame steel unless
     `material` names another role, and never an accent: it carries the run, not what is in it.
     Nothing in it is pipe-shaped. Returns the layout."""
-    d = rf.support_layout(name, radius, height, placements, width=width)
+    d = rf.support_layout(name, radius, floor, placements, width=width)
     w = d["width"]
     for k, p in enumerate(placements):
         pieces = [_arc_band(f"{name}-{k}-saddle", d["inner"], d["outer"], w, material),
                   _arc_band(f"{name}-{k}-strap", d["strap_inner"], d["strap_outer"], w, material),
-                  _plate(f"{name}-{k}-stem", d["stem"]["size"], (0, 0, d["stem"]["centre"]), material, bev=0.006),
-                  _plate(f"{name}-{k}-pad", d["pad"]["size"], (0, 0, d["pad"]["centre"]), material, bev=0.006)]
+                  _plate(f"{name}-{k}-stem", d["stems"][k]["size"], (0, 0, d["stems"][k]["centre"]), material,
+                         bev=0.006),
+                  _plate(f"{name}-{k}-pad", d["pads"][k]["size"], (0, 0, d["pads"][k]["centre"]), material,
+                         bev=0.006)]
         _place(pieces, p)
     return d
 

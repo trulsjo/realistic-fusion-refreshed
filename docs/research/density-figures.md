@@ -379,13 +379,19 @@ same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
 | after, #839 | 0.2892 | 0.5371 |
 
 **The pixel figure did not move and the normal-pass figure rose by 0.0004**, *measured*. Both are
-read on the north sheet, where the water header is hidden along its length behind the east top
-rail, the conduit, the drums and the deck: 36 of its pixels changed by more than 30 of 765 summed
-over the channels, none by more than 90. The south-facing sheet, which neither figure reads, is
-where the supports show. The placing re-rolled nothing else, which is *inferred* from #825's
-streams. The mesh-overlap test on the built model agrees, *measured*: it found every pair it found
-on `main`, and no other but each support's pieces against each other, against the header and, for
-one pad, against the slab it stands on.
+read on the north sheet, where the water header is all but hidden along its length, *measured*:
+a ray cast toward the camera from each of its 690 vertices higher than 0.3, in the built model
+with Blender, met something from all but nine of them, at five places along it, and what it met
+was the frame's east top rail, the conduit, the drums, the deck, the cabinet, a bay panel and the
+steam header's last run. On that sheet 31 pixels changed by more than 30 of 765 summed over the channels, none by more
+than 90. The other three sheets, which neither figure reads, are where the supports show: the
+south-facing one has 138 pixels changed by more than 30, at both supports, the east-facing 63 and
+the west-facing 32, each at one place. The placing re-rolled nothing else, which is *inferred* from
+#825's streams. The mesh-overlap test on the built model agrees, *measured*: it found every pair it
+found on `main`, and no other but each support's pieces against each other and against the header,
+and one pad against the slab. Both pads are built to stand on the slab's top, so that the test
+does not count the other is *inferred* to be a face lying on a face, which it counts or not by
+rounding.
 
 ## What the "before" says, and how far it goes
 
