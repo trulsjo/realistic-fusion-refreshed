@@ -746,8 +746,9 @@ else:
     panels("ManifoldPlates", (on_manifold(0) + MAN_W / 2, 0, SLAB + MAN_H / 2), (L - 0.2, MAN_H), "+X",
            (12, 2), "body", yaw=MAN_YAW, corrode=True)
     # A WARNING PLATE AT EACH END OF THE MANIFOLD (#838), on the upper end plate of the face above,
-    # which the camera sees between the frame's top rail and the end drum. It is placed on the
-    # plates' outermost face, 0.07 proud, and its back is set into them; it takes none of the
+    # which the camera sees between the frame's top rail and the end drum. Each plate stands 0.05 to
+    # 0.07 proud of the face, so this is placed 0.07 out, the most any can stand, and its back, 0.02
+    # behind that, meets the plate under it or is set into it; it takes none of the
     # manifold's yaw, which moves its ends less than a hundredth of a tile across its width.
     cells = rf.panel_grid(L - 0.2, MAN_H, 12, 2, 0.05)
     for end, (y, z, _, _) in (("South", cells[12]), ("North", cells[23])):
