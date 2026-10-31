@@ -52,16 +52,21 @@ geo_path = os.path.join(HERE, "geometry.json")
 geo = json.load(open(geo_path, encoding="utf-8"))
 (x0, y0), (x1, y1) = geo["collision_box"]
 # THE BODY IS BUILT LONG AXIS NORTH-SOUTH AND TURNED AFTERWARDS. Every part below is placed in the
-# frame the look note was accepted in (#252): five wide along X, fifteen long along Y, the
-# manifold on the west face. ADR 0031 (#275) then declared the same machine fifteen wide by five
-# tall with the energy face north -- the same object seen along a different axis, and the note is
-# left as written. So W and L are the short and long extents whichever way the box is declared,
-# and when the declared box is wider than it is tall the finished body is turned a quarter turn so
-# the manifold faces north. The sockets are placed AFTER the turn, in the declared frame, so they
-# land where the prototype says regardless.
+# body's own frame, the one the first look note was accepted in (#252): five wide along X, fifteen
+# long along Y, the manifold on the west face. ADR 0031 (#275) declared the same machine fifteen
+# wide by five tall with the energy face north, and the draft note of #806 is written in that
+# declared frame. So W and L are the short and long extents whichever way the box is declared, and
+# when the declared box is wider than it is tall the finished body is turned a quarter turn so the
+# manifold faces north. Reading the note against this file: its north is the body's west, its south
+# the body's east, its east the body's north and its west the body's south. The sockets are placed
+# AFTER the turn, in the declared frame, so they land where the prototype says regardless.
 W, L = sorted((x1 - x0, y1 - y0))          # 4.5 x 14.5, the body's own frame
 HALF_W, HALF_L = W / 2, L / 2
 TURNED = (x1 - x0) > (y1 - y0)
+# Where along the body the steam socket stands, read off the geometry: the outlet run lands on it,
+# and the frame leaves its bay open (#806). The turn maps declared x onto the body's y.
+_steam = next(c for c in geo["connections"] if c["fluid"] == "steam")["position"]
+STEAM_Y = _steam[0] if TURNED else -_steam[1]
 # The way to the camera, in the body's frame: it stands south of the declared machine pitched
 # rf.CAMERA_PITCH_DEG down, and the turn maps the declared south onto the body's east.
 _PITCH = math.radians(rf.CAMERA_PITCH_DEG)
@@ -104,16 +109,18 @@ PALETTE = {
     # body. The hue is my pick and easy to change: no fluid owns it, as none owns
     # the hazard yellow or the cable sheaths below.
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
-    # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
-    # walkway edges, each an end bar and the toe board on it (#835), the guard rail along the open
-    # side, the cage of the access ladder up the middle drum (#836), the lifting lugs on the drums'
-    # tops (#837) and the warning plates at the manifold's ends, striped with dark (#838), and
-    # nowhere else -- six elements, counting each edge as one though it is two pieces, the rail as
-    # one though it is laid in lengths, the cage as one though it is hoops and bars, the lugs as one
-    # though they are six and the plates as one though they are two, none of them a panel, and
-    # never a fluid accent. Truls judged the cage within the house style's few small elements
-    # (2026-10-30, recorded on #836), chose the lugs yellow, small and few (2026-10-31, recorded on
-    # #837), and judged the plates within the budget too (2026-10-31, recorded on #838).
+    # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the walkway edges of
+    # both decks, each an edge bar or a nosing bar and the toe board on it (#835; the service
+    # platform's since #806), the guard rail along the open side with its one stanchion at the open
+    # bay (#806), the cage of the access ladder up to the platform (#836), the lifting lugs on the
+    # drums' tops (#837) and the warning plates at the manifold's ends and on the cabinet, striped
+    # with dark (#838, #806), and nowhere else -- six elements, as the draft note of #806 counts
+    # them: the edges as one though they are four, the rail as one though it is laid in lengths, the
+    # cage as one though it is hoops and bars, the lugs as one though they are six and the plates as
+    # one though they are three, none of them a panel, and never a fluid accent. Truls judged the
+    # cage within the house style's few small elements (2026-10-30, recorded on #836), chose the
+    # lugs yellow, small and few (2026-10-31, recorded on #837), and judged the plates within the
+    # budget too (2026-10-31, recorded on #838).
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,
@@ -311,8 +318,13 @@ else:
     # name numbered off a loop re-rolled every part after one inserted earlier in it.
     post_ys = [-HALF_L + 0.3 + k * (L - 0.6) / 6 for k in range(7)]
     posts = {f"{y:+.2f}": y for y in post_ys}
+    # NO EAST POST OVER THE STEAM SOCKET (#806). One stood on the socket's own line, over its
+    # opening in the slab and in front of anything that came down onto it, so the outlet run could
+    # only end short of the socket (#828). The cross rail on that line still meets the top rail.
+    east_posts = {p: y for p, y in posts.items() if abs(y - STEAM_Y) > 0.5}
     for p, y in posts.items():
-        hbeam(f"PostE{p}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
+        if p in east_posts:
+            hbeam(f"PostE{p}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
         hbeam(f"PostM{p}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
         hbeam(f"Rail{p}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
     hbeam("RailE", L - 0.4, (EX, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
@@ -324,19 +336,23 @@ else:
     # Grating deck under the drums, the kit's (#835), laid below once the cabinet stands: open
     # bars, so the feed lines below stay visible.
     #
-    # WITH AN OPENING WHERE THE STEAM OUTLET RUN COMES DOWN (Truls, #275). That run has to get from
-    # a drum cap to a socket that lives UNDER this deck, so it crosses the deck's plane somewhere.
-    # The only descent that clears the frame's own beams -- RailE2 along the east posts, and the
-    # cross rails at the post lines -- is at OUTLET_X, which is inside the deck. So the deck gives
-    # it a floor opening, which is what a deck has where a pipe drops through it; the alternative
-    # was a hose visibly cutting a bar.
+    # CUT BACK AT ITS EAST EDGE WHERE THE STEAM OUTLET RUN PASSES (#806). The run comes down beside
+    # the middle drum at OUTLET_X, OUTLET_Y and crosses to land on the steam socket, which lives
+    # below the deck's plane, so the deck is opened from DECK_CUT to its edge between the two and
+    # the run lies in the open. Under #275 it dropped through an opening in the deck and ran on
+    # under it, and there was no room for it: the deck's top stands 0.53 above the slab and the
+    # hose with its rings is about as thick, so it passed through the bars (#828).
     #
-    # 1.52 AND NOT 1.80, so the descent's rings clear the frame (#825). They stand 0.285 off the
-    # hose's axis, and at 1.80 they reached 2.085, past the conduit's inner face at 1.92 and the
-    # top rail's inner flange at 2.03: the run passed through one or the other, and which one turned
-    # on where its rings fell. The descent also bows about 0.07 east of its control points, so 1.60
-    # still put a ring 0.02 into the conduit (measured on the built model).
+    # 1.52 AND NOT 1.80, so the descent's rings clear the frame (#825). They stood 0.285 off the
+    # hose's axis then, and at 1.80 they reached 2.085, past the conduit's inner face at 1.92 and
+    # the top rail's inner flange at 2.03. The descent also bows about 0.07 east of its control
+    # points, so 1.60 still put a ring 0.02 into the conduit (measured on the built model). The
+    # rings stand 0.2375 off the axis since #806, and the descent is left where #825 put it.
     OUTLET_X, OUTLET_Y = 1.52, 1.45
+    DECK_CUT = 1.15
+    # Where on its crossing the outlet run carries its valve: low enough on the run that the wheel,
+    # lying flat over it, passes under the middle drum's weld seam rather than through it.
+    OUTLET_VALVE_Y = 0.5
     #
     # THE GUARD RAIL, IN LENGTHS BETWEEN THE POSTS, NOT ONE BEAM ALONG THEM (Truls, 2026-10-29). As
     # one beam it ran through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter
@@ -345,22 +361,39 @@ else:
     # centre, which leaves 0.045 beyond the flange; the post and the length each jitter by up to
     # 0.02, so together they close it by at most 0.04. The first starts at the cabinet's north
     # face, and the length under the steam outlet is cut round its descent, whose rings reached
-    # past the rail's inner flange while OUTLET_X was 1.80. They stop short of it since #825 moved
-    # the descent in, and the cut is kept as it was. RailE2 is still the rail's name. Each length
-    # is named for where it starts, the cabinet or a post line, as RailE2Cab and RailE2-2.32, and
-    # the two halves of the cut one end in S and N (#827). It moved here from beside RailE so that
+    # past the rail's inner flange while OUTLET_X was 1.80. RailE2 is still the rail's name. Each
+    # length is named for where it starts, the cabinet or a post line, as RailE2Cab and RailE2-2.32,
+    # and the two halves of a cut one end in S and N (#827). It moved here from beside RailE so that
     # OUTLET_Y is known.
+    #
+    # AND IT IS CUT FROM THE STEAM SOCKET TO PAST THE DESCENT, NOT ROUND THE DESCENT ALONE (#806).
+    # From this camera a rail stands in front of anything behind it and low, so the old run under
+    # the deck read as passing through the rail wherever the rail was left in front of it (#828).
+    # The outlet run is in the open from its descent to the socket, and the rail is gone along all
+    # of it: GATE is that stretch with OUTLET_GAP each side. A piece shorter than RAIL_MIN is left
+    # out rather than drawn as a stub, and the length that stops at the gate ends on a yellow
+    # stanchion, since nothing else holds it there.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
-    RAIL_STOP, OUTLET_GAP = 0.16, 0.6
+    RAIL_STOP, OUTLET_GAP, RAIL_MIN = 0.16, 0.6, 0.3
+    GATE = (STEAM_Y - OUTLET_GAP, OUTLET_Y + OUTLET_GAP)
+    RAIL_Z = SLAB + 0.9
     spans = []
-    starts = [("Cab", CAB_N)] + [(p, y + RAIL_STOP) for p, y in list(posts.items())[1:-1]]
-    for (p, a), b in zip(starts, post_ys[1:]):
+    east_ys = list(east_posts.values())
+    starts = [("Cab", CAB_N)] + [(p, y + RAIL_STOP) for p, y in list(east_posts.items())[1:-1]]
+    for (p, a), b in zip(starts, east_ys[1:]):
         b -= RAIL_STOP
-        spans += ([(p + "S", a, OUTLET_Y - OUTLET_GAP), (p + "N", OUTLET_Y + OUTLET_GAP, b)]
-                  if a < OUTLET_Y < b else [(p, a, b)])
+        pieces = ([(p + "S", a, min(b, GATE[0])), (p + "N", max(a, GATE[1]), b)]
+                  if a < GATE[1] and b > GATE[0] else [(p, a, b)])
+        spans += [(n, lo, hi) for n, lo, hi in pieces if hi - lo >= RAIL_MIN]
+    stanchions = []                  # their y, which the kerb's bolts keep clear of
     for p, a, b in spans:
-        hbeam(f"RailE2{p}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
+        hbeam(f"RailE2{p}", b - a, (EX, (a + b) / 2, RAIL_Z), axis="Y",
               depth=0.12, flange=0.12, material="hazard")
+        for end in (a, b):
+            if GATE[0] <= end <= GATE[1]:
+                box(f"RailE2{p}Stanchion", (0.08, 0.08, RAIL_Z - SLAB), (EX, end, (SLAB + RAIL_Z) / 2),
+                    "hazard", bev=0.01)
+                stanchions.append(end)
     # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
     # because the frame read as an empty crate (Truls, #252): the bays were identical and had
     # nothing in them, so fifteen tiles of machine carried three drums and air.
@@ -385,9 +418,15 @@ else:
     # the backing. 0.14 rather than the 0.12 it was set at, which left 0.03 for the bay's yaw and the
     # rail's own jitter to share, and on #825's draws a plate met the rail.
     BAY_BACK = 0.14
+    #
+    # THE BAY AT 2 STOPS AT THE GATE (#806). It ended on the east post the steam socket no longer
+    # has, so it now ends where the guard rail does, at the rail's stanchion, and the open bay in
+    # front of the outlet run starts there.
     bays = []
     for k in (2, 5):                                  # each bay named for the post line it starts at
         p, y0, y1 = f"{post_ys[k]:+.2f}", post_ys[k], post_ys[k + 1]
+        if f"{y1:+.2f}" not in east_posts:
+            y1 = GATE[0]
         yaw = stream(f"BayPanel{p}").jitter(0, 0.008)
         box(f"BayPanel{p}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
             "dark", rot=(0, 0, yaw))
@@ -439,10 +478,10 @@ else:
             # the bands bending into it the strike can stay compact and still be obvious: 0.62
             # across, 0.42 deep, centred between the two.
             #
-            # STRUCK IN THE FRAME THE CAMERA WILL SEE. The body is turned a quarter turn after it
-            # is built (TURNED, above), and a hollow on the body's south flank would end up facing
-            # west and hide. The turn maps the body's east onto the declared south, so when the body
-            # is going to be turned the strike goes on the east flank instead.
+            # STRUCK IN THE FRAME THE CAMERA WILL SEE. The note says the south flank, and means the
+            # declared south (#806). The body is turned a quarter turn after it is built (TURNED,
+            # above), which maps the body's east onto the declared south, so when the body is going
+            # to be turned the strike goes on its east flank.
             strike = (DX + r, y - 0.25, z0 + h * 0.5) if TURNED else (DX + 0.25, y - r, z0 + h * 0.5)
             dent(d, strike, 0.62, 0.42)
             for rib in ribs:                     # already 48x12; a few cuts is plenty
@@ -463,14 +502,24 @@ else:
         # BARE METAL WITH A STEAM BAND, not a steam-coloured body. The accent is near white, and a
         # whole valve in it blew out on the drum tops (Truls, #252); the house style already says an
         # accent is a band and never a body, so this was the model disagreeing with it.
-        vx, vy = DX + r * 0.45, y - r * 0.3
+        #
+        # THE MIDDLE DRUM'S STANDS CLEAR OF ITS THREE RUNS (#806). In the common place it stood
+        # where the outlet run rises off the cap, and the run passed through its stem, body and
+        # band (#828). Between the outlet's landing and the south run's there is room for it, with
+        # the south run swung west off the cap as the north one is (below).
+        vx, vy = (DX + 0.2, y - 0.45) if n == "Mid" else (DX + r * 0.45, y - r * 0.3)
         cyl(f"Drum{n}ValveStem", 0.09, 0.35, (vx, vy, z0 + h + 0.35), "metal", verts=24)
         cyl(f"Drum{n}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "dark", verts=24)
         torus(f"Drum{n}ValveBand", 0.17, 0.03, (vx, vy, z0 + h + 0.6), "steam")
         cyl(f"Drum{n}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
         # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
         # it: the deck between the drums read as empty.
-        gx, gy = DX + r + 0.32, y + stream(f"Drum{n}Gauges").jitter(0.55, 0.15)
+        #
+        # THE MIDDLE DRUM'S STAND NORTH OF THE OUTLET RUN, out of its way (#806): in the body's
+        # frame the run comes down at OUTLET_Y and crosses to the socket south of it, through where
+        # this cluster and its wheel stood. Past the descent the wheel keeps clear of its rings.
+        gx, gy = DX + r + 0.32, (y + stream(f"Drum{n}Gauges").jitter(0.55, 0.15) if n != "Mid" else
+                                 OUTLET_Y + stream(f"Drum{n}Gauges").jitter(1.15, 0.08))
         # THE HANDWHEEL STANDS CLEAR OF A BAY'S PLATES (#827), and the cluster moves with it. The
         # wheel stands 0.72 south of the gauges, and the middle drum's, drawn far enough south,
         # landed on the north end of the plates of the bay beside it, as a rim did on #824. Its rim
@@ -527,15 +576,18 @@ else:
     # every 0.45 tiles, which at 64 px a tile is a ring every 29 px on a 24 px pipe: read as a
     # smooth tube with a few rings on it. The big hose on K2's reactor sheet -- the one crossing its
     # lower half -- bands at roughly its own radius, stands its ribs well proud, and swings clear of
-    # its own line between supports. So 0.26 between rings on a 0.38-tile tube, each rib standing
-    # half the radius proud, and a real sag in the unsupported span. (This said "a quarter" until
-    # #803: the ring's own tube radius is about a quarter of the pipe's, and its centre circle
-    # stands about a quarter out, so together it stands half.) Close enough together to be the
-    # pipe's character, far enough apart that the tube shows between them, which is what tells a
-    # corrugated hose from a spring. The material is unchanged; bare metal was never the
-    # complaint.
+    # its own line between supports. So 0.26 between rings on a 0.38-tile tube and a real sag in
+    # the unsupported span. Close enough together to be the pipe's character, far enough apart that
+    # the tube shows between them, which is what tells a corrugated hose from a spring. The
+    # material is unchanged; bare metal was never the complaint.
+    #
+    # EACH RING STANDS A QUARTER OF THE RADIUS PROUD, as the note asks (#806). A ring stands
+    # band[0] + band[1] - 1 of the radius proud (`rf_parts.hose`), and the band it had until
+    # #806, (1.24, 0.26), stood half. (1.06, 0.19) stands 0.25, which is 0.0475 tiles on
+    # this tube, and its ring's own diameter, 0.072, clears the raised-detail floor of 0.06. The
+    # kit's default is left alone: this header is the one run the note sets it for.
     HEADER_R = 0.19
-    HEADER_CORRUGATE, HEADER_BAND = 0.26, (1.24, 0.26)
+    HEADER_CORRUGATE, HEADER_BAND = 0.26, (1.06, 0.19)
     CAP_ENTRY = 0.34               # how far off a cap's centre a run lands: inside its ring of bolts
     mid_y, mid_cap = cap_tops["Mid"]
     # THE GOOSENECK NEEDS ROOM, and the first attempt did not give it any: a run rose 0.22 off the
@@ -562,7 +614,9 @@ else:
         # A hose slung between two nozzles hangs below them, and there is nothing under this span
         # but open frame.
         s = stream(f"Header{n}")             # `hose` carries on along it for the rings
-        sag = (DX + s.jitter(0.3 * toward, 0.06), (y + mid_y) / 2 + s.jitter(0, 0.15), SAG_Z)
+        # BOTH SWING WEST OF THE CAPS' LINE (#806). The south run swung east, over where the middle
+        # drum's relief valve now stands clear of the outlet run.
+        sag = (DX + s.jitter(-0.3, 0.06), (y + mid_y) / 2 + s.jitter(0, 0.15), SAG_Z)
         hose(f"Header{n}", [start, (start[0], start[1], RUN_Z), sag,
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
              HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
@@ -571,52 +625,68 @@ else:
         # to the chord between its two tops, which is what the valve is turned along: a Bezier's
         # auto handle lies along it only where the two tops are equally far. Measured on the built
         # model for #840, from each sag's handle: 1.8 degrees off on the south run, whose tops stand
-        # 1.99 and 2.37 away, and none on the north, whose stand 2.14 and 2.14. Its wheel turns to
+        # 1.99 and 2.37 away, and none on the north, whose stand 2.14 and 2.14. That was before
+        # #806 swung the south run's sag west, and it was not measured again. Its wheel turns to
         # the camera, which in the body's frame stands east and above (TURNED; rf_blender's pitch),
         # and with open frame under the span and nothing over it, the wheel has the air it needs.
         valve(f"Header{n}Valve", sag, (land[0] - start[0], land[1] - start[1], 0.0), HEADER_R,
               TOWARD_CAMERA)
 
-    # THE OUTLET RUN, AND ITS ROUTE IS THE POINT. In this file's frame, which is the body's own and
-    # not the declared one: down off the middle cap, north around the drum, down outside it at
-    # OUTLET_X -- where the guard rail, RailE2, is cut round it, and which sits at a y
-    # with no cross rail on it -- then back SOUTH under the deck to the steam socket on the east
-    # edge, which lives below the grating. (The quarter turn shows that last leg running west, and
-    # RailE2 lying along the declared south edge.) It passes through nothing but the deck opening.
+    # THE OUTLET RUN, AND ITS ROUTE IS THE POINT (#806). In this file's frame, which is the body's
+    # own and not the declared one: up off the middle cap, north over the drum's shoulder, down
+    # outside it at OUTLET_X, at a y with no cross rail on it, then across in front of the cut-back
+    # deck and STRAIGHT DOWN ONTO THE STEAM SOCKET, landing on a bolted flange on its crown. (The
+    # quarter turn shows the descent east of the drum and the landing on the declared south face.)
+    # No east post stands over the socket and the guard rail is cut along the whole stretch, GATE,
+    # so nothing yellow stands in front of the run from the camera. The top rail, the conduit and
+    # the cable tray still cross in front of its descent, high up, as they did before.
+    #
+    # IT USED TO STOP SHORT OF THE SOCKET, under the deck, and go down into the slab 0.45 inboard
+    # of the socket's inner end with a collar, so that the pipe going into the floor and the pipe
+    # leaving the wall would read as one. Truls read it as connected to nothing (#828), with the
+    # rail across it. It lands on the stub's crown now, just past its inner end, where the camera
+    # sees the two meet.
+    #
     # NOT `out`: that is this script's output path, and shadowing it made Blender try to save the
     # model to a tuple after the whole machine had been built.
-    OUTLET_DROP = HALF_W - 0.95     # 0.45 inboard of the steam socket's inner end; see the run below
+    #
+    # LAND_X is just past the stub's inner end, HALF_W - 0.5, and far enough in that the flange
+    # stops short of the stub's accent band, whose inboard end is BAND_BACK + BAND_DEPTH / 2 = 0.39
+    # in from the selection edge: over the band it would hide the one thing saying what the socket
+    # carries. The flange rests on the stub's crown, SOCKET_Z + SOCKET_R = 0.282, which stands 0.032
+    # over the slab.
+    #
+    # ITS BOLTS STAND OUTSIDE THE HOSE'S RINGS, which reach 0.2375 from the axis: at FLANGE_R less
+    # 0.04 the heads start 0.245 out. On a narrower flange the lowest ring stood in them and hid
+    # them (the first draft's pre-PR review).
+    LAND_X = HALF_W - 0.47
+    FLANGE_R, FLANGE_T = 0.32, 0.06
+    FLANGE_TOP = 0.282 + FLANGE_T
     out_top = (DX + CAP_ENTRY, mid_y, mid_cap)
-    hose("HeaderOut", [
+    outlet = hose("HeaderOut", [
         out_top,
         (out_top[0], out_top[1], OUT_Z),                  # straight up off the cap, then over
         (0.95, mid_y + 0.95, OUT_Z - 0.25),               # across the drum's shoulder, above its cap
         (OUTLET_X, OUTLET_Y, SLAB + 2.10),
-        (OUTLET_X, OUTLET_Y, SLAB + 0.37),
-        (OUTLET_X - 0.05, mid_y + 0.55, SLAB + 0.32),
-        # AND DOWN INTO THE SLAB, since #343 dropped the steam socket to pipe height: the socket's
-        # inner end is inside the stone now, so a run that stopped where this one used to stop
-        # would end in mid-air above it. Stacked in z on the point before it, so the tube turns
-        # down and meets the floor square rather than glancing into it.
-        #
-        # IT GOES DOWN SHORT OF THE SOCKET RATHER THAN ONTO IT. The socket's inner end is at
-        # HALF_W - 0.5 in this frame, and a floor rim there -- a ring half a tile across, at the
-        # height the socket now lies at -- would pass straight through the tube. OUTLET_DROP is far
-        # enough in that the rim clears it and near enough that a player reads the pipe going into
-        # the floor and the pipe leaving the wall as one pipe.
-        (OUTLET_DROP, mid_y, SLAB + 0.30),
-        (OUTLET_DROP, mid_y, SLAB - 0.02),
+        (OUTLET_X, OUTLET_Y, SLAB + 0.95),
+        (LAND_X - 0.05, STEAM_Y + 0.6, SLAB + 0.62),       # across in front of the cut-back deck
+        # Half a tile of straight drop onto the flange, stacked in z, so it lands square.
+        (LAND_X, STEAM_Y, SLAB + 0.55),
+        (LAND_X, STEAM_Y, FLANGE_TOP),
     ], HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
-    # A COLLAR WHERE IT GOES IN, AND NO HOLE UNDER IT. Unlike a socket's `port`, nothing is cut
-    # here: the run simply stops 0.02 below the slab's top, inside solid stone, and the ring reads
-    # as the flange round a penetration. At this camera the difference is invisible -- the pipe
-    # covers what a hole would show -- so the geometry a boolean would add buys nothing. Said
-    # plainly because "rimmed like the sockets are" is what this comment used to claim, and a
-    # reader sent to find the modelled opening would not have found one.
-    torus("OutletPortRim", 0.2, 0.05, (OUTLET_DROP, mid_y, SLAB + 0.02), "dark")
+    cyl("OutletFlange", FLANGE_R, FLANGE_T, (LAND_X, STEAM_Y, FLANGE_TOP - FLANGE_T / 2), "metal",
+        read=2 * FLANGE_R)
+    bolts("OutletFlangeBolt", ring((LAND_X, STEAM_Y, FLANGE_TOP), FLANGE_R - 0.04, 8))
+    # A VALVE WHERE IT CROSSES IN FRONT OF THE DECK (#806), its handwheel lying flat on top. Turned
+    # to the camera, as the sag valves' are, its wheel and stem would stand out past the footprint's
+    # south edge, which is a tile and a half of valve on a run a quarter of a tile in from it; up is
+    # the way that keeps it inside and still shows the wheel's face.
+    # Read from the landing back, since the run first passes this y on its way over the shoulder.
+    at, heading = rf.along(rf_parts.centreline(outlet)[::-1], 1, OUTLET_VALVE_Y)
+    valve("HeaderOutValve", at, heading, HEADER_R, (0.0, 0.0, 1.0))
     # A BAND, not the half-tile steam-coloured block this used to be: near-white at that size read
-    # as a lamp on the middle drum (Truls, #252). On the descent, which is the one stretch of the
-    # steam route standing in the open where a band can be seen.
+    # as a lamp on the middle drum (Truls, #252). On the descent, the stretch of the steam route
+    # standing in the open where a band can be seen best.
     torus("HeaderBand", 0.22, 0.05, (OUTLET_X, OUTLET_Y, SLAB + 1.45), "steam")
 
     # -- cabinet, south-east corner: the one asymmetry. Seams and a blue panel.
@@ -639,15 +709,19 @@ else:
     # and their handwheels stand out over the edge and the guard rail closes it, and the west runs
     # along the mid-line posts.
     #
-    # ITS OPENINGS ARE WHERE SOMETHING PASSES THROUGH IT: the steam outlet's descent, its rings
-    # 0.285 off its axis and about 0.07 further east with its bow, and the cabinet, which stands on
-    # the slab through the deck's south-east corner. The slats left out the whole width of the two
-    # that crossed the descent, and ran through the cabinet.
+    # ITS OPENINGS ARE WHERE SOMETHING PASSES THROUGH IT: the steam outlet run, from its descent to
+    # the socket, where the deck is cut back from DECK_CUT to its east edge (#806), and the cabinet,
+    # which stands on the slab through the deck's south-east corner.
     DECK_SPAN = W - MAN_W - 0.7
+    deck_east = 0.35 + DECK_SPAN / 2
     deck = grating_deck("Deck", (0.35, 0.0), (DECK_SPAN, L - 1.0 + 0.06), SLAB + 0.53, pitch=(L - 1.0) / 29,
-                        openings=[((OUTLET_X + 0.035, OUTLET_Y), (0.8, 0.8)),
+                        openings=[(((DECK_CUT + deck_east + 0.1) / 2, (STEAM_Y - 0.35 + OUTLET_Y + 0.35) / 2),
+                                   (deck_east + 0.1 - DECK_CUT, OUTLET_Y - STEAM_Y + 0.7)),
                                   ((cpos[0], cpos[1]), (CAB[0] + 0.04, CAB[1] + 0.04))],
                         open_edges=("-Y", "+Y"), marked_edges=("-Y", "+Y"))
+    # A WARNING PLATE ON THE CABINET'S FRONT, under its blue panel (#806): the face the camera sees,
+    # on the box a crew opens. The machine's plates are one yellow element, three plates now.
+    warning_plate("CabinetWarning", (cpos[0] + CAB[0] / 2 + 0.02, cpos[1], cpos[2] - 0.2), (0.6, 0.35), "+X")
 
     # -- kit parts: hoses and looms (#803). Machinery a plant has "even where there is no clear
     # reason for it" (house style); none of it reaches a footprint edge, and `pipe` holds every
@@ -773,32 +847,43 @@ else:
     # A FAN STACK at the deck's far end, past the last drum: four discs on a shaft, the cooler a
     # steam plant has beside its drums. The body's north end is the declared east once turned, and
     # the camera sees it from the south.
-    FAN = (0.9, HALF_L - 1.05)
-    cyl("FanShaft", 0.06, 1.0, (FAN[0], FAN[1], SLAB + 0.5 + 0.5), "metal", verts=16)
-    fan_discs("FanStack", stack((FAN[0], FAN[1], SLAB + 0.62), 4, 0.24), 0.42)
+    #
+    # AND ONE AT THE OTHER END TOO (#806), the same module repeated: past the south drum, between
+    # it and the end wall and west of the cabinet. Named for its end, N and S, in the body's frame.
+    for end, fan in (("N", (0.9, HALF_L - 1.05)), ("S", (0.45, -HALF_L + 1.05))):
+        cyl(f"FanShaft{end}", 0.06, 1.0, (fan[0], fan[1], SLAB + 0.5 + 0.5), "metal", verts=16)
+        fan_discs(f"FanStack{end}", stack((fan[0], fan[1], SLAB + 0.62), 4, 0.24), 0.42)
     # A BOLT ROW along the slab's open edge, the kerb the camera looks down on. Bolts that would
-    # stand in a post's foot or in the steam socket's opening are left out (the branch's pre-PR
-    # review).
+    # stand in a post's foot, a stanchion's or the steam socket's opening are left out (#804's
+    # pre-PR review; #806 for the stanchion).
     kerb = row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36)
     bolts("SlabBolts", [p for p in kerb
-                        if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
-    # AN ACCESS LADDER UP THE MIDDLE DRUM TO ITS CAP (#836), from the deck, its cage yellow as a
-    # guard is. The drum's flank due east is taken: its vent hose, its gauge cluster and handwheel,
-    # the weld seam and, outboard, the cable tray. So it stands LADDER_TURN round from east towards
-    # the body's south, still on the side the camera sees once the body is turned. Its foot stands
-    # LADDER_OFF off the drum's skin, so its stiles stand clear of the ribs, of the shoulder casing,
-    # which stands 0.09 proud, and of the weld seam, which is a straight box turned off the drum's
-    # tangent and stands out from the skin on this side: at 0.15 off, a stile ran through it. Its
-    # brackets run back from each stile into the drum: a stile stands off the axis's line by half
-    # the access ladder's width, so the skin behind it is about 0.02 further than LADDER_OFF, and
-    # the drum is stretched by up to 3% across the body by its own jitter, so they run 0.08 past
-    # LADDER_OFF. At 0.03 past, those on one side stopped short of the skin.
-    LADDER_TURN, LADDER_OFF = math.radians(-50), 0.25
-    mid = next(d for d in drums if d["name"] == "Mid")
-    ladder_out = (math.cos(LADDER_TURN), math.sin(LADDER_TURN), 0.0)
-    reach = mid["r"] + LADDER_OFF
-    access_ladder("DrumMidLadder", (DX + reach * ladder_out[0], mid["y"] + reach * ladder_out[1], SLAB + 0.53),
-                  mid["z0"] + mid["h"] + 0.18, ladder_out, standoff=LADDER_OFF + 0.08)
+                        if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)
+                        and all(abs(p[0][1] - y) > 0.12 for y in stanchions)])
+    # A SERVICE PLATFORM ON THE FRAME'S TOP RAILS (#806, Truls's call on the draft's layout,
+    # 2026-10-31): a second grating deck between the middle drum and the north one in the body's
+    # frame, the declared east, so a crew can reach the caps. It lies on the cross rail at its post
+    # line, its bars' undersides on the rail's top. Its span is what is free at that height: south
+    # of it the outlet's descent, whose rings reach about 1.75 with its bow; north the north drum,
+    # its skin within about 3.47 of the post line once its own jitter has stretched it; west the
+    # mid-line posts' flanges at about -1.17; east the middle drum's gauge loom, which drops past
+    # it at DROP_X, 1.70. Its two open edges a crew could step off are walkway edges: the south one over the
+    # outlet's descent, and the east one over the gauges. Open bars, so the bay under it still
+    # shows.
+    PLAT_Z = SLAB + FRAME_H + 0.08 + rf.DECK_BAR[1]
+    PLAT_X, PLAT_Y = (-1.1, 1.55), (2.0, 3.3)
+    # AN ACCESS LADDER UP TO IT FROM THE DECK (#836; moved off the middle drum by #806), through a
+    # hatch in it, its cage standing on past the platform as a guard round the hatch. It faces the
+    # camera, east in the body's frame, and stands free: the platform holds its top. Its cage
+    # reaches LADDER_CAGE[0] + its offset, about 0.52, east of the stiles, so at LADDER_X it stops
+    # about 0.37 short of the middle drum's gauge cluster, which stands past the platform's east
+    # edge. LADDER_Y keeps the cage's south bar clear of the cross rail at the post line, 2.32.
+    LADDER_X, LADDER_Y = 0.7, 2.8
+    HATCH = ((LADDER_X + 0.3, LADDER_Y), (0.75, 0.75))
+    platform = grating_deck("Platform", ((PLAT_X[0] + PLAT_X[1]) / 2, (PLAT_Y[0] + PLAT_Y[1]) / 2),
+                            (PLAT_X[1] - PLAT_X[0], PLAT_Y[1] - PLAT_Y[0]), PLAT_Z, pitch=0.3,
+                            openings=[HATCH], open_edges=("-Y", "+X"), marked_edges=("-Y", "+X"))
+    access_ladder("PlatformLadder", (LADDER_X, LADDER_Y, SLAB + 0.53), PLAT_Z + 1.0, (1.0, 0.0, 0.0))
     for d in drums:
         # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
         # loom's wobble moves the point up to 0.03 each way, so it is set 0.05 inboard of the
@@ -939,8 +1024,10 @@ else:
             at, d = rf.along(spine, 0, x)
             holds.append((at, (0.0, 0.0, math.atan2(d[1], d[0]))))
         pipe_supports("WaterHeaderSupports", holds, 0.13, SLAB, material="dark")
+        # Each collar is bolted down with a ring of the kit's bolts on its crown (#806).
         for conn, end in zip(water, (a, b)):
             torus(f"WaterPortRim-{conn['direction']}", 0.2, 0.05, (end[0], end[1], SLAB + 0.02), "dark")
+            bolts(f"WaterPortBolt-{conn['direction']}", ring((end[0], end[1], SLAB + 0.07), 0.2, 6))
 
     # -- glowing feeds from the SHORT-END energy sockets into the manifold (Truls, #275).
     #

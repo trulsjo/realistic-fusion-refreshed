@@ -395,6 +395,52 @@ pads are built with their bottoms on the slab's top. Why the test counts one of 
 slab and not the other is *inferred*: each is a face lying on a face, which the test counts or
 not as its arithmetic rounds.
 
+## The look-note draft of #806
+
+Measured 2026-10-31 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#806](https://github.com/trulsjo/realistic-fusion-refreshed/issues/806) rebuilt the exchanger
+from the draft of its look note. The changes:
+- a service platform on the frame's top rails, with the access ladder moved to climb up through it;
+- the steam outlet run landing on its socket in an open bay;
+- the guard rail cut along that bay;
+- the header's rings a quarter of the radius proud instead of half;
+- a valve on the outlet run;
+- a second fan stack;
+- a warning plate on the cabinet;
+- bolts on the water collars.
+
+The "before" is #839's figures, the head of `main`. Blender 5.2.0, 64 samples for the sheet and 16
+for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #839 | 0.2892 | 0.5371 |
+| after, #806's draft | 0.2874 | 0.5359 |
+
+**Both fell a little**, *measured*: the pixel figure by 0.0018 and the normal-pass figure by 0.0012,
+each well inside the 0.005 a single re-roll can move the pixel figure (#827, above). No new part is
+placed so that it explains the fall. What the parts that came off took with them, which is the
+middle drum's access ladder, the east post over the steam socket and most of one guard-rail length,
+is about what the new ones add. That reading is *inferred*.
+
+The mesh-overlap test on the built model, against `main`'s, *measured*, found several pairs gone:
+- every pair of the east post that stood over the steam socket;
+- the access ladder's brackets against the middle drum and its casing;
+- the outlet run through the middle drum, through its relief valve, into the slab and against the
+  water header;
+- the middle drum's handwheel on the bay's plates.
+
+The new pairs it found are each new part's pieces against each other and against what it stands on
+or covers:
+- the outlet's flange on the socket's stub and its cut, with the run's last ring on both;
+- the valve on the outlet run;
+- the platform's bars on the cross rail at its post line;
+- the stanchion against its rail length;
+- the bolts on each water collar;
+- the second fan's shaft through a deck bar, as the first one's goes;
+- the middle drum's vent hose ending on a deck bar;
+- the cabinet's warning plate over its seam.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

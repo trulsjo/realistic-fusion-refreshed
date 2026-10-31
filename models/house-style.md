@@ -631,7 +631,7 @@ three referents in this repository and only one of them is a socket's:**
 | What | Where | Spelling found there |
 |---|---|---|
 | a socket's accent band | this document | *collar* -- the one #351 keeps |
-| the ring where a pipe turns down through the deck | `models/heat-exchanger/build.py` (three times, one of them capitalised), `models/isotope-collector/build.py`, and the `look: rf-heat-exchanger` note in `realistic-fusion-refreshed/prototypes/entities.lua` | *collar where it goes in*, and once *floor collar* |
+| the ring where a pipe turns down into the slab or through the deck | `models/heat-exchanger/build.py` (four times, all lower case), `models/isotope-collector/build.py`, and the `look: rf-heat-exchanger` note in `realistic-fusion-refreshed/prototypes/entities.lua` | *collar where it goes in*, once *floor collar*, and bare *collar*; the note says *with a collar* since its draft of #806 |
 | a corrugation ring along a hose run | `models/heat-exchanger/build.py` | *collar* -- renamed *ring* by #361, to agree with `models/rf_parts.py`'s `pipe` |
 
 Neither of the other two sits on a socket, so the narrowed rule reaches none of them and nothing was
