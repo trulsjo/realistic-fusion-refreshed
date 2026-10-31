@@ -285,7 +285,7 @@ be lenient by up to the spacing of a part's points.
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
 | `lifting_lugs` | a ring, a row or a stack | the eye's diameter, on the cut floor; the plate's thickness, on the raised floor, which binds first at its proportions; the gap between neighbouring lugs on the cut floor | #837 |
 | `warning_plate` | a face | a stripe's width, on the raised floor; no side longer than 0.8 | #838 |
-| `pipe_supports` | a ring, a row or points on a run's axis, with the run's radius and the floor's depth | the saddle's width along the run, on the raised floor; the gap between neighbouring supports on the cut floor | #839 |
+| `pipe_supports` | a ring, a row or points on a run's axis, with the run's radius and the floor's height | the saddle's width along the run, on the raised floor; the gap between neighbouring supports on the cut floor | #839 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 | `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |
@@ -343,8 +343,10 @@ names another role, and never an accent. A saddle cups the run's underside, a st
 its top, and a stem runs from the saddle to a pad on the floor. The strap is what a camera looking
 down on a run in view sees, since the run hides the saddle beneath it (Truls, 2026-10-31, while
 #839 was implemented, recorded on #839). A support shows only where its run does: on the
-exchanger's north sheet the water header is hidden along its length behind the east top rail, the
-conduit, the drums and the deck, and its two supports show on the south-facing sheet. Its width
+exchanger's north sheet the water header is all but hidden along its length, by the frame, the
+drums, the deck and the cabinet, and its two supports show on the south-facing sheet
+(`docs/research/density-figures.md` has the ray cast and the pixel counts). Each support reaches
+the floor from its own height, so one call supports a run that sags or rises. Its width
 along the run scales with the run's radius, so a support under a run whose radius is under a tenth
 of a tile is refused unless the model gives it a width that reads. `rf_blender.along` finds where a
 support stands on a run's centreline.

@@ -439,8 +439,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `rf_blender.along`: a pipe support's saddle width scaled from the run's radius; its inner edge on
   the run and its outer edge a thickness out, paired along each ray and spanning its cup about
   straight down; its strap over the top, on the run, thinner than the saddle and lapping into it at
-  each end; its stem from inside the saddle into the pad and the pad on the floor; no gap for
-  one support, two in a row held apart by their pads and overlapping ones refused on the cut floor;
-  a support refused, naming it, whose saddle is under the raised floor or whose floor is above its
-  own saddle; and a run's point and direction where it crosses a coordinate. It renders nothing, so
+  each end; its stem from inside the saddle into the pad and the pad on the floor, each support's
+  from its own height under a run that sags; no gap for one support, two in a row held apart by
+  their pads and overlapping ones refused on the cut floor; a support refused, naming it, whose
+  saddle is under the raised floor, whose floor is nearer its axis than its saddle's bottom and a
+  pad's height, or that is turned off upright; and a run's point and direction where it crosses a
+  coordinate. It renders nothing, so
   it cannot see whether a support reads.

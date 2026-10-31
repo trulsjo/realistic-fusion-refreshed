@@ -954,32 +954,42 @@ SUPPORT_STEM = 0.5               # the stem's depth across the run, in run radii
 SUPPORT_PAD = (1.8, 2.2, 0.03)   # the pad: widths along and across the run, then its height
 
 
-def support_layout(name, radius, height, placements, width=None):
-    """A pipe support's pieces, built about the run's axis at its own origin with the run along
-    its own X: a saddle cupping the underside of the run, `SUPPORT_CUP` degrees of it about
-    straight down; a strap over the run's top from one end of the saddle to the other, lapping a
-    little into each and thinner than it; a stem from inside the saddle's bottom into a pad; and
-    the pad, standing on the floor `height` below the axis. `inner` and `outer` are the saddle's
-    edges in its own (across, up), on the run and a thickness further out, paired along each ray,
-    and `strap_inner` and `strap_outer` the strap's.
+def support_layout(name, radius, floor, placements, width=None):
+    """A pipe support's pieces at each placement, each built about the run's axis at its own
+    origin with the run along its own X: a saddle cupping the underside of the run, `SUPPORT_CUP`
+    degrees of it about straight down; a strap over the run's top from one end of the saddle to
+    the other, lapping a little into each and thinner than it; a stem from inside the saddle's
+    bottom into a pad; and the pad, standing on the floor at height `floor`. `inner` and `outer`
+    are the saddle's edges in its own (across, up), on the run and a thickness further out, paired
+    along each ray, and `strap_inner` and `strap_outer` the strap's; they are the same at every
+    placement. The stem and the pad are one per placement, since each stands as far below its
+    axis as the floor is: a run that sags or rises is supported with one call.
 
-    THE STRAP IS WHAT THIS CAMERA SEES of a support under a run it looks down on: the run hides
-    the saddle beneath it, and the strap crosses the run's top as a band (Truls, 2026-10-31,
-    recorded on #839). It is as wide as the saddle.
+    A PLACEMENT TURNS A SUPPORT ABOUT ITS OWN Z ONLY, to follow the run's heading, so the support
+    stands upright and `floor` is a height in the frame the placements are given in. One turned
+    any other way is refused.
+
+    THE STRAP IS WHAT THIS CAMERA SEES of a support under a run it looks down on and has in view:
+    the run hides the saddle beneath it, and the strap crosses the run's top as a band (Truls,
+    2026-10-31, recorded on #839). It is as wide as the saddle.
 
     THE READ IS THE SADDLE'S WIDTH ALONG THE RUN, on the raised floor: from this camera a support
-    is a bar crossing under the run, and its width is the bar's. It is `SUPPORT_WIDTH` of the
-    radius unless `width` says otherwise, so a support under a thin run is refused unless the
-    model gives it a width that reads. A floor above the saddle's bottom is refused, since the stem
-    would have no length. Neighbouring supports, measured from the supports as placed, stand apart
-    by the cut floor. Returns the edges, the stem and the pad as a centre height and a size, the
-    width and the gap, None for one support."""
+    is a bar crossing the run, and its width is the bar's. It is `SUPPORT_WIDTH` of the radius
+    unless `width` says otherwise, so a support under a thin run is refused unless the model gives
+    it a width that reads. A floor nearer an axis than the saddle's bottom and a pad's height below
+    it is refused, since that pad would stand in its saddle. Neighbouring supports, measured from
+    the supports as placed, stand apart by the cut floor. Returns the edges, each placement's stem
+    and pad as a centre height and a size, the width and the gap, None for one support."""
     w = check_detail(f"{name} (saddle width)", SUPPORT_WIDTH * radius if width is None else width)
     t = SUPPORT_THICK * radius
     pad_h = SUPPORT_PAD[2]
-    if height < radius + t + pad_h - 1e-9:
-        sys.exit(f"pipe support: {name} stands its floor {height:g} below the run's axis, above the bottom "
-                 f"of its own saddle and pad at {radius + t + pad_h:g}.")
+    for loc, rot in placements:
+        if rot[0] or rot[1]:
+            sys.exit(f"pipe support: {name} is turned off upright; a placement turns a support about Z only.")
+        if loc[2] - floor < radius + t + pad_h - 1e-9:
+            sys.exit(f"pipe support: {name} stands {loc[2] - floor:g} above its floor, nearer than its saddle's "
+                     f"bottom and a pad's height below it, {radius + t + pad_h:g}: the pad would stand in "
+                     f"the saddle.")
     lo = math.radians(270.0 - SUPPORT_CUP / 2)
     step = math.radians(SUPPORT_CUP) / (SUPPORT_POINTS - 1)
     rays = [(math.cos(lo + k * step), math.sin(lo + k * step)) for k in range(SUPPORT_POINTS)]
@@ -992,17 +1002,26 @@ def support_layout(name, radius, height, placements, width=None):
     strap_inner = [(radius * c, radius * s) for c, s in over]
     strap_outer = [((radius + ts) * c, (radius + ts) * s) for c, s in over]
     top = -(radius + t / 2)                       # inside the saddle's bottom, so the two join,
-    foot = -height + pad_h / 2                    # and inside the pad's middle
-    stem = {"centre": (top + foot) / 2, "size": (w, SUPPORT_STEM * radius, top - foot)}
-    pad = {"centre": -height + pad_h / 2, "size": (SUPPORT_PAD[0] * w, SUPPORT_PAD[1] * radius, pad_h)}
-    pts = [(x, u, z) for u, z in outer + strap_outer for x in (-w / 2, w / 2)]
-    pa, pc = pad["size"][0] / 2, pad["size"][1] / 2
-    pts += [(x, u, -height) for x in (-pa, pa) for u in (-pc, pc)]
-    gap = least_gap(pts, placements)
-    if gap is not None:
+    pa, pc = SUPPORT_PAD[0] * w / 2, SUPPORT_PAD[1] * radius / 2
+    band = [(x, u, z) for u, z in outer + strap_outer for x in (-w / 2, w / 2)]
+    stems, pads, placed = [], [], []
+    for loc, rot in placements:
+        height = loc[2] - floor
+        foot = -height + pad_h / 2                # and inside the pad's middle
+        stems.append({"centre": (top + foot) / 2, "size": (w, SUPPORT_STEM * radius, top - foot)})
+        pads.append({"centre": -height + pad_h / 2, "size": (2 * pa, 2 * pc, pad_h)})
+        pts = band + [(x, u, -height) for x in (-pa, pa) for u in (-pc, pc)]
+        m = euler_matrix(rot)
+        placed.append([tuple(a + b for a, b in zip(turn(m, q), loc)) for q in pts])
+    # As `least_gap` measures, but from each support's own points, since each pad stands at its
+    # own depth below its axis.
+    gap = None
+    if len(placed) > 1:
+        pairs = list(zip(placed, placed[1:])) + ([(placed[-1], placed[0])] if len(placed) > 2 else [])
+        gap = min(math.dist(a, b) for p, q in pairs for a in p for b in q)
         check_detail(f"{name} (gap)", gap, cut=True)
     return {"inner": inner, "outer": outer, "strap_inner": strap_inner, "strap_outer": strap_outer,
-            "stem": stem, "pad": pad, "width": w, "gap": gap}
+            "stems": stems, "pads": pads, "width": w, "gap": gap}
 
 
 def along(points, axis, value):

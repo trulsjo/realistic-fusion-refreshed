@@ -677,7 +677,8 @@ assert "P" in (plate_refusal("P", (0.6, 0.35), 0) or "")
 # ---- pipe supports (#839) ----
 #
 # A pipe support is built about the run's axis at its own origin, the run along its own X: a saddle
-# cupping the underside, a stem down from it and a pad on the floor `height` below the axis.
+# cupping the underside, a strap over the top, a stem down from the saddle and a pad on the floor,
+# which is a height in the placements' frame, so each support's stem and pad reach it from its own.
 
 
 def support_refusal(*args, **kwargs):
@@ -689,7 +690,7 @@ def support_refusal(*args, **kwargs):
 
 
 _one = [((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))]
-_sp = rf.support_layout("S", 0.13, 0.3, _one)
+_sp = rf.support_layout("S", 0.13, -0.3, _one)
 _t = rf.SUPPORT_THICK * 0.13
 # The saddle's width along the run scales with the run's radius; it carries the read.
 assert abs(_sp["width"] - rf.SUPPORT_WIDTH * 0.13) < 1e-9
@@ -711,23 +712,29 @@ _se = [math.degrees(math.atan2(p[1], p[0])) % 360 for p in (_sp["strap_inner"][0
 assert abs((_se[1] - _se[0]) % 360 - (360 - rf.SUPPORT_CUP + 2 * rf.SUPPORT_STRAP_LAP)) < 1e-6
 assert max(p[1] for p in _sp["strap_outer"]) > 0.13 and abs(_sp["strap_outer"][len(_sp["strap_outer"]) // 2][0]) < 1e-9
 # The stem runs from inside the saddle's bottom into the pad's middle, and the pad stands on the floor.
-_sz, _sh = _sp["stem"]["centre"], _sp["stem"]["size"][2]
-_pz, _ph = _sp["pad"]["centre"], _sp["pad"]["size"][2]
+_sz, _sh = _sp["stems"][0]["centre"], _sp["stems"][0]["size"][2]
+_pz, _ph = _sp["pads"][0]["centre"], _sp["pads"][0]["size"][2]
 assert abs(_pz - _ph / 2 - (-0.3)) < 1e-9
 assert abs(_sz - _sh / 2 - _pz) < 1e-9
 assert -(0.13 + _t) < _sz + _sh / 2 < -0.13
-assert _sp["stem"]["size"][0] == _sp["width"]
+assert _sp["stems"][0]["size"][0] == _sp["width"]
+# Under a run that sags, one call stands each support on the same floor from its own height.
+_sag = rf.support_layout("S", 0.13, -0.3, [((0, 0, 0), (0, 0, 0)), ((1, 0, -0.05), (0, 0, 0))])
+for (loc, _), pad in zip([((0, 0, 0), 0), ((1, 0, -0.05), 0)], _sag["pads"]):
+    assert abs(loc[2] + pad["centre"] - pad["size"][2] / 2 - (-0.3)) < 1e-9
 # One support has no neighbour; two along a row half a tile apart stand clear by that less a pad's
 # width, and overlapping ones are refused on the cut floor.
 assert _sp["gap"] is None
 _pw = rf.SUPPORT_PAD[0] * _sp["width"]
-assert abs(rf.support_layout("S", 0.13, 0.3, rf.row((0, 0, 0), (1, 0, 0), 2))["gap"] - (0.5 - _pw)) < 1e-9
-assert "S" in (support_refusal("S", 0.13, 0.3, rf.row((0, 0, 0), (0.05, 0, 0), 2)) or "")
+assert abs(rf.support_layout("S", 0.13, -0.3, rf.row((0, 0, 0), (1, 0, 0), 2))["gap"] - (0.5 - _pw)) < 1e-9
+assert "S" in (support_refusal("S", 0.13, -0.3, rf.row((0, 0, 0), (0.05, 0, 0), 2)) or "")
 # A support too narrow to read is refused, naming it, on the raised floor; so is one whose floor is
-# above the bottom of its own saddle.
-assert "S" in (support_refusal("S", 0.08, 0.3, _one) or "")
-assert support_refusal("S", 0.08, 0.3, _one, width=0.06) is None
-assert "S" in (support_refusal("S", 0.13, 0.15, _one) or "")
+# nearer its axis than its saddle's bottom and a pad's height, and one turned off upright.
+assert "S" in (support_refusal("S", 0.08, -0.3, _one) or "")
+assert support_refusal("S", 0.08, -0.3, _one, width=0.06) is None
+assert "S" in (support_refusal("S", 0.13, -0.2, _one) or "")
+assert support_refusal("S", 0.13, -(0.13 + _t + rf.SUPPORT_PAD[2]), _one) is None
+assert "S" in (support_refusal("S", 0.13, -0.3, [((0, 0, 0), (0.3, 0, 0))]) or "")
 
 # A run's point and direction where it crosses a value of one coordinate, from its centreline.
 _run = [(0.0, 0.0, 1.0), (2.0, 0.0, 0.0), (4.0, 2.0, 0.0)]

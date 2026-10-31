@@ -898,8 +898,9 @@ else:
     # (#343), and it is the collector's lesson taken rather than relearnt. A header run at the
     # sockets' own 0.033 would be buried in stone for its whole length and draw nothing; a header
     # left where it was would stop in mid-air, above a socket that is now inside the floor. So it
-    # stays under the grating where it reads, and turns DOWN into the slab at each end with a
-    # collar where it goes in. A player reads a pipe entering the floor and a pipe leaving the wall
+    # stays under the grating, where the south-facing sheet shows it (the north sheet all but
+    # hides it along its length, #839), and turns DOWN into the slab at each end with a collar
+    # where it goes in. A player reads a pipe entering the floor and a pipe leaving the wall
     # as the same pipe, which is what real plant looks like.
     #
     # AND IT STOPS SHORT OF THE SOCKETS RATHER THAN OVER THEM, which is why `back` is 0.9 and not
@@ -919,31 +920,34 @@ else:
         # glancing into it and showing a slanted open mouth.
         header = pipe("WaterHeader", [(a[0], a[1], SLAB - 0.02), a, mid, b, (b[0], b[1], SLAB - 0.02)],
                       0.13, "metal")
-        # A PIPE SUPPORT UNDER THE HEADER IN EACH SPAN BETWEEN THE DRUMS (#839), where the camera
-        # sees it between the deck's bars. Not at the post lines, where the draft put them: there
-        # the east posts stand straight in front of a support from this camera and hid it whole.
-        # Each stands midway between the two deck bars nearest 2.8 off the middle, past the post
-        # line at 2.32 and short of the end drum's flank at about 3.55; at 3.0 a bar stood over it.
-        # The body's y is the declared x once it is turned. Each stands on the slab and takes the
-        # header's own height and heading there. They are dark, not the part's frame steel: frame is
-        # near black, and under the deck in the header's shadow a frame support rendered as no
-        # change at all.
+        # A PIPE SUPPORT UNDER THE HEADER IN EACH SPAN BETWEEN THE DRUMS (#839), between the deck's
+        # bars. The south-facing sheet shows them as straps across the header; on the north sheet
+        # the header is all but hidden along its length, by the frame's east top rail, the conduit,
+        # the drums, the deck and the cabinet, and they barely show (Truls kept them here, recorded
+        # on #839). Not at the post lines, where the draft put them: there the east posts stand
+        # straight in front of a support from this camera. Each stands midway between the two deck
+        # bars nearest 2.8 off the middle, past the post line at 2.32 and short of the end drum's
+        # flank at about 3.55; at 3.0 a bar stood over it. The body's y is the declared x once it is
+        # turned. Each takes the header's own height and heading there, and stands on the slab.
+        # They are dark, not the part's frame steel: frame is near black, and under the deck in the
+        # header's shadow a frame support rendered as no change at all.
         bar_ys = sorted({round(b["centre"][1], 6) for b in deck["bars"]})
         gaps = [(a + b) / 2 for a, b in zip(bar_ys, bar_ys[1:])]
         spine = rf_parts.centreline(header)
+        holds = []
         for x in (min(gaps, key=lambda m: abs(m + 2.8)), min(gaps, key=lambda m: abs(m - 2.8))):
             at, d = rf.along(spine, 0, x)
-            pipe_supports(f"WaterHeaderSupport{x:+.2f}", [(at, (0.0, 0.0, math.atan2(d[1], d[0])))], 0.13,
-                          at[2] - SLAB, material="dark")
+            holds.append((at, (0.0, 0.0, math.atan2(d[1], d[0]))))
+        pipe_supports("WaterHeaderSupports", holds, 0.13, SLAB, material="dark")
         for conn, end in zip(water, (a, b)):
             torus(f"WaterPortRim-{conn['direction']}", 0.2, 0.05, (end[0], end[1], SLAB + 0.02), "dark")
 
     # -- glowing feeds from the SHORT-END energy sockets into the manifold (Truls, #275).
     #
     # Without them those two sockets read as bare stubs bolted to the ends, carrying nothing: the
-    # water pair is visibly joined by the header above, and the reactor-facing socket IS the
-    # manifold -- it stands inside it -- so the two chaining sockets were the only connections on
-    # the machine with no run behind them. Same material and same glow as the drum feeds, because
+    # water pair is joined by the header above, as the south-facing sheet shows, and the
+    # reactor-facing socket IS the manifold -- it stands inside it -- so the two chaining sockets
+    # were the only connections on the machine with no run behind them. Same material and same glow as the drum feeds, because
     # it is the same fluid arriving the same way, and they run under the grating at the drum feeds'
     # own height so all five read as one system.
     #
