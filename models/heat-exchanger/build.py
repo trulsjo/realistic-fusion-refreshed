@@ -114,13 +114,15 @@ PALETTE = {
     # platform's since #806), the guard rail along the open side with its one stanchion at the open
     # bay (#806), the cage of the access ladder up to the platform (#836), the lifting lugs on the
     # drums' tops (#837) and the warning plates at the manifold's ends and on the cabinet, striped
-    # with dark (#838, #806), and nowhere else -- six elements, as the draft note of #806 counts
-    # them: the edges as one though they are four, the rail as one though it is laid in lengths, the
+    # with dark (#838, #806), and nowhere else -- five kinds of thing, as the draft note of #806
+    # counts them: the edges as one though they are four, the rail as one though it is laid in lengths, the
     # cage as one though it is hoops and bars, the lugs as one though they are six and the plates as
     # one though they are three, none of them a panel, and never a fluid accent. Truls judged the
     # cage within the house style's few small elements (2026-10-30, recorded on #836), chose the
     # lugs yellow, small and few (2026-10-31, recorded on #837), and judged the plates within the
-    # budget too (2026-10-31, recorded on #838).
+    # budget too (2026-10-31, recorded on #838). Shown the draft of #806's yellow alone beside
+    # main's, he had no problem with its amount: the platform's edges, the stanchion and the
+    # cabinet's plate (2026-10-31, recorded on #806).
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,
@@ -505,8 +507,9 @@ else:
         #
         # THE MIDDLE DRUM'S STANDS CLEAR OF ITS THREE RUNS (#806). In the common place it stood
         # where the outlet run rises off the cap, and the run passed through its stem, body and
-        # band (#828). Between the outlet's landing and the south run's there is room for it, with
-        # the south run swung west off the cap as the north one is (below).
+        # band (#828). Between where the outlet run leaves the cap and where the south run lands on
+        # it there is room for it, with the south run swung west off the cap as the north one is
+        # (below).
         vx, vy = (DX + 0.2, y - 0.45) if n == "Mid" else (DX + r * 0.45, y - r * 0.3)
         cyl(f"Drum{n}ValveStem", 0.09, 0.35, (vx, vy, z0 + h + 0.35), "metal", verts=24)
         cyl(f"Drum{n}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "dark", verts=24)
@@ -678,9 +681,9 @@ else:
         read=2 * FLANGE_R)
     bolts("OutletFlangeBolt", ring((LAND_X, STEAM_Y, FLANGE_TOP), FLANGE_R - 0.04, 8))
     # A VALVE WHERE IT CROSSES IN FRONT OF THE DECK (#806), its handwheel lying flat on top. Turned
-    # to the camera, as the sag valves' are, its wheel and stem would stand out past the footprint's
-    # south edge, which is a tile and a half of valve on a run a quarter of a tile in from it; up is
-    # the way that keeps it inside and still shows the wheel's face.
+    # to the camera, as the sag valves' are, its wheel would stand past the footprint's south edge:
+    # `rf_blender.valve_layout` puts it about 0.74 out from the run, whose axis there is about half
+    # a tile in from that edge. Up is the way that keeps it inside and still shows the wheel's face.
     # Read from the landing back, since the run first passes this y on its way over the shoulder.
     at, heading = rf.along(rf_parts.centreline(outlet)[::-1], 1, OUTLET_VALVE_Y)
     valve("HeaderOutValve", at, heading, HEADER_R, (0.0, 0.0, 1.0))
@@ -706,8 +709,9 @@ else:
     # ITS TWO ENDS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the things
     # a real plant paints so somebody sees it. They are its open edges too, and carry its toe
     # boards, yellow with them. The two long sides carry neither: on the east the gauge clusters
-    # and their handwheels stand out over the edge and the guard rail closes it, and the west runs
-    # along the mid-line posts.
+    # and their handwheels stand out over the edge and the guard rail closes it, except along the
+    # open bay, where the deck is cut back for the outlet run and nothing closes it (#806); and the
+    # west runs along the mid-line posts.
     #
     # ITS OPENINGS ARE WHERE SOMETHING PASSES THROUGH IT: the steam outlet run, from its descent to
     # the socket, where the deck is cut back from DECK_CUT to its east edge (#806), and the cabinet,
@@ -755,8 +759,9 @@ else:
     #
     # TRAY_X IS SET ABSOLUTELY rather than off the rail, which is jittered: the tray's outer rail
     # stands 0.015 inside the collision box by the arithmetic. Its inner rail's outer face, at 1.965,
-    # stands about 0.09 clear of the steam outlet's rings, which reach 0.285 from the descent's axis
-    # at 1.52 and about 0.07 further with its bow (measured on the built model under #825). The loom
+    # stood about 0.09 clear of the steam outlet's rings, which reached 0.285 from the descent's
+    # axis at 1.52 and about 0.07 further with its bow (measured on the built model under #825).
+    # Since #806 the rings reach 0.2375, so it stands about 0.14 clear, by the same arithmetic. The loom
     # no longer steps out round the outlet: the tray runs straight past it.
     #
     # EVERY DROP LEAVES THE TRAY INBOARD, at DROP_X, which clears the rail's flange, the conduit and
