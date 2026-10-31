@@ -923,12 +923,12 @@ else:
         # A PIPE SUPPORT UNDER THE HEADER IN EACH SPAN BETWEEN THE DRUMS (#839), between the deck's
         # bars. The south-facing sheet shows them as straps across the header; on the north sheet
         # the header is all but hidden along its length, by the frame's east top rail, the conduit,
-        # the drums, the deck and the cabinet, and they barely show (Truls kept them here, recorded
-        # on #839). Not at the post lines, where the draft put them: there the east posts stand
-        # straight in front of a support from this camera. Each stands midway between the two deck
-        # bars nearest 2.8 off the middle, past the post line at 2.32 and short of the end drum's
-        # flank at about 3.55; at 3.0 a bar stood over it. The body's y is the declared x once it is
-        # turned. Each takes the header's own height and heading there, and stands on the slab.
+        # the drums, the deck and the cabinet among others, and they barely show (Truls kept them
+        # here, recorded on #839). Not at the post lines, where the draft put them: there the east
+        # posts stand straight in front of a support from this camera. Each stands midway between
+        # the two deck bars nearest 2.8 off the middle, past the post line at 2.32 and short of the
+        # end drum's flank at about 3.55; at 3.0 a bar stood over it. The body's y is the declared x
+        # once it is turned. Each takes the header's own height and heading there, and stands on the slab.
         # They are dark, not the part's frame steel: frame is near black, and under the deck in the
         # header's shadow a frame support rendered as no change at all.
         bar_ys = sorted({round(b["centre"][1], 6) for b in deck["bars"]})
