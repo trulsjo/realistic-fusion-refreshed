@@ -285,6 +285,7 @@ be lenient by up to the spacing of a part's points.
 | `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
 | `lifting_lugs` | a ring, a row or a stack | the eye's diameter, on the cut floor; the plate's thickness, on the raised floor, which binds first at its proportions; the gap between neighbouring lugs on the cut floor | #837 |
 | `warning_plate` | a face | a stripe's width, on the raised floor; no side longer than 0.8 | #838 |
+| `pipe_supports` | a ring, a row or points on a run's axis, with the run's radius and the floor's depth | the saddle's width along the run, on the raised floor; the gap between neighbouring supports on the cut floor | #839 |
 | `valve` | a point on a run, with the run's direction there | the handwheel rim's minor diameter, sized from the run and never under the raised floor | #833 |
 | `cable_tray` | straight lengths between points, its bed | the gap between rungs, on the cut floor; the side rail's height, on the raised floor | #834 |
 | `grating_deck` | a rectangle, its top face at a height | the gap between bars, on the cut floor; the bar's width, and a toe board's height, on the raised floor | #835 |
@@ -336,6 +337,17 @@ with dark stripes crossing hazard yellow at 45 degrees, a yellow band at each en
 element and never a panel, so no side is longer than `rf_blender.WARNING_PLATE_MAX`, 0.8, and a
 model places only a few. Its back is set into the face, so it sits on plates that stand out by
 different depths.
+
+**A pipe support carries a run, not what is in it** (#839), so it is frame steel unless the model
+names another role, and never an accent. A saddle cups the run's underside, a strap as wide goes over
+its top, and a stem runs from the saddle to a pad on the floor. The strap is what a camera looking
+down on a run in view sees, since the run hides the saddle beneath it (Truls, 2026-10-31, while
+#839 was implemented, recorded on #839). A support shows only where its run does: on the
+exchanger's north sheet the water header is hidden along its length behind the east top rail, the
+conduit, the drums and the deck, and its two supports show on the south-facing sheet. Its width
+along the run scales with the run's radius, so a support under a run whose radius is under a tenth
+of a tile is refused unless the model gives it a width that reads. `rf_blender.along` finds where a
+support stands on a run's centreline.
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

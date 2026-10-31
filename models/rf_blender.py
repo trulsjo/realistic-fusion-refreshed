@@ -943,6 +943,80 @@ def warning_plate_layout(name, size, stripes):
     return {"bands": bands, "stripe_width": width, "depth": WARNING_PLATE_DEPTH}
 
 
+SUPPORT_WIDTH = 0.6              # the saddle's width along the run, in run radii
+SUPPORT_THICK = 0.4              # its thickness round the run, in run radii
+SUPPORT_CUP = 150.0              # how far round the run it cups, in degrees, about straight down
+SUPPORT_POINTS = 13              # points along the cup
+SUPPORT_STRAP = 0.25             # the strap's thickness over the run, in run radii
+SUPPORT_STRAP_LAP = 5.0          # how far, in degrees, it runs into the saddle at each end
+SUPPORT_STRAP_POINTS = 21        # points along the strap, odd so one stands straight up
+SUPPORT_STEM = 0.5               # the stem's depth across the run, in run radii
+SUPPORT_PAD = (1.8, 2.2, 0.03)   # the pad: widths along and across the run, then its height
+
+
+def support_layout(name, radius, height, placements, width=None):
+    """A pipe support's pieces, built about the run's axis at its own origin with the run along
+    its own X: a saddle cupping the underside of the run, `SUPPORT_CUP` degrees of it about
+    straight down; a strap over the run's top from one end of the saddle to the other, lapping a
+    little into each and thinner than it; a stem from inside the saddle's bottom into a pad; and
+    the pad, standing on the floor `height` below the axis. `inner` and `outer` are the saddle's
+    edges in its own (across, up), on the run and a thickness further out, paired along each ray,
+    and `strap_inner` and `strap_outer` the strap's.
+
+    THE STRAP IS WHAT THIS CAMERA SEES of a support under a run it looks down on: the run hides
+    the saddle beneath it, and the strap crosses the run's top as a band (Truls, 2026-10-31,
+    recorded on #839). It is as wide as the saddle.
+
+    THE READ IS THE SADDLE'S WIDTH ALONG THE RUN, on the raised floor: from this camera a support
+    is a bar crossing under the run, and its width is the bar's. It is `SUPPORT_WIDTH` of the
+    radius unless `width` says otherwise, so a support under a thin run is refused unless the
+    model gives it a width that reads. A floor above the saddle's bottom is refused, since the stem
+    would have no length. Neighbouring supports, measured from the supports as placed, stand apart
+    by the cut floor. Returns the edges, the stem and the pad as a centre height and a size, the
+    width and the gap, None for one support."""
+    w = check_detail(f"{name} (saddle width)", SUPPORT_WIDTH * radius if width is None else width)
+    t = SUPPORT_THICK * radius
+    pad_h = SUPPORT_PAD[2]
+    if height < radius + t + pad_h - 1e-9:
+        sys.exit(f"pipe support: {name} stands its floor {height:g} below the run's axis, above the bottom "
+                 f"of its own saddle and pad at {radius + t + pad_h:g}.")
+    lo = math.radians(270.0 - SUPPORT_CUP / 2)
+    step = math.radians(SUPPORT_CUP) / (SUPPORT_POINTS - 1)
+    rays = [(math.cos(lo + k * step), math.sin(lo + k * step)) for k in range(SUPPORT_POINTS)]
+    inner = [(radius * c, radius * s) for c, s in rays]
+    outer = [((radius + t) * c, (radius + t) * s) for c, s in rays]
+    ts = SUPPORT_STRAP * radius
+    a0 = math.radians(270.0 + SUPPORT_CUP / 2 - SUPPORT_STRAP_LAP)
+    sweep = math.radians(360.0 - SUPPORT_CUP + 2 * SUPPORT_STRAP_LAP) / (SUPPORT_STRAP_POINTS - 1)
+    over = [(math.cos(a0 + k * sweep), math.sin(a0 + k * sweep)) for k in range(SUPPORT_STRAP_POINTS)]
+    strap_inner = [(radius * c, radius * s) for c, s in over]
+    strap_outer = [((radius + ts) * c, (radius + ts) * s) for c, s in over]
+    top = -(radius + t / 2)                       # inside the saddle's bottom, so the two join,
+    foot = -height + pad_h / 2                    # and inside the pad's middle
+    stem = {"centre": (top + foot) / 2, "size": (w, SUPPORT_STEM * radius, top - foot)}
+    pad = {"centre": -height + pad_h / 2, "size": (SUPPORT_PAD[0] * w, SUPPORT_PAD[1] * radius, pad_h)}
+    pts = [(x, u, z) for u, z in outer + strap_outer for x in (-w / 2, w / 2)]
+    pa, pc = pad["size"][0] / 2, pad["size"][1] / 2
+    pts += [(x, u, -height) for x in (-pa, pa) for u in (-pc, pc)]
+    gap = least_gap(pts, placements)
+    if gap is not None:
+        check_detail(f"{name} (gap)", gap, cut=True)
+    return {"inner": inner, "outer": outer, "strap_inner": strap_inner, "strap_outer": strap_outer,
+            "stem": stem, "pad": pad, "width": w, "gap": gap}
+
+
+def along(points, axis, value):
+    """Where the polyline `points` crosses `value` on coordinate `axis`, and its direction there,
+    from the first segment that spans it; None where none does. A model places parts along a run
+    with it, from the run's centreline."""
+    for a, b in zip(points, points[1:]):
+        lo, hi = sorted((a[axis], b[axis]))
+        if lo - 1e-12 <= value <= hi + 1e-12 and hi > lo:
+            t = (value - a[axis]) / (b[axis] - a[axis])
+            return tuple(a[j] + t * (b[j] - a[j]) for j in range(3)), tuple(b[j] - a[j] for j in range(3))
+    return None
+
+
 class Stream(random.Random):
     """One part's own random stream: `random.Random` with the one draw the models make most."""
 

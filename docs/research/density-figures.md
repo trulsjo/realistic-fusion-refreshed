@@ -365,6 +365,28 @@ placing re-rolled nothing else, which is *inferred* from #825's streams. The mes
 the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
 plate against the manifold plate it stands on.
 
+## The pipe supports of #839
+
+Measured 2026-10-31 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#839](https://github.com/trulsjo/realistic-fusion-refreshed/issues/839) put two of the kit's
+pipe supports, each with a strap over the run, under the exchanger's water header, one in each span
+between the drums. The "before" is #838's sheet, taken again from the same command on `main` the
+same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #838 | 0.2892 | 0.5367 |
+| after, #839 | 0.2892 | 0.5371 |
+
+**The pixel figure did not move and the normal-pass figure rose by 0.0004**, *measured*. Both are
+read on the north sheet, where the water header is hidden along its length behind the east top
+rail, the conduit, the drums and the deck: 36 of its pixels changed by more than 30 of 765 summed
+over the channels, none by more than 90. The south-facing sheet, which neither figure reads, is
+where the supports show. The placing re-rolled nothing else, which is *inferred* from #825's
+streams. The mesh-overlap test on the built model agrees, *measured*: it found every pair it found
+on `main`, and no other but each support's pieces against each other, against the header and, for
+one pad, against the slab it stands on.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

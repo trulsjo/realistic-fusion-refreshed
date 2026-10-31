@@ -41,7 +41,7 @@ import rf_blender as rf  # noqa: E402
 import rf_parts  # noqa: E402
 from rf_parts import (access_ladder, bolts, box, cable_tray, casing, cyl, dent, fan_discs,  # noqa: E402,F401
                       grating_deck, hbeam, hose, lifting_lugs, loom, panels, pipe, rivets, seam, stream,
-                      torus, valve, warning_plate)
+                      pipe_supports, torus, valve, warning_plate)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -644,10 +644,10 @@ else:
     # the slab through the deck's south-east corner. The slats left out the whole width of the two
     # that crossed the descent, and ran through the cabinet.
     DECK_SPAN = W - MAN_W - 0.7
-    grating_deck("Deck", (0.35, 0.0), (DECK_SPAN, L - 1.0 + 0.06), SLAB + 0.53, pitch=(L - 1.0) / 29,
-                 openings=[((OUTLET_X + 0.035, OUTLET_Y), (0.8, 0.8)),
-                           ((cpos[0], cpos[1]), (CAB[0] + 0.04, CAB[1] + 0.04))],
-                 open_edges=("-Y", "+Y"), marked_edges=("-Y", "+Y"))
+    deck = grating_deck("Deck", (0.35, 0.0), (DECK_SPAN, L - 1.0 + 0.06), SLAB + 0.53, pitch=(L - 1.0) / 29,
+                        openings=[((OUTLET_X + 0.035, OUTLET_Y), (0.8, 0.8)),
+                                  ((cpos[0], cpos[1]), (CAB[0] + 0.04, CAB[1] + 0.04))],
+                        open_edges=("-Y", "+Y"), marked_edges=("-Y", "+Y"))
 
     # -- kit parts: hoses and looms (#803). Machinery a plant has "even where there is no clear
     # reason for it" (house style); none of it reaches a footprint edge, and `pipe` holds every
@@ -917,8 +917,24 @@ else:
         mid = ((a[0] + b[0]) / 2 + s.jitter(0, 0.1), (a[1] + b[1]) / 2 + s.jitter(0, 0.1), 0.5)
         # Stacked control points in z at both ends, so the tube meets the floor square instead of
         # glancing into it and showing a slanted open mouth.
-        pipe("WaterHeader", [(a[0], a[1], SLAB - 0.02), a, mid, b, (b[0], b[1], SLAB - 0.02)],
-             0.13, "metal")
+        header = pipe("WaterHeader", [(a[0], a[1], SLAB - 0.02), a, mid, b, (b[0], b[1], SLAB - 0.02)],
+                      0.13, "metal")
+        # A PIPE SUPPORT UNDER THE HEADER IN EACH SPAN BETWEEN THE DRUMS (#839), where the camera
+        # sees it between the deck's bars. Not at the post lines, where the draft put them: there
+        # the east posts stand straight in front of a support from this camera and hid it whole.
+        # Each stands midway between the two deck bars nearest 2.8 off the middle, past the post
+        # line at 2.32 and short of the end drum's flank at about 3.55; at 3.0 a bar stood over it.
+        # The body's y is the declared x once it is turned. Each stands on the slab and takes the
+        # header's own height and heading there. They are dark, not the part's frame steel: frame is
+        # near black, and under the deck in the header's shadow a frame support rendered as no
+        # change at all.
+        bar_ys = sorted({round(b["centre"][1], 6) for b in deck["bars"]})
+        gaps = [(a + b) / 2 for a, b in zip(bar_ys, bar_ys[1:])]
+        spine = rf_parts.centreline(header)
+        for x in (min(gaps, key=lambda m: abs(m + 2.8)), min(gaps, key=lambda m: abs(m - 2.8))):
+            at, d = rf.along(spine, 0, x)
+            pipe_supports(f"WaterHeaderSupport{x:+.2f}", [(at, (0.0, 0.0, math.atan2(d[1], d[0])))], 0.13,
+                          at[2] - SLAB, material="dark")
         for conn, end in zip(water, (a, b)):
             torus(f"WaterPortRim-{conn['direction']}", 0.2, 0.05, (end[0], end[1], SLAB + 0.02), "dark")
 
