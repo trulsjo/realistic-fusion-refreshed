@@ -40,7 +40,8 @@ import rf_blender as rf  # noqa: E402
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
 from rf_parts import (access_ladder, bolts, box, cable_tray, casing, cyl, dent, fan_discs,  # noqa: E402,F401
-                      grating_deck, hbeam, hose, loom, panels, pipe, rivets, seam, stream, torus, valve)
+                      grating_deck, hbeam, hose, lifting_lugs, loom, panels, pipe, rivets, seam, stream,
+                      torus, valve)
 from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
@@ -105,11 +106,12 @@ PALETTE = {
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
     # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
     # walkway edges, each an end bar and the toe board on it (#835), the guard rail along the open
-    # side, and the cage of the access ladder up the middle drum (#836), and nowhere else -- four
-    # elements, counting each edge as one though it is two pieces, the rail as one though it is
-    # laid in lengths and the cage as one though it is hoops and bars, none of them a panel, and
-    # never a fluid accent. Truls judged the cage within the house style's few small elements
-    # (2026-10-30, recorded on #836).
+    # side, the cage of the access ladder up the middle drum (#836), and the lifting lugs on the
+    # drums' tops (#837), and nowhere else -- five elements, counting each edge as one though it is
+    # two pieces, the rail as one though it is laid in lengths, the cage as one though it is hoops
+    # and bars and the lugs as one though they are six, none of them a panel, and never a fluid
+    # accent. Truls judged the cage within the house style's few small elements (2026-10-30,
+    # recorded on #836), and chose the lugs yellow, small and few (2026-10-31, recorded on #837).
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
     # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
     **rf.CABLE_COLOURS,
@@ -751,6 +753,12 @@ else:
         jacket_r = d["r"] + 0.02
         at = ring((DX, d["y"], d["z0"] + d["h"] - 0.24), jacket_r, 8, phase=math.pi / 8)
         casing(f"Drum{d['name']}Jacket", at, jacket_r, rf.casing_arc(8, jacket_r, 0.06), 0.34)
+    # TWO LIFTING LUGS ON EACH DRUM'S TOP (#837), east and west of its cap, between the cap's ring
+    # of bolts and the drum's rim, yellow as a lifting point is. The east one faces the camera once
+    # the body is turned, so its eye shows; Truls chose yellow for them, small and few (recorded on
+    # #837).
+    for d in drums:
+        lifting_lugs(f"Drum{d['name']}Lugs", ring((DX, d["y"], d["z0"] + d["h"]), d["r"] * 0.85, 2), 0.2)
     # A FAN STACK at the deck's far end, past the last drum: four discs on a shaft, the cooler a
     # steam plant has beside its drums. The body's north end is the declared east once turned, and
     # the camera sees it from the south.

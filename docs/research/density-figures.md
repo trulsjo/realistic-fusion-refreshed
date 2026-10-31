@@ -329,6 +329,24 @@ the rise comes from is *inferred*. The placing re-rolled nothing else, which is 
 found on `main`, and no other but the access ladder's own pieces against each other and its
 brackets against the middle drum and, the top two, its shoulder casing.
 
+## The lifting lugs of #837
+
+Measured 2026-10-31 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+after [#837](https://github.com/trulsjo/realistic-fusion-refreshed/issues/837) put two of the kit's
+lifting lugs on each of the exchanger's three drum tops, in hazard yellow. The "before" is #836's
+sheet, taken again from the same command on `main` the same day. Blender 5.2.0, 64 samples for the
+sheet and 16 for the normal pass.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| before, #836 | 0.2854 | 0.5302 |
+| after, #837 | 0.2876 | 0.5351 |
+
+**Both rose**, *measured*: the pixel figure by 0.0022 and the normal-pass figure by 0.0049. The
+placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on
+the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
+lug against the drum it stands on.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

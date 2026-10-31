@@ -585,6 +585,50 @@ assert "rung" in (ladder_refusal("L", (0, 0, 0), 2.0, (1, 0, 0), rung=0.05) or "
 assert "L" in (ladder_refusal("L", (0, 0, 1), 1.0, (1, 0, 0)) or "")
 assert "L" in (ladder_refusal("L", (0, 0, 0), 2.0, (0, 0, 1)) or "")
 
+# ---- lifting lugs (#837) ----
+#
+# A lug is a plate standing on its own origin, its face square to its own X, with an eye through it:
+# a rectangle below the eye and a half disc round its top, concentric with the eye.
+
+
+def lug_refusal(*args):
+    try:
+        rf.lug_layout(*args)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+_lg = rf.lug_layout("G", 0.2, [((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))])
+_ew, _et, _ec = rf.LUG_EYE * 0.2, rf.LUG_THICK * 0.2, rf.LUG_CENTRE * 0.2
+# The eye, its plate's thickness and its centre's height scale with the lug's width.
+assert abs(_lg["eye"] - _ew) < 1e-9 and abs(_lg["thick"] - _et) < 1e-9
+# Each inner point is on the eye, about its centre, and each outer point is on the outline: on the
+# half disc of half the width above the eye's centre, on a side or on the base below it.
+assert all(abs(math.dist(p, (0.0, _ec)) - _ew / 2) < 1e-9 for p in _lg["inner"])
+for (u, z) in _lg["outer"]:
+    if z >= _ec - 1e-9:
+        assert abs(math.dist((u, z), (0.0, _ec)) - 0.1) < 1e-9, (u, z)
+    else:
+        assert abs(abs(u) - 0.1) < 1e-9 or abs(z) < 1e-9, (u, z)
+# Inner and outer pair up along one ray from the eye's centre, the outer always further out.
+for (a, b) in zip(_lg["inner"], _lg["outer"]):
+    ra, rb = (a[0], a[1] - _ec), (b[0], b[1] - _ec)
+    assert abs(ra[0] * rb[1] - ra[1] * rb[0]) < 1e-9 and ra[0] * rb[0] + ra[1] * rb[1] > 0
+    assert math.dist(b, (0.0, _ec)) > math.dist(a, (0.0, _ec))
+# It stands from its base to the top of the half disc, and reaches the base's corners.
+assert abs(_lg["height"] - (_ec + 0.1)) < 1e-9
+assert any(_close(p, (0.1, 0.0)) for p in _lg["outer"]) and any(_close(p, (-0.1, 0.0)) for p in _lg["outer"])
+# One lug has no neighbour; two on a ring are held apart by the cut floor, as bolts are.
+assert _lg["gap"] is None
+_two = rf.lug_layout("G", 0.2, rf.ring((0, 0, 0), 0.9, 2))
+assert _two["gap"] is not None and _two["gap"] > 1.5
+assert "G" in (lug_refusal("G", 0.2, rf.row((0, 0, 0), (0.06, 0, 0), 2)) or "")
+# A lug too small for its eye or its plate is refused, naming it: the plate on the raised floor by
+# its thickness, the eye on the cut floor by its diameter.
+assert "G" in (lug_refusal("G", 0.18, [((0, 0, 0), (0, 0, 0))]) or "")
+assert lug_refusal("G", 0.2, [((0, 0, 0), (0, 0, 0))]) is None
+
 # ---- each part's own random stream (#825) ----
 #
 # A part's imperfections are drawn from a stream seeded from the machine's seed and the part's name,
