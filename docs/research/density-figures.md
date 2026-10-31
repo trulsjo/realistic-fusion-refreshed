@@ -430,15 +430,23 @@ post over the steam socket, and 1.24 of the 2.80 tiles of guard rail that stood 
 either side of the socket, by `build.py`'s arithmetic. What they took with them may be about what
 the new parts add.
 
-The mesh-overlap test on the built model, against `main`'s, *measured*, found these pairs gone:
+The mesh-overlap test on the built model, against `main`'s, *measured*, found these pairs gone between one part and another:
 - every pair of the east post that stood over the steam socket;
 - the access ladder's brackets against the middle drum and its casing;
 - the outlet run through the middle drum, through two of the deck's bars, through the middle drum's
-  relief valve, into the slab and against the water header, which was #828's defect;
+  relief valve, into the slab and its seam and against the water header, which was #828's defect,
+  and the floor collar it went down through, against the run, the slab and its seam;
 - the middle drum's handwheel on the dark backing of the bay beside it;
-- the north header run's valve body against one of its rings, the north run against one of the
-  south run's rings, and that ring against the middle drum's cap. These went with the thinner rings
-  or with the south run's swing west, which this test cannot tell apart.
+- the north header run's valve body against one of its rings, which went with the thinner rings,
+  since the north run's sag draws the same on both;
+- the north run against one of the south run's rings, and that ring against the middle drum's cap,
+  which went with the thinner rings or with the south run's swing west; this test cannot tell
+  which.
+
+The other pairs gone are a hose's rings against each other or against their own hose, on the north
+and south header runs, the outlet run and the middle drum's vent hose. The first fan stack's pairs,
+and its shaft through a deck bar, are gone under their old names and back under new ones, `FanShaftN`
+and `FanStackN`, with nothing moved.
 
 The new pairs are each new part's pieces against each other and against what it stands on or
 covers:
