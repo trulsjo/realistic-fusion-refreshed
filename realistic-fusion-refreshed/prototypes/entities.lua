@@ -518,8 +518,9 @@ contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 -- THE NOTE BELOW IS A DRAFT, NOT AN ACCEPTED NOTE (#806). A session wrote it for Truls to rewrite
 -- or accept with a render of it in front of him, and rebuilding from his rewrite is #831. It
 -- replaces the note accepted in #252 and amended by #275, which git keeps. It is written in the
--- compass this file declares: fifteen wide, five deep, the energy face north. Every kit part it
--- names in capitals is one in models/rf_parts.py, and what it asks of each is read under
+-- compass this file declares: fifteen wide, five deep, the energy face north. It names each kit
+-- part in capitals, and each is one in models/rf_parts.py; its other capitals are emphasis. What
+-- it asks of each part is read under
 -- models/house-style.md, The kit; the parts it would use if they existed are listed below it,
 -- outside the marker, each needing a ticket of its own.
 --[[ look: rf-heat-exchanger   (DRAFT for Truls to rewrite or accept, #806; read under models/house-style.md)
@@ -549,7 +550,7 @@ DENTED, struck on its south flank between the rib bands, and the bands bend into
 drum's south flank to the deck, no two bent alike. At each drum's foot, on the south side, a painted
 gauge cluster and a handwheel valve; the middle drum's stand east of the outlet run, out of its way.
 
-A SERVICE PLATFORM rides the top of the frame between the middle drum and the east drum: a second
+A service platform rides the top of the frame between the middle drum and the east drum: a second
 GRATING DECK laid on the top rails, so a crew can reach the caps, open enough that the bay under it
 still shows. An ACCESS LADDER climbs to it from the deck below, up through a hatch in it, its cage
 standing on past the platform as a guard round the hatch. Both of the platform's open edges that a
@@ -566,8 +567,9 @@ tells a hose from a spring. It is three runs. The west and east drums each send 
 middle drum in a run that rises a third of a tile off its cap and then hangs in a sag below the
 caps, both swinging north of the drums' line, so they read as hoses slung between the drums and not
 as loops arching over the machine; a VALVE stands at the low point of each, its handwheel turned to
-the camera. Every run leaves or lands a cap vertically with half a tile of straight rise, inside the
-ring of bolts; the middle cap carries three, spread round it, and its relief valve stands clear of
+the camera. Every run leaves or lands a cap vertically, inside the ring of bolts, and rises straight
+before it turns: a third of a tile on the runs between drums, half a tile on the outlet run, or the
+curve overshoots and the hose curls back over itself; the middle cap carries three, spread round it, and its relief valve stands clear of
 all three.
 
 THE OUTLET RUN IS THE ONE THAT CLIMBS, and its route is this: up off the middle cap, east over the
@@ -600,7 +602,7 @@ the blue panel: those two are what break the symmetry. Past each end drum a cool
 deck, a stack of four FAN DISCS on a shaft, the same module at both ends. A row of BOLTS runs along
 the slab's south kerb.
 
-HAZARD YELLOW IS A MARKING HERE AND NOTHING MORE, and it goes on six things: the guard rail along
+HAZARD YELLOW IS A MARKING HERE AND NOTHING MORE, and it goes on five kinds of thing: the guard rail along
 the south face, in lengths between the posts, with its one stanchion at the open bay; the walkway
 edges of both decks; the access ladder's cage; the lifting lugs; and the warning plates. Nothing
 else on the machine is yellow.
