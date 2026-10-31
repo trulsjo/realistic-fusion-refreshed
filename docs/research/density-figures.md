@@ -380,10 +380,11 @@ same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
 
 **The pixel figure did not move and the normal-pass figure rose by 0.0004**, *measured*. Both are
 read on the north sheet, where the water header is all but hidden along its length, *measured*:
-a ray cast toward the camera from each of its 690 vertices higher than 0.3, in the built model
-with Blender, met something from all but nine of them, at five places along it. The cast lists,
-for each half tile, the three things it met most, and among those are the frame's east top rail,
-the conduit, the drums, the deck and the cabinet. On that sheet 31 pixels changed by more than 30
+of its 690 vertices higher than 0.3, in the built model with Blender, a ray cast toward the
+camera met the header itself from 286, which are its far side, and from the other 404 met
+something else from all but nine, at five places along it. The cast lists, for each half tile,
+the three things it met most, the header among them, and among the others are the frame's east
+top rail, the conduit, the drums, the deck and the cabinet. On that sheet 31 pixels changed by more than 30
 of 765 summed over the channels, none by more than 90. The other three sheets, which neither
 figure reads, are where the supports show: the south-facing one has 138 pixels changed by more
 than 30, at both supports, the east-facing 63 and the west-facing 32, each at one place. The
