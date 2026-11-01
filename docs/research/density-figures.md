@@ -43,11 +43,14 @@ for the head of #806, and against `9c0ef40`, the exchanger before #806, the 1 20
 matched by name, *measured* 2026-11-01.
 
 **Before #806 there was no one test.** Each section before the one on #806 that says "the
-mesh-overlap test" was measured by a script written for that ticket and never committed. Three of
-those scripts were found, and they count three ways: #806's counted cutters hidden from render,
-which is the tool's rule; one earlier one left them out; and another counted the pieces of one beam,
-hose or loom as one part. Each section's pairs are its own script's, so the tool reproduces them
-only where its rule is the one used, and which script measured which section was not recorded.
+mesh-overlap test" was measured by a script written for its ticket and never committed, *read from
+source*: no commit on any ref holds a file named for overlaps but this tool, and #850 says the same.
+Three such scripts were found in session scratchpads, the last the one that measured #806, and they
+count three ways, *read from source*: #806's counts cutters hidden from render, which is the tool's
+rule; one of 2026-10-29 leaves them out; and one of 2026-10-30 counts the pieces of one beam, hose
+or loom as one part. Which script measured which section was not recorded, so each section's pairs
+are *inferred* to be its own script's, and the tool reproduces them only where its rule is the one
+that script used.
 
 ## The "before"
 
@@ -195,12 +198,13 @@ figure by 0.0049, so on that figure the fall is only about twice what one re-rol
 claim holds for the normal-pass figure more than for the pixel one. That is *inferred* from three
 samples of a re-roll.
 
-**The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
-others, as #824's re-roll had, *measured* by a mesh-overlap test on the built model before and
-after, a script of the ticket's own ([The mesh-overlap test](#the-mesh-overlap-test)). The fixes that followed on the same branch moved parts on purpose, so they get a row of
-their own. The feeds now cross the mid-line posts beside them, the steam outlet comes down at 1.52
-and not 1.80, the loom rests 0.025 higher over the cross rails, and the bays stand back 0.14 and
-not 0.12, *read from source*.
+**The re-roll also moved the exchanger's accidental contacts.** It took some away and landed others,
+as #824's re-roll had, *measured* by a mesh-overlap test on the built model before and after,
+*inferred* to be a script of the ticket's own ([The mesh-overlap test](#the-mesh-overlap-test)). The
+fixes that followed on the same branch moved parts on purpose, so they get a row of their own. The
+feeds now cross the mid-line posts beside them, the steam outlet comes down at 1.52 and not 1.80,
+the loom rests 0.025 higher over the cross rails, and the bays stand back 0.14 and not 0.12, *read
+from source*.
 
 | `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
 |---|---:|---:|
@@ -236,19 +240,19 @@ frame, the bays and the loom's spans, with the fixes kept. #825's one re-roll mo
 So a re-roll can move that figure by about 0.005, *inferred* from three samples, and a difference
 of that size between two sheets may be chance.
 
-**The renaming landed two contacts of the kind #824 and #825 fixed**, *measured* by the same
-mesh-overlap test: the middle drum's handwheel stood on the plates of the bay beside it, and the
-south drum's weld seam stood in the cabinet. Both were fixed on the same branch, *read from
-source*: the wheel's plane kept 0.07 from a bay's plates, which leaves its rim 0.02 clear, with its
-gauges moved along with it, and the weld stopped 0.03 short of the cabinet. Every other contact the test found new on the exchanger is of four kinds, *inferred* from
-its list of pairs: a handwheel against the frame, which #806 is left to settle; a beam meeting a
-beam or the slab; the pieces of one drum or one hose meeting each other, and the headers where they
-land together on the middle drum's cap; and a part meeting what it is joined to, as a hose its cap,
-a vent hose its valve and the deck, a gauge loom the main loom, the loom the cabinet it climbs off,
-and a conduit clamp its post. On the collector it found
-five new contacts and lost four, *measured*, all of ice: against what it hangs from or sits on,
-against other ice, or, for two icicles hung from the tritium drum, their tips against the deck
-below, *read from source*.
+**The renaming landed two contacts of the kind #824 and #825 fixed**, *measured* by a mesh-overlap
+test of its own ([The mesh-overlap test](#the-mesh-overlap-test)): the middle drum's handwheel stood
+on the plates of the bay beside it, and the south drum's weld seam stood in the cabinet. Both were
+fixed on the same branch, *read from source*: the wheel's plane kept 0.07 from a bay's plates, which
+leaves its rim 0.02 clear, with its gauges moved along with it, and the weld stopped 0.03 short of
+the cabinet. Every other contact the test found new on the exchanger is of four kinds, *inferred*
+from its list of pairs: a handwheel against the frame, which #806 is left to settle; a beam meeting
+a beam or the slab; the pieces of one drum or one hose meeting each other, and the headers where
+they land together on the middle drum's cap; and a part meeting what it is joined to, as a hose its
+cap, a vent hose its valve and the deck, a gauge loom the main loom, the loom the cabinet it climbs
+off, and a conduit clamp its post. On the collector it found five new contacts and lost four,
+*measured*, all of ice: against what it hangs from or sits on, against other ice, or, for two
+icicles hung from the tritium drum, their tips against the deck below, *read from source*.
 
 **The exchanger is textured since #805, and its sheet's figures are 0.2745 and 0.5180**,
 *measured* 2026-10-30 with the same command, after
@@ -270,12 +274,12 @@ first inline valve on each of the exchanger's two drum-to-drum steam runs, at th
 | before, #805 | 0.2745 | 0.5180 |
 | after, #833 | 0.2747 | 0.5188 |
 
-**Both rose a little**, *measured*: the pixel figure by 0.0002, well inside what a re-roll moves
-it ([The re-roll of #827](#the-re-roll-of-827)), and the normal-pass figure by 0.0008. Two valves
-are a small share of a fifteen-tile sheet. The placing re-rolled nothing else, which is *inferred*
-from #825's streams, since every part draws from a stream of its own name. The mesh-overlap test
-on the built model agrees, *measured*: it found every pair it found on `main`, and no other but
-the valves' own pieces and the hoses they sit on.
+**Both rose a little**, *measured*: the pixel figure by 0.0002, well inside what a re-roll moves it
+([The re-roll of #827](#the-re-roll-of-827)), and the normal-pass figure by 0.0008. Two valves are a
+small share of a fifteen-tile sheet. The placing re-rolled nothing else, which is *inferred* from
+#825's streams, since every part draws from a stream of its own name. The mesh-overlap test on the
+built model ([The mesh-overlap test](#the-mesh-overlap-test)) agrees, *measured*: it found every
+pair it found on `main`, and no other but the valves' own pieces and the hoses they sit on.
 
 ## The cable tray of #834
 
@@ -293,12 +297,12 @@ command on `main` the same day. Blender 5.2.0, 64 samples for the sheet and 16 f
 **Both rose**, *measured*: the pixel figure by 0.0062 and the normal-pass figure by 0.0040. The
 pixel figure's rise is about thirty times the valves'. The tray need not be all of it, which is
 *inferred*: the loom no longer wanders across the rail between the posts or steps out round the
-steam outlet, and lies higher, in the tray. The placing re-rolled nothing else, which is
-*inferred* from #825's streams.
-The mesh-overlap test on the built model agrees, *measured*: the only pairs it found that `main`
-did not are the tray's rails, rungs and brackets against each other and against the rail they rest
-on, the gauge looms against their own ties, and the gauge looms' cables against the main loom's,
-where they branch from it, as on `main`.
+steam outlet, and lies higher, in the tray. The placing re-rolled nothing else, which is *inferred*
+from #825's streams. The mesh-overlap test on the built model ([The mesh-overlap
+test](#the-mesh-overlap-test)) agrees, *measured*: the only pairs it found that `main` did not are
+the tray's rails, rungs and brackets against each other and against the rail they rest on, the gauge
+looms against their own ties, and the gauge looms' cables against the main loom's, where they branch
+from it, as on `main`.
 
 ## The grating deck of #835
 
@@ -322,10 +326,10 @@ describes and which are not in the tree. With dark toe boards first, the pixel f
 *measured* the same day. The dark board stood on the yellow bar's top face, along its outer edge.
 Crops of that render against `main`'s, made in the session and put to Truls before the boards were
 made yellow, showed the yellow line thinner; that the board hid part of it is *inferred* from them.
-The placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on the built model
-agrees, *measured*: every pair a slat made on `main` the bar in its place makes, but the cabinet's
-and its seam's, which the cabinet's opening removes, and the only new pairs are each toe board
-against its end bar.
+The placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test
+on the built model ([The mesh-overlap test](#the-mesh-overlap-test)) agrees, *measured*: every pair
+a slat made on `main` the bar in its place makes, but the cabinet's and its seam's, which the
+cabinet's opening removes, and the only new pairs are each toe board against its end bar.
 
 ## The access ladder of #836
 
@@ -342,11 +346,12 @@ sheet and 16 for the normal pass.
 
 **Both rose**, *measured*: the pixel figure by 0.0060 and the normal-pass figure by 0.0072. The
 access ladder stands between the middle drum and its neighbour from this camera, where the frame
-behind it is dark, and its yellow cage meets that dark on every hoop and bar; that this is where
-the rise comes from is *inferred*. The placing re-rolled nothing else, which is *inferred* from
-#825's streams. The mesh-overlap test on the built model agrees, *measured*: it found every pair it
-found on `main`, and no other but the access ladder's own pieces against each other and its
-brackets against the middle drum and, the top two, its shoulder casing.
+behind it is dark, and its yellow cage meets that dark on every hoop and bar; that this is where the
+rise comes from is *inferred*. The placing re-rolled nothing else, which is *inferred* from #825's
+streams. The mesh-overlap test on the built model ([The mesh-overlap test](#the-mesh-overlap-test))
+agrees, *measured*: it found every pair it found on `main`, and no other but the access ladder's own
+pieces against each other and its brackets against the middle drum and, the top two, its shoulder
+casing.
 
 ## The lifting lugs of #837
 
@@ -363,8 +368,8 @@ sheet and 16 for the normal pass.
 
 **Both rose**, *measured*: the pixel figure by 0.0022 and the normal-pass figure by 0.0049. The
 placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on
-the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
-lug against the drum it stands on.
+the built model ([The mesh-overlap test](#the-mesh-overlap-test)) agrees, *measured*: it found every
+pair it found on `main`, and no other but each lug against the drum it stands on.
 
 ## The warning plates of #838
 
@@ -381,8 +386,8 @@ yellow striped with dark. The "before" is #837's sheet, taken again from the sam
 
 **Both rose**, *measured*: the pixel figure by 0.0016 and the normal-pass figure by 0.0016. The
 placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on
-the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
-plate against the manifold plate it stands on.
+the built model ([The mesh-overlap test](#the-mesh-overlap-test)) agrees, *measured*: it found every
+pair it found on `main`, and no other but each plate against the manifold plate it stands on.
 
 ## The pipe supports of #839
 
@@ -398,21 +403,21 @@ same day. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
 | after, #839 | 0.2892 | 0.5371 |
 
 **The pixel figure did not move and the normal-pass figure rose by 0.0004**, *measured*. Both are
-read on the north sheet, where the water header is all but hidden along its length, *measured*:
-of its 690 vertices higher than 0.3, in the built model with Blender, a ray cast toward the
-camera met the header itself from 286, which are its far side, and from the other 404 met
-something else from all but nine, at five places along it. The cast lists, for each half tile,
-the three things it met most, the header among them, and among the others are the frame's east
-top rail, the conduit, the drums, the deck and the cabinet. On that sheet 31 pixels changed by more than 30
-of 765 summed over the channels, none by more than 90. The other three sheets, which neither
-figure reads, are where the supports show: the south-facing one has 138 pixels changed by more
-than 30, at both supports, the east-facing 63 and the west-facing 32, each at one place. The
-placing re-rolled nothing else, which is *inferred* from #825's streams. The mesh-overlap test on
-the built model agrees, *measured*: it found every pair it found on `main`, and no other but each
-support's pieces against each other and against the header, and one pad against the slab. Both
-pads are built with their bottoms on the slab's top. Why the test counts one of them against the
-slab and not the other is *inferred*: each is a face lying on a face, which the test counts or
-not as its arithmetic rounds.
+read on the north sheet, where the water header is all but hidden along its length, *measured*: of
+its 690 vertices higher than 0.3, in the built model with Blender, a ray cast toward the camera met
+the header itself from 286, which are its far side, and from the other 404 met something else from
+all but nine, at five places along it. The cast lists, for each half tile, the three things it met
+most, the header among them, and among the others are the frame's east top rail, the conduit, the
+drums, the deck and the cabinet. On that sheet 31 pixels changed by more than 30 of 765 summed over
+the channels, none by more than 90. The other three sheets, which neither figure reads, are where
+the supports show: the south-facing one has 138 pixels changed by more than 30, at both supports,
+the east-facing 63 and the west-facing 32, each at one place. The placing re-rolled nothing else,
+which is *inferred* from #825's streams. The mesh-overlap test on the built model ([The mesh-overlap
+test](#the-mesh-overlap-test)) agrees, *measured*: it found every pair it found on `main`, and no
+other but each support's pieces against each other and against the header, and one pad against the
+slab. Both pads are built with their bottoms on the slab's top. Why the test counts one of them
+against the slab and not the other is *inferred*: each is a face lying on a face, which the test
+counts or not as its arithmetic rounds.
 
 ## The look-note draft of #806
 
