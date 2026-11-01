@@ -519,10 +519,10 @@ contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 -- or accept with a render of it in front of him, and rebuilding from his rewrite is #831. It
 -- replaces the note accepted in #252 and amended by #275, which git keeps. It is written in the
 -- compass this file declares: fifteen wide, five deep, the energy face north. It names each kit
--- part in capitals, and each is one in models/rf_parts.py; its other capitals are emphasis. What
--- it asks of each part is read under
--- models/house-style.md, The kit; the parts it would use if they existed are listed below it,
--- outside the marker, each needing a ticket of its own.
+-- part in capitals where it places it, and each is one in models/rf_parts.py; its other capitals
+-- are emphasis. What it asks of each part is read under models/house-style.md, The kit; the parts
+-- it would use if they existed are listed below it, outside the marker, each needing a ticket of
+-- its own.
 --[[ look: rf-heat-exchanger   (DRAFT for Truls to rewrite or accept, #806; read under models/house-style.md)
 A long, low hall, fifteen wide and five deep, that turns reactor energy into steam, and it should
 read as a piece of a working plant: things a crew climbs, opens, turns and bolts, and not a box with
@@ -550,7 +550,7 @@ to hold the rail. The frame has no top rail along the manifold: its cross rails 
 manifold's top to the south posts, so the manifold is a low trough with its top at the frame's top,
 and the energy channel stays in view. A conduit runs on clamps along the outer face of the south top
 rail, and the deck's edge along the open bay, where it is cut back for the outlet run, is closed by
-a toe board, unmarked.
+a toe board and marked as a walkway edge, since a crew could step off it there too.
 
 Three tall drums stand on the line midway between the manifold's inner face and the south posts,
 each 1.8 tiles across and standing about 1.6 above the frame's top, set in the bays between posts
@@ -568,7 +568,7 @@ and heavier rings on it are fine. THE GAUGE CLUSTERS ARE ON THE DRUMS: each is a
 to its own drum's south flank, on the drum's skin, below the lower rib band and above the cable
 tray, so the camera sees the box on the drum and nothing standing between them. No gauge stands on a
 post or on the deck. The middle drum's sits where neither its vent hose nor the outlet run passes in
-front of it. A handwheel valve sits on a short drain off each drum's foot.
+front of it. A handwheel VALVE sits on a short drain off each drum's foot.
 
 A service platform rides the top of the frame between the middle drum and the east drum: a second
 GRATING DECK laid on the top rails, so a crew can reach the caps, open enough that the bay under it
@@ -576,7 +576,7 @@ still shows. Its two marked edges are what the camera sees of it. Each of its ed
 board; the two a crew could step off, the one over the steam outlet and the one to the south, are
 marked as walkway edges, and the north edge and the east edge, against the east drum, are not
 marked. AN ACCESS LADDER CLIMBS TO IT, AND IS SEEN TO ARRIVE: it stands on the platform's south
-side, the side toward the camera, and rises from the deck below up through a hatch just inside the
+side, the side toward the camera, and rises from the deck below up through a hatch cut through the
 platform's south edge, beside which a hatch lid stands open; its stiles carry on past the platform's
 deck as handholds, and its cage stands on past the platform as a guard round the hatch, so the
 ladder plainly ends on the platform and not in the air. NOTHING PASSES IN FRONT OF THE LADDER, its
@@ -645,9 +645,9 @@ of BOLTS runs along the slab's south kerb.
 
 HAZARD YELLOW IS A MARKING HERE AND NOTHING MORE, and it goes on five kinds of thing: the guard rail
 along the south face, ONE RAIL AT HAND HEIGHT, in lengths between the posts, with its one stanchion
-at the open bay; the marked walkway edges of both decks, the lower deck's being its south edge
-outside the open bay; the access ladder's cage; the lifting lugs; and the warning plates. Nothing
-else on the machine is yellow.
+at the open bay; the marked walkway edges of both decks, the lower deck's being its whole south
+edge, the open bay's included; the access ladder's cage; the lifting lugs; and the warning plates.
+Nothing else on the machine is yellow.
 
 The manifold channel and its feed lines glow with the energy accent while the machine is working,
 and are DARK when it is not -- they carry the accent as emission, not as their own colour, or a
@@ -659,6 +659,7 @@ stopped machine looks lit. The drums are steam and never glow. Nothing on it mov
 --   * handrail -- a post-and-rail guard along a walkway edge, yellow as a guard is, so the service
 --     platform's open edges carry one rather than a toe board alone. Proposal; needs its own ticket.
 --   * hatch -- a hinged grating cover standing open beside an access ladder's opening in a deck.
+--     Until it exists, the lid the draft asks for is built by hand in the exchanger's build script.
 --     Proposal; needs its own ticket.
 --   * instrument -- a pressure or temperature transmitter, a small box on a stem with a loom drop to
 --     it, so a drum's jacket and the outlet's descent carry one each. Proposal; needs its own
