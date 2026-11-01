@@ -528,83 +528,125 @@ A long, low hall, fifteen wide and five deep, that turns reactor energy into ste
 read as a piece of a working plant: things a crew climbs, opens, turns and bolts, and not a box with
 three drums in it.
 
-THE NORTH FACE IS THE REACTOR CONTACT: a closed, riveted manifold trough the full fifteen tiles, with
-an energy channel let into its top under a grille, reading as one continuous contact and not as a
-socket. The manifold is the one part that has CORRODED -- it is hot, wet and outdoors -- in patches
-and not evenly: rust where water has run, a much darker brown pitting inside it, and a little
-verdigris. Its inner, south-facing side is a long row of INSET PANELS, twelve by two, in the same
-corroded steel, and the end panel at each end carries a WARNING PLATE.
+THE NORTH FACE IS THE REACTOR CONTACT: a closed, riveted manifold trough the full length of the
+body, with an energy channel let into its top under a grille, reading as one continuous contact and
+not as a socket. The manifold is the one part that has CORRODED -- it is hot, wet and outdoors -- in
+patches and not evenly: rust where water has run, over about a third of its face, a few small dark
+brown pits inside the rust, and verdigris rarest of the three. Its inner, south-facing side is a
+long row of INSET PANELS, twelve by two, in the same corroded steel, and the upper end panel at each
+end carries a WARNING PLATE. The painted parts elsewhere are weathered by the same rust photograph,
+taking its value and not its hue, so a panel keeps its colour on average and gains the mottling of
+old paint.
 
 South of it the body is an open frame of dark H-beams over a GRATING DECK, so the internals show.
-The beams are almost straight and not quite. Two bays on the south face are closed with a dark
-backing carrying INSET PANELS of paint, three by two, set back behind the guard rail, and two more
-carry a diagonal brace. A conduit runs along the top of the south posts on clamps. THE BAY IN FRONT
-OF THE STEAM SOCKET HAS NO POST: it is the open bay the steam comes out through.
+The beams are almost straight and not quite. Six posts stand at seven evenly spaced places along the
+south face, about two and a third tiles apart, the middle place left empty over the steam socket:
+THE BAY IN FRONT OF THE STEAM SOCKET HAS NO POST, so the open bay the steam comes out through is two
+bays wide. The bays either side of the open bay are closed with a dark backing carrying INSET PANELS
+of paint, three by two, set back behind the guard rail, and the two end bays carry a diagonal brace.
+The frame's top rails stand at about 1.55, under the cable tray and the guard rail at 1.75, so
+nothing of the frame hides what rises out of the tray, and the posts carry on past the frame's top
+to hold the rail. The frame has no top rail along the manifold: its cross rails run from the
+manifold's top to the south posts, so the manifold is a low trough with its top at the frame's top,
+and the energy channel stays in view. A conduit runs on clamps along the outer face of the south top
+rail, and the deck's edge along the open bay, where it is cut back for the outlet run, is closed by
+a toe board, unmarked.
 
-Down the centreline stand three tall drums, bare metal with two rib bands and a weld seam, each
-capped by a bolted flange with a ring of BOLTS, a pressure relief valve that is dark with a steam
-band and never a white body, and two LIFTING LUGS on its top. Under each cap the drum wears a
-segmented CASING, an insulation jacket of eight segments with a slot between each. THE EAST DRUM IS
-DENTED, struck on its south flank between the rib bands, and the bands bend into the hollow with it
--- a straight band across a dent cancels it. Off each relief valve a thin vent HOSE runs down the
-drum's south flank to the deck, no two bent alike. At each drum's foot, on the south side, a painted
-gauge cluster and a handwheel valve; the middle drum's stand east of the outlet run, out of its way.
+Three tall drums stand on the line midway between the manifold's inner face and the south posts,
+each 1.8 tiles across and standing about 1.6 above the frame's top, set in the bays between posts
+and never on a post line, so no cross rail meets one: the west and east drums three and a half tiles
+either side of the middle, the middle drum three quarters of a tile west of the steam socket, which
+leaves its east side clear for the outlet run. They are bare metal with two rib bands and a weld
+seam, each capped by a bolted flange with a ring of BOLTS, a pressure relief valve that is dark with
+a steam band and never a white body, and two LIFTING LUGS on its top. Under each cap the drum wears
+a segmented CASING, an insulation jacket of eight segments with a slot between each. THE EAST DRUM
+IS DENTED, struck on its south flank between the rib bands, and the bands bend into the hollow with
+it -- a straight band across a dent cancels it. Off each relief valve a thin vent HOSE runs down the
+drum's south flank to the deck, no two bent alike; it is thinner than the header, with a ring about
+every 1.2 of its radius, since the thinnest ring a hose may carry leaves no bare tube at one radius,
+and heavier rings on it are fine. THE GAUGE CLUSTERS ARE ON THE DRUMS: each is a painted box bolted
+to its own drum's south flank, on the drum's skin, below the lower rib band and above the cable
+tray, so the camera sees the box on the drum and nothing standing between them. No gauge stands on a
+post or on the deck. The middle drum's sits where neither its vent hose nor the outlet run passes in
+front of it. A handwheel valve sits on a short drain off each drum's foot.
 
 A service platform rides the top of the frame between the middle drum and the east drum: a second
 GRATING DECK laid on the top rails, so a crew can reach the caps, open enough that the bay under it
-still shows. An ACCESS LADDER climbs to it from the deck below, up through a hatch in it, its cage
-standing on past the platform as a guard round the hatch. Both of the platform's open edges that a
-crew could step off, the one over the steam outlet and the one to the south, are marked as walkway
-edges, and each stands on a toe board.
+still shows. Its two marked edges are what the camera sees of it. Each of its edges stands on a toe
+board; the two a crew could step off, the one over the steam outlet and the one to the south, are
+marked as walkway edges, and the north edge and the east edge, against the east drum, are not
+marked. AN ACCESS LADDER CLIMBS TO IT, AND IS SEEN TO ARRIVE: it stands on the platform's south
+side, the side toward the camera, and rises from the deck below up through a hatch just inside the
+platform's south edge, beside which a hatch lid stands open; its stiles carry on past the platform's
+deck as handholds, and its cage stands on past the platform as a guard round the hatch, so the
+ladder plainly ends on the platform and not in the air. NOTHING PASSES IN FRONT OF THE LADDER, its
+cage, the hatch or the platform's deck round the hatch, from the lower deck to the top of the cage:
+no hose, valve, rail or tray crosses it, so the camera sees the whole climb and the deck it lands
+on.
 
-From the manifold, glowing feed lines run south under the grating to the foot of each drum, and at
-each short end a glowing feed runs from the energy socket into the manifold, so every energy
-connection has a run behind it.
+From the manifold, glowing feed lines run south under the grating to the foot of each drum, beside
+each drum rather than under it so they show, and at each short end a glowing feed runs from the
+energy socket into the manifold, so every energy connection has a run behind it.
 
-THE STEAM HEADER IS A CORRUGATED HOSE: rings on a tube, a ring about every tube-radius along the run,
-each standing about a quarter of the radius proud, with bare tube between them -- the gap is what
-tells a hose from a spring. It is three runs. The west and east drums each send their steam to the
-middle drum in a run that rises a third of a tile off its cap and then hangs in a sag below the
-caps, both swinging north of the drums' line, so they read as hoses slung between the drums and not
-as loops arching over the machine; a VALVE stands at the low point of each, its handwheel turned to
-the camera. Every run leaves or lands a cap vertically, inside the ring of bolts, and rises straight
-before it turns: a third of a tile on the runs between drums, half a tile on the outlet run, or the
-curve overshoots and the hose curls back over itself; the middle cap carries three, spread round it, and its relief valve stands clear of
-all three.
+THE STEAM HEADER IS A CORRUGATED HOSE about two fifths of a tile across: rings on a tube, a ring
+about every tube-radius along the run, each standing about a quarter of the radius proud, with bare
+tube between them -- the gap is what tells a hose from a spring. It is three runs. The west and east
+drums each send their steam to the middle drum in a run that rises a third of a tile off its cap and
+then hangs in a sag below the caps, close above the drums' line, so it reads as a hose slung between
+the drums and not as a loop arching over the machine; a VALVE stands at the low point of each, its
+handwheel turned to the camera, and the east run, its sag and its climb to the east cap included,
+passes north of the access ladder and its hatch, behind them from the camera, and never in front.
+Every run leaves or lands a cap vertically, inside the ring of bolts, and rises straight before it
+turns: a third of a tile on the runs between drums, half a tile on the outlet run, or the curve
+overshoots and the hose curls back over itself. On each end cap the run to the middle drum leaves
+from the side facing it, the relief valve stands on its south side and the lugs on its north. On the
+middle cap the runs from the west and east drums land on its west and east sides, the outlet run
+leaves from its south side toward the camera, the relief valve stands on its south-west side,
+between the west run and the outlet run, so its vent hose runs straight down the south flank, and
+its two lugs stand north-west and north-east.
 
 THE OUTLET RUN IS THE ONE THAT CLIMBS, and its route is this: up off the middle cap, east over the
 drum's shoulder, down east of the drum inside the frame and clear of the service platform's edge,
 then across in front of the deck, which is cut back where the run passes, and STRAIGHT DOWN ONTO THE
-STEAM SOCKET, landing on a flange with a ring of BOLTS on the socket's crown, just inside the slab
-and short of its accent band. It comes down in the open bay. A VALVE sits on it where it crosses in
-front of the deck, its handwheel lying flat on top, where the camera looks down on it. The guard
-rail stops short of the run on the west at a yellow stanchion and takes up again at the next post
-east, so nothing yellow stands in front of it. It bends around the drum and the frame rather than
-through them, and a band of the steam accent sits on its descent.
+STEAM SOCKET, landing on a bolted flange a little wider than the hose's rings, with a ring of BOLTS,
+on the slab over the socket's buried stub and inboard of its accent band, so the band shows past it.
+It comes down in the open bay. A VALVE sits on it north of the cable tray, where the tray does not
+hide it, its handwheel lying flat on top, where the camera looks down on it; the deck is opened
+where the run and its valve pass through it. The guard rail stops short of the run on the west at a
+yellow stanchion and takes up again at the next post east, so nothing yellow stands in front of it.
+It bends around the drum and the frame rather than through them, and a band of the steam accent sits
+on its descent.
 
 THE THREE SOCKETS A PLAYER CAN PLUMB ARE DRAWN LIKE THE PIPE THAT PLUGS INTO THEM, height and
-thickness both -- water on both short ends south of centre, steam at the middle of the south face
--- each through a modelled, rimmed opening in the slab with a flange pair at its mouth. The three
+thickness both -- water on both short ends south of centre, steam at the middle of the south face --
+each through a modelled, rimmed opening in the slab with a flange pair at its mouth. The three
 reactor-energy connections, at the middle of the north face and on both short ends north of centre,
 are drawn at the same height and thickness and wear neither rim nor flanges, because they meet a
 machine face and never a pipe. No other socket is drawn, and nothing pipe-shaped meets a footprint
 edge anywhere else. The water header runs under the grating between its two sockets, held by a PIPE
 SUPPORT in the span either side of the middle drum, and turns down into the slab short of each
-socket with a collar, and a ring of BOLTS holds each collar down.
+socket with a collar, and a ring of BOLTS holds each collar down. It shows on the other three sheets
+more than on this one.
 
-A CABLE TRAY runs along the top of the south rail, and a red and green cable LOOM leaves the top of
-the cabinet and lies in it the whole way east, with a drop out of the tray to each gauge cluster and
-a last drop to the deck at the east end. Its cables are a loom's colours and no fluid's.
+A CABLE TRAY runs along the south face at the guard rail's height, on brackets off the posts, just
+inside the rail, and a red and green cable LOOM leaves the top of the cabinet and lies in it the
+whole way east. THE LOOM VISIBLY REACHES EVERY DRUM: a drop rises out of the tray, up the drum's
+flank, and enters the bottom of that drum's gauge box through a cable gland, so each cable is seen
+going into the box: there is no gap between a cable's end and its box, and nothing stands in front
+of the joint. A last drop goes to the deck past the tray's east end. Its cables are a loom's colours
+and no fluid's.
 
-The west end is closed by a painted wall with a vent, and a control cabinet with a blue panel stands
-at the south-west corner, its top broken into INSET PANELS and a WARNING PLATE on its front under
-the blue panel: those two are what break the symmetry. Past each end drum a cooler stands on the
-deck, a stack of four FAN DISCS on a shaft, the same module at both ends. A row of BOLTS runs along
-the slab's south kerb.
+The west end is closed by a painted wall with a vent, which stops above the west sockets so their
+accent bands show under it. A control cabinet with a blue panel stands at the south-west corner,
+taller than the guard rail, its top broken into INSET PANELS, and its blue panel and a WARNING PLATE
+under it on the face toward the camera: those two are what break the symmetry. Past each end drum a
+cooler stands on the deck, a stack of four FAN DISCS on a shaft, the same module at both ends. A row
+of BOLTS runs along the slab's south kerb.
 
-HAZARD YELLOW IS A MARKING HERE AND NOTHING MORE, and it goes on five kinds of thing: the guard rail along
-the south face, in lengths between the posts, with its one stanchion at the open bay; the walkway
-edges of both decks; the access ladder's cage; the lifting lugs; and the warning plates. Nothing
+HAZARD YELLOW IS A MARKING HERE AND NOTHING MORE, and it goes on five kinds of thing: the guard rail
+along the south face, ONE RAIL AT HAND HEIGHT, in lengths between the posts, with its one stanchion
+at the open bay; the marked walkway edges of both decks, the lower deck's being its south edge
+outside the open bay; the access ladder's cage; the lifting lugs; and the warning plates. Nothing
 else on the machine is yellow.
 
 The manifold channel and its feed lines glow with the energy accent while the machine is working,

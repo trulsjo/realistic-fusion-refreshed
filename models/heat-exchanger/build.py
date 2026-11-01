@@ -2,18 +2,19 @@
 
     blender -b --python build.py -- [out.blend] [machine|cube]
 
-Reads geometry.json beside this file for the collision box and the connections, so the sockets
-land where the prototype declares them, and stamps the scene with that file's hash so render.py
-can refuse a model whose geometry has moved on. Every shape is a primitive or a curve: no mesh is
-imported (ADR 0030). The materials are procedural but for one CC0 image texture, a rust
-photograph under the manifold's broad rust and the paint's weathering (ADR 0043, #805), kept
-beside this file with its record in textures.json. `cube` builds a 1x1x1 calibration cube for measuring the camera. Written to heat-exchanger.blend beside this file
-unless a path is given.
+Reads geometry.json beside this file for the collision box and the connections, so the sockets land
+where the prototype declares them, and stamps that file's hash on the scene so render.py can refuse
+a model whose geometry has moved on. Every shape is a primitive, a curve or a kit part with a
+procedural material; the one image is the CC0 rust photograph recorded in textures.json beside this
+file (ADR 0043), which the manifold's corrosion and the paint's weathering both read.
 
-Drafts 2 and 3 follow Truls's reactions of 2026-09-04: imperfect drums (rib bands, weld seam,
-relief valve), a corrugated header that is not quite straight, an open H-beam frame over a grating
-instead of walls with glowing feed lines visible under it, a south end wall, panel seams and rivet
-lines, procedural grime, and the energy channel on top of the manifold where the camera sees it.
+BUILT IN THE DECLARED FRAME: fifteen wide along X, five deep along Y, the energy face north (+Y in
+Blender, since Factorio's +y is south), the camera south of the machine looking north. Nothing is
+turned at the end, so every point below is where it is drawn.
+
+REBUILT FROM THE LOOK NOTE ALONE for #806, so the note's gaps show in the model rather than being
+filled from an earlier one. Where the note was silent or met the house style or another part of
+itself, the choice made is said where it is made, beside the part.
 """
 import json
 import math
@@ -24,54 +25,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 import bpy  # noqa: E402
 import rf_blender as rf  # noqa: E402
-
-# ---- shared parts ---------------------------------------------------------------------------
-#
-# models/rf_parts.py holds every mesh helper both machines use, and `mat` below is the one thing
-# that stays here: this machine's palette and its own weathering. `use` installs it, and the
-# helpers that build a surface -- `box`, `cyl`, `torus`, `pipe` -- forward whatever keyword
-# flags a call gives them straight back to it (#340). `hbeam`, `rivets` and `seam` pick their
-# own material and take no flags; rf_parts' own docstring says why.
-#
-# The names come in bare rather than behind a `parts.` prefix: they are the vocabulary this
-# file is written in, and prefixing 72 call sites would be the diff that hides whether
-# anything else moved. Named one by one rather than starred, so what this file uses can be
-# read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
-# on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import (access_ladder, bolts, box, cable_tray, casing, cyl, dent, fan_discs,  # noqa: E402,F401
-                      grating_deck, hbeam, hose, lifting_lugs, loom, panels, pipe, rivets, seam, stream,
-                      pipe_supports, torus, valve, warning_plate)
-from rf_blender import ring, row, stack  # noqa: E402
+from rf_parts import box, cyl, hbeam, hose, pipe, rivets, seam, stream, torus  # noqa: E402
 
 args = rf.script_args()
-out = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
+out_path = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
 variant = args[1] if len(args) > 1 else "machine"
 
 geo_path = os.path.join(HERE, "geometry.json")
 geo = json.load(open(geo_path, encoding="utf-8"))
 (x0, y0), (x1, y1) = geo["collision_box"]
-# THE BODY IS BUILT LONG AXIS NORTH-SOUTH AND TURNED AFTERWARDS. Every part below is placed in the
-# body's own frame, the one the first look note was accepted in (#252): five wide along X, fifteen
-# long along Y, the manifold on the west face. ADR 0031 (#275) declared the same machine fifteen
-# wide by five tall with the energy face north, and the draft note of #806 is written in that
-# declared frame. So W and L are the short and long extents whichever way the box is declared, and
-# when the declared box is wider than it is tall the finished body is turned a quarter turn so the
-# manifold faces north. Reading the note against this file: its north is the body's west, its south
-# the body's east, its east the body's north and its west the body's south. The sockets are placed
-# AFTER the turn, in the declared frame, so they land where the prototype says regardless.
-W, L = sorted((x1 - x0, y1 - y0))          # 4.5 x 14.5, the body's own frame
-HALF_W, HALF_L = W / 2, L / 2
-TURNED = (x1 - x0) > (y1 - y0)
-# Where along the body the steam socket stands, read off the geometry: the outlet run lands on it,
-# and the frame leaves its bay open (#806). The turn maps declared x onto the body's y.
-_steam = next(c for c in geo["connections"] if c["fluid"] == "steam")["position"]
-STEAM_Y = _steam[0] if TURNED else -_steam[1]
-# The way to the camera, in the body's frame: it stands south of the declared machine pitched
-# rf.CAMERA_PITCH_DEG down, and the turn maps the declared south onto the body's east.
-_PITCH = math.radians(rf.CAMERA_PITCH_DEG)
-TOWARD_CAMERA = ((math.cos(_PITCH), 0.0, math.sin(_PITCH)) if TURNED
-                 else (0.0, -math.cos(_PITCH), math.sin(_PITCH)))
+TX, TY = (x1 - x0) / 2, (y1 - y0) / 2       # declared half extents: 7.25 x 2.25
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -79,82 +43,73 @@ scene.name = "rf"
 
 # ---- materials (house style palette) -------------------------------------------------------
 #
-# The values dropped on 2026-09-05 (#252). Truls, on the first in-game shots: too pale and flat --
-# beside Krastorio 2's reactor the machine was one value of grey with no dark recesses. Painted body
-# steel went from 0.30 to 0.24 and rougher, so it reads as PAINT beside bare metal rather than as
-# more metal; "frame" to 0.07 and "dark" from 0.35 to 0.26 -- the grating deck, the ribs and the
-# vents -- so the frame has shadows in it. Bare metal is unchanged: the house style fixes it, and
-# what was wrong with the drums was the grime, not the colour. Taking the whole palette darker was
-# tried first and only moved the fault: uniformly muddy is as flat as uniformly pale.
-#
-# AND DOWN AGAIN AT THE DARK END ONLY (#801). Beside Krastorio 2's reactor the sheet's median was
-# already close -- 66 of 255 against 51 -- but its darkest twentieth sat at 13 where K2's sits at 1:
-# K2 has a near-black base and we had none. So frame, body and dark go down and paint stays where
-# it was, which is what makes it a wider range rather than the uniformly muddy palette of
-# 2026-09-05. Bare metal went down too, from 0.55 to 0.30 (Truls, #801, on seeing the drums and
-# hoses still the pale mass beside K2): its colour only, so it keeps the gloss that gives it a
-# bright rim where the key light lands. The highlights are now the paint and those rims.
+# models/house-style.md's Palette table, row for row; scripts/ship-check.ps1 section 8 holds the
+# accents to it. Only the accents of the three fluids this machine carries.
 PALETTE = {
-    "body":   ((0.13, 0.14, 0.16), 0.72, 0.0),
-    "frame":  ((0.02, 0.022, 0.025), 0.6, 0.2),
-    "metal":  ((0.30, 0.30, 0.32), 0.35, 0.8),
-    "dark":   ((0.14, 0.145, 0.155), 0.5, 0.7),
-    "energy": ((1.00, 0.45, 0.10), 0.5, 0.0),
-    "steam":  ((0.85, 0.88, 0.90), 0.5, 0.0),
-    "water":  ((0.25, 0.55, 1.00), 0.5, 0.0),
-    "plasma": ((0.55, 0.20, 1.00), 0.5, 0.0),
-    # PAINT, not steel. Truls, #252: the machine needed some painted panels -- steel-on-steel gave
-    # it no colour of its own beside Krastorio 2's, which is yellow. A matte industrial off-white
-    # is high in value where the frame is low, so a panel reads as a panel rather than as more
-    # body. The hue is my pick and easy to change: no fluid owns it, as none owns
-    # the hazard yellow or the cable sheaths below.
-    "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
-    # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the walkway edges of
-    # both decks, each an edge bar or a nosing bar and the toe board on it (#835; the service
-    # platform's since #806), the guard rail along the open side with its one stanchion at the open
-    # bay (#806), the cage of the access ladder up to the platform (#836), the lifting lugs on the
-    # drums' tops (#837) and the warning plates at the manifold's ends and on the cabinet, striped
-    # with dark (#838, #806), and nowhere else -- five kinds of thing, as the draft note of #806
-    # counts them: the edges as one though they are four, the rail as one though it is laid in lengths, the
-    # cage as one though it is hoops and bars, the lugs as one though they are six and the plates as
-    # one though they are three, none of them a panel, and never a fluid accent. Truls judged the
-    # cage within the house style's few small elements (2026-10-30, recorded on #836), chose the
-    # lugs yellow, small and few (2026-10-31, recorded on #837), and judged the plates within the
-    # budget too (2026-10-31, recorded on #838). Shown the draft of #806's yellow alone beside
-    # main's, he had no problem with its amount: the platform's edges, the stanchion and the
-    # cabinet's plate (2026-10-31, recorded on #806).
-    "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
-    # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
+    "body":     ((0.13, 0.14, 0.16), 0.72, 0.0),
+    "frame":    ((0.02, 0.022, 0.025), 0.6, 0.2),
+    "dark":     ((0.14, 0.145, 0.155), 0.5, 0.7),
+    "metal":    ((0.30, 0.30, 0.32), 0.35, 0.8),
+    "paint":    ((0.58, 0.55, 0.47), 0.8, 0.0),
+    "energy":   ((1.00, 0.45, 0.10), 0.5, 0.0),
+    "steam":    ((0.85, 0.88, 0.90), 0.5, 0.0),
+    "water":    ((0.25, 0.55, 1.00), 0.5, 0.0),
+    "hazard":   ((0.72, 0.55, 0.09), 0.55, 0.0),
     **rf.CABLE_COLOURS,
 }
-ACCENTS = ("energy", "steam", "water", "plasma")   # stay clean: no grime, so they read
+# Clean, so they read: the accents, the marking and the cable sheaths.
+CLEAN = ("energy", "steam", "water", "hazard", "cable-red", "cable-green")
+# Painted, and weathered by the photograph's value rather than by noise.
+PAINTED = ("body", "paint")
+RUST = "rust_coarse_01_diff_1k.jpg"
+# The photograph's mean linear luminance, measured off the file (0.0597), so that dividing by it
+# leaves a painted panel its own colour on average, as the note asks.
+RUST_MEAN = 0.0597
+PIT = (0.045, 0.022, 0.010)                # dark brown, inside the rust
+VERDIGRIS = (0.10, 0.24, 0.19)
 MATS = {}
 
 
-# CORROSION IS THREE COLOURS, NOT ONE. A single rust mask over the whole manifold came out even and
-# orange, and Truls read it as copper (#252). Real corrosion is patchy and goes several ways at
-# once, so three masks at three scales run in sequence: rust where water has run, a much darker
-# brown where it has sat and pitted, and a little verdigris. Each has its own noise, because
-# sharing a mask is what made the first version uniform.
-RUST = (0.27, 0.14, 0.07)
-RUST_DARK = (0.09, 0.045, 0.025)
-VERDIGRIS = (0.14, 0.28, 0.20)
-# THE BROAD RUST IS A PHOTOGRAPH OF RUST (ADR 0043, #805): Poly Haven's rust_coarse_01, CC0, kept
-# beside this file and recorded in textures.json. Noise at 64 px a tile washes out or turns into
-# render noise, and the photograph has grain at every scale. It brings its grain and not its
-# colour: scaled channel by channel by RUST over its own mean linear colour, measured off the file
-# (2026-10-30), so the rust is the palette's on average and the value range #801 set is unmoved.
-RUST_TEXTURE = "rust_coarse_01_diff_1k.jpg"
-RUST_TEXTURE_MEAN = (0.129, 0.0436, 0.0152)
-RUST_TEXTURE_TILES = 2.0               # one repeat of the image: it is about 2.2 m of steel
-# AND THE PAINT IS WEATHERED BY THE SAME PHOTOGRAPH (Truls, #805): on the manifold alone it moved
-# about 530 pixels of the north sheet by more than 3 of 255, which is too little to judge a texture
-# by. The paint takes the photograph's value and not its hue -- its luminance over its own
-# mean, measured off the file (2026-10-30) -- so a panel keeps its colour on average and gains the
-# mottling of old paint. PAINT_GRAIN is how much of that it takes: at 1 the photograph's own spread,
-# a fourteenth of it under half the mean and a twentieth over 1.8 times it.
-RUST_TEXTURE_LUMA = 0.0597
-PAINT_GRAIN = 1.0
+def _node(nt, kind, **inputs):
+    n = nt.nodes.new(kind)
+    for k, v in inputs.items():
+        n.inputs[k].default_value = v
+    return n
+
+
+def _world_noise(nt, scale, detail, stretch=(1.0, 1.0, 1.0), offset=(0.0, 0.0, 0.0)):
+    """A noise read in world space, so a turned or stretched box gets the same grain as its
+    neighbours: Generated coordinates are each object's own bounding box (house style, Materials)."""
+    pos = nt.nodes.new("ShaderNodeNewGeometry")
+    mapped = nt.nodes.new("ShaderNodeVectorMath")
+    mapped.operation = "MULTIPLY_ADD"
+    mapped.inputs[1].default_value = stretch
+    mapped.inputs[2].default_value = offset
+    nt.links.new(pos.outputs["Position"], mapped.inputs[0])
+    noise = _node(nt, "ShaderNodeTexNoise", Scale=scale, Detail=detail)
+    nt.links.new(mapped.outputs["Vector"], noise.inputs["Vector"])
+    return noise.outputs["Fac"]
+
+
+def _ramp(nt, fac, lo, hi):
+    r = nt.nodes.new("ShaderNodeValToRGB")
+    r.color_ramp.elements[0].position = lo
+    r.color_ramp.elements[1].position = hi
+    nt.links.new(fac, r.inputs["Fac"])
+    return r.outputs["Color"]
+
+
+def _mix(nt, factor, a, b):
+    """Mix two colours; `a` and `b` are each a socket or a constant."""
+    m = nt.nodes.new("ShaderNodeMix")
+    m.data_type = "RGBA"
+    nt.links.new(factor, m.inputs["Factor"])
+    for name, v in (("A", a), ("B", b)):
+        if isinstance(v, tuple):
+            m.inputs[name].default_value = (*v, 1.0)
+        else:
+            nt.links.new(v, m.inputs[name])
+    return m.outputs["Result"]
 
 
 def mat(name, glow=False, corrode=False):
@@ -162,932 +117,521 @@ def mat(name, glow=False, corrode=False):
     if key in MATS:
         return MATS[key]
     rgb, rough, metal = PALETTE[name]
-    # A GLOWING PART IS DARK IN THE STRUCTURE SHEET AND THE ACCENT IN THE GLOW SHEET. The game adds
-    # the two, so a part left at full accent in both washes pale when working and looks lit when
-    # cold -- see rf_blender.GLOW_BASE_DARKEN. The darkened value is the base for everything below,
-    # grime included, which is the point: the cold channel used to be an ACCENT and accents are
-    # excluded from grime, so it came out as fourteen tiles of dead-flat mid-brown and Truls read
-    # the manifold as copper (#252). It was never the corrosion. A glowing part takes grime like
-    # any other surface now, and only a part that is actually clean stays clean.
-    base = tuple(c * rf.GLOW_BASE_DARKEN for c in rgb) if glow else rgb
-    m = bpy.data.materials.new(f"{name}{'-glow' if glow else ''}{'-rust' if corrode else ''}")
+    m = bpy.data.materials.new(name + ("-glow" if glow else "") + ("-corroded" if corrode else ""))
     m.use_nodes = True
-    b = m.node_tree.nodes["Principled BSDF"]
-    b.inputs["Base Color"].default_value = (*base, 1.0)
+    nt = m.node_tree
+    b = nt.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*rgb, 1.0)
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
-    if glow or name not in ACCENTS:
-        # GRIME, and it does more work than it used to. The first version mixed one soft noise at
-        # 0.55 of the base and modulated roughness by 0.35, which at 64 px a tile is invisible: the
-        # drums came out as smooth plastic and the whole machine as one value (Truls, #252). Now two
-        # noises blend -- a broad one for patches and a fine one for streaks -- and roughness swings
-        # by 0.5, which is what stops a big curved bare-metal surface holding one clean highlight.
-        # The dark end stays at about half the base: the fault was the mask, not its depth.
-        nt = m.node_tree
-        noise = nt.nodes.new("ShaderNodeTexNoise")
-        noise.inputs["Scale"].default_value = 4.0
-        noise.inputs["Detail"].default_value = 6.0
-        fine = nt.nodes.new("ShaderNodeTexNoise")
-        fine.inputs["Scale"].default_value = 22.0
-        fine.inputs["Detail"].default_value = 4.0
-        # BLENDED, not summed. The first attempt added the fine noise on top of the broad one, which
-        # pushed the mask past the top of the ramp nearly everywhere: every surface came out at the
-        # dark end, evenly, and the machine went from too pale to uniformly muddy without ever being
-        # patchy. A weighted blend keeps the mask centred so the ramp has something to spread.
-        combine = nt.nodes.new("ShaderNodeMix")
-        combine.data_type = "FLOAT"
-        combine.inputs[0].default_value = 0.35         # 0 = broad patches only, 1 = fine streaks only
-        nt.links.new(noise.outputs["Fac"], combine.inputs[2])
-        nt.links.new(fine.outputs["Fac"], combine.inputs[3])
-        ramp = nt.nodes.new("ShaderNodeValToRGB")
-        ramp.color_ramp.elements[0].position = 0.40
-        ramp.color_ramp.elements[1].position = 0.72
+    MATS[key] = m
+    if glow:
+        # THE ACCENT AS EMISSION, NOT AS COLOUR (house style, Glow): a dark base, so a stopped
+        # machine looks stopped, and the accent in the emission render.py switches on.
+        b.inputs["Base Color"].default_value = (*(c * rf.GLOW_BASE_DARKEN for c in rgb), 1.0)
+        b.inputs["Emission Color"].default_value = (*rgb, 1.0)
+        b.inputs["Emission Strength"].default_value = rf.GLOW_EMISSION
+        return m
+    if name in CLEAN:
+        return m
+    rough_out = None
+    if name in PAINTED:
+        # OLD PAINT: the photograph's value over the palette colour, divided by its mean so the
+        # panel keeps its colour on average, at a little over half strength so it mottles rather
+        # than stains.
+        tex = rf_parts.texture(nt, HERE, RUST, tiles=2.0)
+        bw = nt.nodes.new("ShaderNodeRGBToBW")
+        nt.links.new(tex, bw.inputs["Color"])
+        f = nt.nodes.new("ShaderNodeMath")
+        f.operation = "MULTIPLY_ADD"
+        f.inputs[1].default_value = 0.55 / RUST_MEAN
+        f.inputs[2].default_value = 0.45
+        nt.links.new(bw.outputs["Val"], f.inputs[0])
+        scaled = nt.nodes.new("ShaderNodeVectorMath")
+        scaled.operation = "SCALE"
+        scaled.inputs[0].default_value = rgb
+        nt.links.new(f.outputs["Value"], scaled.inputs["Scale"])
+        colour = scaled.outputs["Vector"]
+    else:
+        # GRIME on bare metal, dark and frame: a broad noise for patches blended with a fine one,
+        # through a ramp, with the roughness swung by the same mask.
         mix = nt.nodes.new("ShaderNodeMix")
-        mix.data_type = "RGBA"
-        mix.inputs["A"].default_value = (*base, 1.0)
-        mix.inputs["B"].default_value = (base[0] * 0.5, base[1] * 0.45, base[2] * 0.4, 1.0)
-        nt.links.new(combine.outputs["Result"], ramp.inputs["Fac"])
-        nt.links.new(ramp.outputs["Color"], mix.inputs["Factor"])
-        out = mix.outputs["Result"]
-        if corrode:
-            # Three passes, each its own noise at its own scale and its own coverage, applied one
-            # after another. Separate from the grime ramp on purpose -- grime is everywhere and
-            # even, corrosion is in patches -- and separate from each other, which is the fix for
-            # the version that read as copper: one mask meant one colour over the whole panel.
-            for scale, detail, lo, hi, colour in (
-                (9.0, 8.0, 0.62, 0.80, RUST),        # broad rust, where water has run
-                (17.0, 6.0, 0.72, 0.80, RUST_DARK),  # small, hard-edged pits inside it
-                (5.0, 4.0, 0.78, 0.88, VERDIGRIS),   # a little verdigris, rarest of the three
-            ):
-                n = nt.nodes.new("ShaderNodeTexNoise")
-                n.inputs["Scale"].default_value = scale
-                n.inputs["Detail"].default_value = detail
-                r = nt.nodes.new("ShaderNodeValToRGB")
-                r.color_ramp.elements[0].position = lo
-                r.color_ramp.elements[1].position = hi
-                mx = nt.nodes.new("ShaderNodeMix")
-                mx.data_type = "RGBA"
-                mx.inputs["B"].default_value = (*colour, 1.0)
-                if colour is RUST:
-                    nt.links.new(rf_parts.texture(nt, HERE, RUST_TEXTURE, RUST_TEXTURE_TILES,
-                                                  tuple(c / m for c, m in zip(RUST, RUST_TEXTURE_MEAN))),
-                                 mx.inputs["B"])
-                nt.links.new(n.outputs["Fac"], r.inputs["Fac"])
-                nt.links.new(r.outputs["Color"], mx.inputs["Factor"])
-                nt.links.new(out, mx.inputs["A"])
-                out = mx.outputs["Result"]
-        if name == "paint":
-            luma = nt.nodes.new("ShaderNodeRGBToBW")
-            nt.links.new(rf_parts.texture(nt, HERE, RUST_TEXTURE, RUST_TEXTURE_TILES), luma.inputs[0])
-            grain = nt.nodes.new("ShaderNodeMath")
-            grain.operation = "MULTIPLY_ADD"            # 1 on average, whatever PAINT_GRAIN is
-            grain.inputs[1].default_value = PAINT_GRAIN / RUST_TEXTURE_LUMA
-            grain.inputs[2].default_value = 1.0 - PAINT_GRAIN
-            nt.links.new(luma.outputs["Val"], grain.inputs[0])
-            weathered = nt.nodes.new("ShaderNodeMix")
-            weathered.data_type = "RGBA"
-            weathered.blend_type = "MULTIPLY"
-            weathered.inputs["Factor"].default_value = 1.0
-            nt.links.new(out, weathered.inputs["A"])
-            nt.links.new(grain.outputs["Value"], weathered.inputs["B"])
-            out = weathered.outputs["Result"]
-        nt.links.new(out, b.inputs["Base Color"])
+        mix.data_type = "FLOAT"
+        mix.inputs[0].default_value = 0.35
+        nt.links.new(_world_noise(nt, 4.0, 6.0), mix.inputs[2])
+        nt.links.new(_world_noise(nt, 22.0, 4.0, offset=(3.1, 7.7, 1.3)), mix.inputs[3])
+        grime = _ramp(nt, mix.outputs["Result"], 0.40, 0.72)
+        colour = _mix(nt, grime, rgb, (rgb[0] * 0.5, rgb[1] * 0.45, rgb[2] * 0.4))
         rmix = nt.nodes.new("ShaderNodeMath")
         rmix.operation = "MULTIPLY_ADD"
         rmix.inputs[1].default_value = 0.5
-        rmix.inputs[2].default_value = rough if not corrode else min(1.0, rough + 0.18)
-        nt.links.new(ramp.outputs["Color"], rmix.inputs[0])
-        nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
-    if glow:
-        b.inputs["Emission Color"].default_value = (*rgb, 1.0)
-        b.inputs["Emission Strength"].default_value = rf.GLOW_EMISSION
-    MATS[key] = m
+        rmix.inputs[2].default_value = rough
+        nt.links.new(grime, rmix.inputs[0])
+        rough_out = rmix.outputs["Value"]
+    if corrode:
+        # CORROSION, the manifold's alone: rust where water has run, over about a third of the
+        # face, so a broad patch noise blended with one stretched tall into runs; small dark pits
+        # inside it; and verdigris, rarer than either. The rust takes the photograph's colour.
+        patch = _world_noise(nt, 0.9, 3.0)
+        runs = _world_noise(nt, 1.6, 4.0, stretch=(1.0, 1.0, 0.18), offset=(5.0, 2.0, 0.0))
+        blend = nt.nodes.new("ShaderNodeMix")
+        blend.data_type = "FLOAT"
+        blend.inputs[0].default_value = 0.45
+        nt.links.new(patch, blend.inputs[2])
+        nt.links.new(runs, blend.inputs[3])
+        rust = _ramp(nt, blend.outputs["Result"], 0.47, 0.53)
+        tex = rf_parts.texture(nt, HERE, RUST, tiles=2.0, gain=(1.6, 1.6, 1.6))
+        colour = _mix(nt, rust, colour, tex)
+        pos = nt.nodes.new("ShaderNodeNewGeometry")
+        vor = _node(nt, "ShaderNodeTexVoronoi", Scale=14.0)
+        nt.links.new(pos.outputs["Position"], vor.inputs["Vector"])
+        pit = nt.nodes.new("ShaderNodeMapRange")
+        pit.clamp = True
+        for k, v in (("From Min", 0.05), ("From Max", 0.08), ("To Min", 1.0), ("To Max", 0.0)):
+            pit.inputs[k].default_value = v
+        nt.links.new(vor.outputs["Distance"], pit.inputs["Value"])
+        pits = nt.nodes.new("ShaderNodeMath")
+        pits.operation = "MULTIPLY"
+        nt.links.new(pit.outputs["Result"], pits.inputs[0])
+        nt.links.new(rust, pits.inputs[1])
+        colour = _mix(nt, pits.outputs["Value"], colour, PIT)
+        verd = _ramp(nt, _world_noise(nt, 2.4, 3.0, offset=(11.0, 4.0, 9.0)), 0.68, 0.71)
+        colour = _mix(nt, verd, colour, VERDIGRIS)
+        r = nt.nodes.new("ShaderNodeMapRange")
+        for k, v in (("To Min", rough), ("To Max", 0.92)):
+            r.inputs[k].default_value = v
+        nt.links.new(rust, r.inputs["Value"])
+        rough_out = r.outputs["Result"]
+    nt.links.new(colour, b.inputs["Base Color"])
+    if rough_out is not None:
+        nt.links.new(rough_out, b.inputs["Roughness"])
     return m
 
 
 rf_parts.use(mat, geo, seed=7)  # each part's imperfections: its name and this, nothing else
 
-# ---- the machine --------------------------------------------------------------------------
+# ---- the layout -----------------------------------------------------------------------------
+#
+# Heights. The note gives the frame's top (1.55), the guard rail and the tray (1.75) and the drums
+# (about 1.6 over the frame's top); the lower deck's height it leaves open, and it is set by the
+# water header under it, whose pipe supports need 0.21 between the slab and the header's axis.
+SLAB = 0.25
+DECK = 0.70                    # the lower deck's top face
+TOP = 1.55                     # the frame's top rails' top face
+BEAM_Z = TOP - 0.1             # their axis, a 0.2 deep H-beam
+RAIL_Z = 1.75                  # the guard rail
+TRAY_Z = 1.80                  # the tray's bed; why not 1.75 is at `cable_tray` below
+PLATFORM = TOP + rf.DECK_BAR[1]  # the service platform's top face, its bars laid on the top rails
+
+POST_Y = -2.05                 # the south posts' line
+MAN_IN = 1.45                  # the manifold's inner, south-facing face
+MAN_X = 7.2
+DRUM_Y = (MAN_IN + POST_Y) / 2  # midway between the manifold and the posts
+DRUM_R = 0.9
+DRUM_TOP = TOP + 1.55               # "about 1.6": 1.6 put the outlet run's bend over the 4-tile cap
+CAP_TOP = DRUM_TOP + 0.08
+TRAY_Y = -1.81
+HEADER_R = 0.2                 # two fifths of a tile across
+VENT_R = 0.08
+WATER_R = 0.13
+WATER_Y = -1.0                 # the water sockets' line (Factorio y 1)
+WATER_Z = 0.47
+
+# Seven places along the south face, the middle one left empty over the steam socket.
+PLACES = {"W3": -7.0, "W2": -14 / 3, "W1": -7 / 3, "E1": 7 / 3, "E2": 14 / 3, "E3": 7.0}
+DRUMS = {
+    # x, the relief valve's angle on the cap, the lugs' angles, the gauge's, the vent hose's and the
+    # drain's offsets across the south flank, and the side the energy feed runs up. The middle
+    # drum's vent hose runs straight down under its relief valve.
+    "West":   dict(x=-3.5, relief=270, lugs=(65, 115), gauge=-0.35, vent=0.30, drain=-0.6, feed=-1),
+    "Middle": dict(x=-0.75, relief=225, lugs=(60, 120), gauge=0.35, vent=None, drain=-0.6, feed=-1),
+    "East":   dict(x=3.5, relief=270, lugs=(65, 115), gauge=0.35, vent=-0.45, drain=0.6, feed=1),
+}
+RUN_R = 0.55                   # where a header run leaves or lands a cap, inside its ring of bolts
+BOLT_RING = 0.87
+
+# The service platform, between the middle drum and the east drum; its west edge clear of the
+# outlet run, its east edge against the east drum.
+PLAT_X = (1.0, 2.55)
+PLAT_Y = (-1.85, MAN_IN - 0.15)
+LADDER = (1.6, -1.72)          # the access ladder's foot, against the hatch's south side
+HATCH = ((1.6, -1.525), (0.7, 0.75))
+
+
+def at_flank(dx, ox, d):
+    """The point `d` from drum `dx`'s axis on the radius through its south flank `ox` across, and
+    the yaw that turns a part to face out along that radius."""
+    phi = math.asin(ox / DRUM_R)
+    return (dx + d * math.sin(phi), DRUM_Y - d * math.cos(phi)), phi
+
+
+def skin_y(ox):
+    return DRUM_Y - math.sqrt(DRUM_R ** 2 - ox ** 2)
+
+
+def on_cap(dx, angle, r=RUN_R):
+    a = math.radians(angle)
+    return (dx + r * math.cos(a), DRUM_Y + r * math.sin(a))
+
+
+def turned(p, rot):
+    return rf.turn(rf.euler_matrix(rot), p)
+
+
 if variant == "cube":
     box("Cube", (1, 1, 1), (0, 0, 0.5), "body")
 else:
-    SLAB = 0.25
-    box("Slab", (W, L, SLAB), (0, 0, SLAB / 2), "frame")
-    seam("SlabSeam", (W + 0.02, 0.05, 0.05), (0, 0, SLAB))
-    seam("SlabSeam2", (0.05, L + 0.02, 0.05), (0.6, 0, SLAB))
+    slab = box("Slab", (2 * TX, 2 * TY, SLAB), (0, 0, SLAB / 2), "frame")
+    # A row of BOLTS along the slab's south kerb, either side of the steam socket's opening.
+    for side, (a, b) in (("West", (-7.1, -0.45)), ("East", (0.45, 7.1))):
+        rf_parts.bolts(f"KerbBolts{side}", rf.row((a, -2.21, SLAB), (b, -2.21, SLAB), 22))
 
-    # -- west manifold: the reactor contact. Closed panels, seams, rivet line, energy band. Glows.
-    MAN_W, MAN_H = 0.8, 1.25
-    MX = -HALF_W + MAN_W / 2
-    # Corroded, and it is the only part that is: it is the face the reactor's energy arrives
-    # through, hot and wet and outdoors, and it was the one surface Truls called too polished (#252).
-    #
-    # ALMOST STRAIGHT (Truls, #252). Fourteen tiles of dead-straight extrusion is the most
-    # machine-made thing on the model. A yaw of MAN_YAW radians walks the ends about 0.04 tiles --
-    # two or three pixels of lean over the full length, read as a fabrication that is out rather
-    # than as a bend. Everything sitting on the manifold takes the SAME yaw and the x offset that
-    # goes with it (-y * yaw), or the channel and its grille would slide off the panel they sit on.
-    MAN_YAW = stream("Manifold").jitter(0, 0.006)
+    # -- THE MANIFOLD: the reactor contact, a riveted trough the full length, corroded. Its top is
+    # the frame's top, with the energy channel let into it between two lips and a grille over it.
+    man_cy = (MAN_IN + TY) / 2
+    CH = (1.70, 2.00)                       # the channel's south and north sides
+    CH_FLOOR = TOP - 0.15
+    box("Manifold", (2 * MAN_X, TY - MAN_IN, CH_FLOOR - SLAB), (0, man_cy, (SLAB + CH_FLOOR) / 2),
+        "body", corrode=True)
+    box("ManifoldLipSouth", (2 * MAN_X, CH[0] - MAN_IN, TOP - CH_FLOOR),
+        (0, (MAN_IN + CH[0]) / 2, (CH_FLOOR + TOP) / 2), "body", corrode=True)
+    box("ManifoldLipNorth", (2 * MAN_X, TY - CH[1], TOP - CH_FLOOR),
+        (0, (CH[1] + TY) / 2, (CH_FLOOR + TOP) / 2), "body", corrode=True)
+    box("EnergyChannel", (2 * MAN_X - 0.1, CH[1] - CH[0] + 0.02, 0.04), (0, sum(CH) / 2, CH_FLOOR),
+        "energy", glow=True, read=CH[1] - CH[0])
+    for k in range(48):
+        gx = -MAN_X + 0.15 + k * (2 * MAN_X - 0.3) / 47
+        box(f"Grille{gx:+.2f}", (0.06, CH[1] - CH[0] + 0.06, 0.06), (gx, sum(CH) / 2, TOP - 0.03),
+            "dark", bev=0)
+    rivets("ManifoldRivets", (-MAN_X + 0.1, MAN_IN - 0.01, TOP - 0.06), (MAN_X - 0.1, MAN_IN - 0.01, TOP - 0.06),
+           64, r=0.032)
+    rivets("ManifoldRivetsTop", (-MAN_X + 0.1, MAN_IN + 0.12, TOP + 0.005), (MAN_X - 0.1, MAN_IN + 0.12, TOP + 0.005),
+           64, r=0.032)
+    # Its inner face, twelve by two, in the same corroded steel, from the deck up to the lip.
+    PANEL_FACE = (2 * MAN_X - 0.1, CH_FLOOR - 0.05 - DECK)
+    panel_c = (0, MAN_IN, DECK + PANEL_FACE[1] / 2)
+    rf_parts.panels("ManifoldPanels", panel_c, PANEL_FACE, "-Y", (12, 2), corrode=True)
+    cells = rf.panel_grid(PANEL_FACE[0], PANEL_FACE[1], 12, 2, 0.05)
+    for side, (cu, cv, su, sv) in (("West", cells[12]), ("East", cells[23])):
+        rf_parts.warning_plate(f"ManifoldWarning{side}", (cu, MAN_IN - 0.055, panel_c[2] + cv),
+                               (0.6, min(0.24, sv - 0.04)), "-Y", stripes=3)
 
-    def on_manifold(y):
-        return MX - y * MAN_YAW
+    # -- THE FRAME: dark H-beams, open, over the grating deck. Six posts on seven places, carried
+    # past the top to hold the guard rail; top rails along the south face and cross rails from
+    # the manifold's top to each post.
+    for name, x in PLACES.items():
+        hbeam(f"Post{name}", RAIL_Z + 0.05 - SLAB, (x, POST_Y, (SLAB + RAIL_Z + 0.05) / 2))
+        hbeam(f"CrossRail{name}", MAN_IN + 0.15 - POST_Y, (x, (MAN_IN + 0.15 + POST_Y) / 2, BEAM_Z), axis="Y")
+    # THE OPEN BAY HAS NO SOUTH TOP RAIL, NOR A BOTTOM ONE. The note puts nothing across it but the
+    # guard rail's west length, and the access ladder in it must have nothing in front of it from
+    # the deck to its cage's top; a rail at 1.45 across the bay would cross it. The platform's bars
+    # span between its two north-south beams, so its south edge needs no rail under it.
+    for name, (a, b) in (("W3", (-7.0, -14 / 3)), ("W2", (-14 / 3, -7 / 3)),
+                         ("E1", (7 / 3, 14 / 3)), ("E2", (14 / 3, 7.0))):
+        hbeam(f"TopRail{name}", b - a, ((a + b) / 2, POST_Y, BEAM_Z), axis="X")
+        hbeam(f"BottomRail{name}", b - a, ((a + b) / 2, POST_Y, DECK - 0.16), axis="X")
+    # The platform's west beam, from the manifold's top: the open bay's middle place has no post.
+    hbeam("PlatformBeam", MAN_IN + 0.15 - PLAT_Y[0], (PLAT_X[0] - 0.05, (MAN_IN + 0.15 + PLAT_Y[0]) / 2, BEAM_Z),
+          axis="Y")
 
-    box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body", corrode=True,
-        rot=(0, 0, MAN_YAW))
-    # Each seam is named for where it stands along the manifold, as the frame's parts are (#827).
-    # A seam is cut with no bevel and draws nothing, so its name moves no stream.
-    for i in range(6):
-        y = -HALF_L + 0.1 + (i + 1) * (L - 0.2) / 7
-        seam(f"ManifoldSeam{y:+.2f}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (on_manifold(y), y, SLAB + MAN_H / 2),
-             rot=(0, 0, MAN_YAW))
-    rivets("ManifoldRivetsTop", (on_manifold(-HALF_L + 0.3) - MAN_W / 2 + 0.08, -HALF_L + 0.3, SLAB + MAN_H + 0.01),
-           (on_manifold(HALF_L - 0.3) - MAN_W / 2 + 0.08, HALF_L - 0.3, SLAB + MAN_H + 0.01), 28)
-    # energy channel along the TOP of the manifold, where the camera sees it; glows when working
-    box("ManifoldBand", (MAN_W * 0.45, L - 0.6, 0.06), (MX + 0.05, 0, SLAB + MAN_H + 0.01), "energy",
-        glow=True, rot=(0, 0, MAN_YAW))
-    for i in range(14):
-        y = -HALF_L + 0.6 + i * (L - 1.2) / 13
-        box(f"ManifoldGrille{i}", (MAN_W * 0.5, 0.06, 0.06), (on_manifold(y) + 0.05, y, SLAB + MAN_H + 0.04),
-            "dark", bev=0, rot=(0, 0, MAN_YAW))
+    # The two end bays carry a diagonal brace. The west one is a knee from the post at 4.67 to the
+    # top rail, not the full diagonal, so it passes behind none of the control cabinet's face.
+    for name, (xa, za), (xb, zb) in (("West", (-14 / 3 - 0.1, DECK + 0.02), (-5.95, BEAM_Z - 0.08)),
+                                     ("East", (14 / 3 + 0.1, DECK + 0.02), (6.9, BEAM_Z - 0.08))):
+        length = math.hypot(xb - xa, zb - za)
+        tilt = -math.atan2(zb - za, xb - xa) if xb > xa else math.atan2(zb - za, xa - xb)
+        box(f"Brace{name}", (length, 0.1, 0.1), ((xa + xb) / 2, POST_Y, (za + zb) / 2), "frame",
+            rot=(0, tilt, 0))
 
-    # -- open frame of H-beams, no walls. Posts on the east edge and the mid-line, rails on top.
-    FRAME_H = 2.0
-    EX = HALF_W - 0.12
-    MXE = MX + MAN_W / 2 + 0.2
-    #
-    # EACH POST LINE IS NAMED FOR WHERE IT STANDS, its y to two places with its sign, and every
-    # part that stands on one is named for it (#827). A part draws from the stream of its name, so a
-    # name numbered off a loop re-rolled every part after one inserted earlier in it.
-    post_ys = [-HALF_L + 0.3 + k * (L - 0.6) / 6 for k in range(7)]
-    posts = {f"{y:+.2f}": y for y in post_ys}
-    # NO EAST POST OVER THE STEAM SOCKET (#806). One stood on the socket's own line, over its
-    # opening in the slab and in front of anything that came down onto it, so the outlet run could
-    # only end short of the socket (#828). The cross rail on that line still meets the top rail.
-    east_posts = {p: y for p, y in posts.items() if abs(y - STEAM_Y) > 0.5}
-    for p, y in posts.items():
-        if p in east_posts:
-            hbeam(f"PostE{p}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
-        hbeam(f"PostM{p}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
-        hbeam(f"Rail{p}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
-    hbeam("RailE", L - 0.4, (EX, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
-    hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
-    # The low rail along the open side is the guard rail a walkway behind it would have, and is
-    # yellow for the reason one is (#801). The handwheel rims were tried first and hid behind it.
-    # It is laid below, once OUTLET_Y is known.
-    #
-    # Grating deck under the drums, the kit's (#835), laid below once the cabinet stands: open
-    # bars, so the feed lines below stay visible.
-    #
-    # CUT BACK AT ITS EAST EDGE WHERE THE STEAM OUTLET RUN PASSES (#806). The run comes down beside
-    # the middle drum at OUTLET_X, OUTLET_Y and crosses to land on the steam socket, which lives
-    # below the deck's plane, so the deck is opened from DECK_CUT to its edge between the two and
-    # the run lies in the open. Under #275 it dropped through an opening in the deck and ran on
-    # under it, and there was no room for it: the deck's top stands 0.53 above the slab and the
-    # hose with its rings is about as thick, so it passed through the bars (#828).
-    #
-    # 1.52 AND NOT 1.80, so the descent's rings clear the frame (#825). They stood 0.285 off the
-    # hose's axis then, and at 1.80 they reached 2.085, past the conduit's inner face at 1.92 and
-    # the top rail's inner flange at 2.03. The descent also bows about 0.07 east of its control
-    # points, so 1.60 still put a ring 0.02 into the conduit (measured on the built model). The
-    # rings stand 0.2375 off the axis since #806, and the descent is left where #825 put it.
-    OUTLET_X, OUTLET_Y = 1.52, 1.45
-    DECK_CUT = 1.15
-    # Where on its crossing the outlet run carries its valve: low enough on the run that the wheel,
-    # lying flat over it, passes under the middle drum's weld seam rather than through it.
-    OUTLET_VALVE_Y = 0.5
-    #
-    # THE GUARD RAIL, IN LENGTHS BETWEEN THE POSTS, NOT ONE BEAM ALONG THEM (Truls, 2026-10-29). As
-    # one beam it ran through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter
-    # drifts across the post line: it stood in front of some posts and inside others, and it ran
-    # into the cabinet and across its blue panel. Each length stops RAIL_STOP short of a post's
-    # centre, which leaves 0.045 beyond the flange; the post and the length each jitter by up to
-    # 0.02, so together they close it by at most 0.04. The first starts at the cabinet's north
-    # face, and the length under the steam outlet is cut round its descent, whose rings reached
-    # past the rail's inner flange while OUTLET_X was 1.80. RailE2 is still the rail's name. Each
-    # length is named for where it starts, the cabinet or a post line, as RailE2Cab and RailE2-2.32,
-    # and the two halves of a cut one end in S and N (#827). It moved here from beside RailE so that
-    # OUTLET_Y is known.
-    #
-    # AND IT IS CUT FROM THE STEAM SOCKET TO PAST THE DESCENT, NOT ROUND THE DESCENT ALONE (#806).
-    # From this camera a rail stands in front of anything behind it and low, so the old run under
-    # the deck read as passing through the rail wherever the rail was left in front of it (#828).
-    # The outlet run is in the open from its descent to the socket, and the rail is gone along all
-    # of it: GATE is that stretch with OUTLET_GAP each side. A piece shorter than RAIL_MIN is left
-    # out rather than drawn as a stub, and the length that stops at the gate ends on a yellow
-    # stanchion, since nothing else holds it there.
-    CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
-    RAIL_STOP, OUTLET_GAP, RAIL_MIN = 0.16, 0.6, 0.3
-    GATE = (STEAM_Y - OUTLET_GAP, OUTLET_Y + OUTLET_GAP)
-    RAIL_Z = SLAB + 0.9
-    spans = []
-    east_ys = list(east_posts.values())
-    starts = [("Cab", CAB_N)] + [(p, y + RAIL_STOP) for p, y in list(east_posts.items())[1:-1]]
-    for (p, a), b in zip(starts, east_ys[1:]):
-        b -= RAIL_STOP
-        pieces = ([(p + "S", a, min(b, GATE[0])), (p + "N", max(a, GATE[1]), b)]
-                  if a < GATE[1] and b > GATE[0] else [(p, a, b)])
-        spans += [(n, lo, hi) for n, lo, hi in pieces if hi - lo >= RAIL_MIN]
-    stanchions = []                  # their y, which the kerb's bolts keep clear of
-    for p, a, b in spans:
-        hbeam(f"RailE2{p}", b - a, (EX, (a + b) / 2, RAIL_Z), axis="Y",
-              depth=0.12, flange=0.12, material="hazard")
-        for end in (a, b):
-            if GATE[0] <= end <= GATE[1]:
-                box(f"RailE2{p}Stanchion", (0.08, 0.08, RAIL_Z - SLAB), (EX, end, (SLAB + RAIL_Z) / 2),
-                    "hazard", bev=0.01)
-                stanchions.append(end)
-    # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
-    # because the frame read as an empty crate (Truls, #252): the bays were identical and had
-    # nothing in them, so fifteen tiles of machine carried three drums and air.
-    pipe("Conduit", [(EX - 0.12, -HALF_L + 0.4, SLAB + FRAME_H - 0.18),
-                     (EX - 0.14, 0, SLAB + FRAME_H - 0.22),
-                     (EX - 0.12, HALF_L - 0.4, SLAB + FRAME_H - 0.18)], 0.07, "dark")
-    for i, y in enumerate(post_ys):
-        torus(f"ConduitClamp{i}", 0.1, 0.03, (EX - 0.13, y, SLAB + FRAME_H - 0.2), "metal",
-              rot=(math.pi / 2, 0, 0))
-    # Two bays closed with a painted panel instead of left open -- the machine had no colour of its
-    # own next to Krastorio 2's yellow, and these are where there is area to give it some (#252).
-    #
-    # THE BACKING IS DARK AND THE PAINT IS IN INSET PANELS ON IT (#802), so each bay is six plates
-    # with dark seams rather than one off-white slab: the seams read against paint where they would
-    # vanish into body steel. Placed with the kit below; the yaw is drawn here, from the bay's
-    # own stream, and the plates take it.
-    #
-    # SET BACK BEHIND THE GUARD RAIL (the branch's pre-PR review). The rail runs across both bays
-    # at RailE2's height, and with the plates standing proud of a backing on the post line they
-    # passed through it; the backing already did. Set back BAY_BACK, the plates' faces stop short
-    # of the rail's flange and the rail runs in front of them. The rivets keep their place behind
-    # the backing. 0.14 rather than the 0.12 it was set at, which left 0.03 for the bay's yaw and the
-    # rail's own jitter to share, and on #825's draws a plate met the rail.
-    BAY_BACK = 0.14
-    #
-    # THE BAY AT 2 STOPS AT THE GATE (#806). It ended on the east post the steam socket no longer
-    # has, so it now ends where the guard rail does, at the rail's stanchion, and the open bay in
-    # front of the outlet run starts there.
-    bays = []
-    for k in (2, 5):                                  # each bay named for the post line it starts at
-        p, y0, y1 = f"{post_ys[k]:+.2f}", post_ys[k], post_ys[k + 1]
-        if f"{y1:+.2f}" not in east_posts:
-            y1 = GATE[0]
-        yaw = stream(f"BayPanel{p}").jitter(0, 0.008)
-        box(f"BayPanel{p}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
-            "dark", rot=(0, 0, yaw))
-        bays.append((p, (EX - 0.015 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
-        rivets(f"BayPanelRivets{p}", (EX - 0.1 - BAY_BACK, y0 + 0.25, SLAB + 1.42),
-               (EX - 0.1 - BAY_BACK, y1 - 0.25, SLAB + 1.42), 5, r=0.035)
-    for k, rise in ((1, 1), (4, -1)):                 # two bays only: a braced frame, not a lattice
-        dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * rise
-        box(f"Brace{post_ys[k]:+.2f}", (0.06, math.hypot(dy, dz), 0.14),
-            (EX, (post_ys[k] + post_ys[k + 1]) / 2, SLAB + FRAME_H / 2), "frame",
-            rot=(math.atan2(dz, dy), 0, 0), bev=0.01)
+    # The bays either side of the open bay are closed with a dark backing carrying inset panels of
+    # paint, three by two, set back behind the guard rail and under the top rail.
+    for name, cx in (("West", -3.5), ("East", 3.5)):
+        width = 7 / 3 - 0.18
+        bz = (DECK + BEAM_Z - 0.1) / 2
+        box(f"Backing{name}", (width, 0.04, BEAM_Z - 0.1 - DECK), (cx, POST_Y + 0.1, bz), "dark", read=0.6)
+        rf_parts.panels(f"BackingPanels{name}", (cx, POST_Y + 0.08, bz), (width - 0.06, BEAM_Z - 0.16 - DECK),
+                        "-Y", (3, 2), material="paint")
 
-    # South end wall: a closed panel the camera can see, between manifold and cabinet.
-    box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "paint")
-    seam("EndWallSeam", (0.05, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
-    rivets("EndWallRivets", (MXE + 0.2, -HALF_L + 0.03, SLAB + 1.0), (EX - 0.3, -HALF_L + 0.03, SLAB + 1.0), 9, r=0.04)
-    box("EndWallVent", (0.9, 0.06, 0.4), (MXE + (EX - MXE) / 2 + 0.3, -HALF_L + 0.03, SLAB + 0.55),
-        "dark", bev=0, read=0.4)
+    # -- THE LOWER DECK, a grating over the slab, its south edge marked outside the open bay. In the
+    # open bay it is closed by an unmarked toe board, and between the middle drum and the platform
+    # it is cut back to the drums' feet, so the outlet run and its valve pass down in front of it.
+    deck_y = (POST_Y + 0.11, MAN_IN - 0.03)
+    for name, (a, b), south, marked, holes in (
+            ("West", (-7.08, -7 / 3), deck_y[0], True, ()),
+            ("BayWest", (-7 / 3, -0.4), deck_y[0], False, ()),
+            ("BayCut", (-0.4, PLAT_X[0] - 0.05), -1.15, False, (((0.5, -0.85), (0.72, 0.8)),)),
+            ("BayEast", (PLAT_X[0] - 0.05, 7 / 3), deck_y[0], False, ()),
+            ("East", (7 / 3, 7.08), deck_y[0], True, ())):
+        rf_parts.grating_deck(f"Deck{name}", ((a + b) / 2, (south + deck_y[1]) / 2), (b - a, deck_y[1] - south),
+                              DECK, along="X", openings=holes, open_edges=("-Y",),
+                              marked_edges=("-Y",) if marked else ())
 
-    # -- three drums: rib bands, weld seam, cap, relief valve. Not identical.
-    DRUM_H = 2.3
-    DX = 0.35
-    # Named south, middle and north in the body's frame, and every part of a drum takes its name
-    # (#827).
-    DRUMS = (("S", -4.6), ("Mid", 0.0), ("N", 4.6))
-    DENTED = "N"                    # the north drum in the body's frame; the east one once turned
-    cap_tops = {}                   # (y, z) of each drum's cap, for the header to clear and collect
-    drums = []                      # where each drum's valve and gauges landed, for the kit below
-    for n, y in DRUMS:
-        s = stream(f"Drum{n}")
-        r = s.jitter(1.05, 0.04)
-        h = s.jitter(DRUM_H, 0.08)
-        z0 = SLAB + 0.5
-        cap_tops[n] = (y, z0 + h + 0.18)
-        d = cyl(f"Drum{n}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
-        d.scale = (1.0, s.jitter(1.0, 0.03), 1.0)
-        ribs = [torus(f"Drum{n}Rib{band}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
-                for band, frac in (("Low", 0.3), ("High", 0.7))]
-        if n == DENTED:
-            # SOUTH FLANK, because the camera stands south of the machine looking north: a drum
-            # shows its cap and its south side, and a hollow struck anywhere else hides behind the
-            # drum's own top.
-            #
-            # AND THE RIBS TAKE THE SAME STRIKE. That is what finally made it read (Truls, #252:
-            # "I can see the dent, but it is not very visible"). Denting the shell alone left the
-            # two rib bands running dead straight across the hollow -- they are separate objects
-            # and do not deform with it -- and a straight band over a curved dent cancels it out,
-            # which is why every earlier attempt had to be widened and still went unnoticed. With
-            # the bands bending into it the strike can stay compact and still be obvious: 0.62
-            # across, 0.42 deep, centred between the two.
-            #
-            # STRUCK IN THE FRAME THE CAMERA WILL SEE. The note says the south flank, and means the
-            # declared south (#806). The body is turned a quarter turn after it is built (TURNED,
-            # above), which maps the body's east onto the declared south, so when the body is going
-            # to be turned the strike goes on its east flank.
-            strike = (DX + r, y - 0.25, z0 + h * 0.5) if TURNED else (DX + 0.25, y - r, z0 + h * 0.5)
-            dent(d, strike, 0.62, 0.42)
-            for rib in ribs:                     # already 48x12; a few cuts is plenty
-                dent(rib, strike, 0.62, 0.42, cuts=4)
-        # THE WELD STOPS 0.03 SHORT OF THE CABINET'S NORTH FACE (#827). It runs 2r + 0.02 along the
-        # drum's east side, so the south drum's reached past CAB_N whenever its radius was drawn
-        # over about 1.05, and stood in the cabinet. The north and middle drums are nowhere near.
-        weld_half = min(r + 0.01, y - CAB_N - 0.03)
-        seam(f"Drum{n}Weld", (0.05, 2 * weld_half, 0.05), (DX + r - 0.02, y, z0 + h * 0.4),
-             rot=(0, 0, stream(f"Drum{n}Weld").jitter(0, 0.2)))
-        cyl(f"Drum{n}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
-        # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
-        # what the camera sees most of, and they were bare (#252).
-        torus(f"Drum{n}CapFlange", r * 0.62, 0.05, (DX, y, z0 + h + 0.01), "metal")
-        # The ring of bolts is the kit's (#804), on the spots the hand-placed ones stood.
-        bolts(f"Drum{n}CapBolt", ring((DX, y, z0 + h + 0.025), r * 0.62, 10))
-        # relief valve: a stub, a body and a little cap, off-centre so rotations differ.
-        # BARE METAL WITH A STEAM BAND, not a steam-coloured body. The accent is near white, and a
-        # whole valve in it blew out on the drum tops (Truls, #252); the house style already says an
-        # accent is a band and never a body, so this was the model disagreeing with it.
-        #
-        # THE MIDDLE DRUM'S STANDS CLEAR OF ITS THREE RUNS (#806). In the common place it stood
-        # where the outlet run rises off the cap, and the run passed through its stem, body and
-        # band (#828). Between where the outlet run leaves the cap and where the south run lands on
-        # it there is room for it, with the south run swung west off the cap as the north one is
-        # (below).
-        vx, vy = (DX + 0.2, y - 0.45) if n == "Mid" else (DX + r * 0.45, y - r * 0.3)
-        cyl(f"Drum{n}ValveStem", 0.09, 0.35, (vx, vy, z0 + h + 0.35), "metal", verts=24)
-        cyl(f"Drum{n}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "dark", verts=24)
-        torus(f"Drum{n}ValveBand", 0.17, 0.03, (vx, vy, z0 + h + 0.6), "steam")
-        cyl(f"Drum{n}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
-        # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
-        # it: the deck between the drums read as empty.
-        #
-        # THE MIDDLE DRUM'S STAND NORTH OF THE OUTLET RUN, out of its way (#806): in the body's
-        # frame the run comes down at OUTLET_Y and crosses to the socket south of it, through where
-        # this cluster and its wheel stood. Past the descent the wheel keeps clear of its rings.
-        gx, gy = DX + r + 0.32, (y + stream(f"Drum{n}Gauges").jitter(0.55, 0.15) if n != "Mid" else
-                                 OUTLET_Y + stream(f"Drum{n}Gauges").jitter(1.15, 0.08))
-        # THE HANDWHEEL STANDS CLEAR OF A BAY'S PLATES (#827), and the cluster moves with it. The
-        # wheel stands 0.72 south of the gauges, and the middle drum's, drawn far enough south,
-        # landed on the north end of the plates of the bay beside it, as a rim did on #824. Its rim
-        # is 0.05 thick either side of its plane, so WHEEL_CLEAR is that and air.
-        WHEEL_CLEAR = 0.07
-        wy = gy - 0.72
-        for _, centre, size, _ in bays:
-            half = (size[0] - 0.12) / 2              # the plates, 0.06 inside the backing's ends
-            lo, hi = centre[1] - half - WHEEL_CLEAR, centre[1] + half + WHEEL_CLEAR
-            if lo < wy < hi:
-                wy = hi if wy > centre[1] else lo
-        gy = wy + 0.72
-        box(f"Drum{n}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
-        for side, dy in (("S", -0.17), ("N", 0.17)):
-            cyl(f"Drum{n}Gauge{side}", 0.13, 0.06, (gx + 0.15, gy + dy, SLAB + 0.95),
-                "steam", axis="X", verts=20, read=0.26)
-        # BACK TO 0.05, and judged on its face. #339 took this to 0.06 because the floor was
-        # reading its edge; with `read` the disc is measured across, so it keeps the thickness it
-        # was drawn with.
-        cyl(f"Drum{n}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y",
-            verts=24, read=0.56)
-        drums.append({"name": n, "y": y, "r": r, "h": h, "z0": z0, "vx": vx, "vy": vy, "gx": gx, "gy": gy})
-        cyl(f"Drum{n}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
-        torus(f"Drum{n}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
-              rot=(math.pi / 2, 0, 0))
-        # glowing feed line from the manifold to the foot of the drum, under the deck
-        #
-        # IT CROSSES THE MID-LINE POSTS BESIDE THE DRUM'S POST, NOT THROUGH IT (#825). Each drum
-        # stands within 0.04 of a post line, so a feed leaving the manifold at the drum's own y
-        # went through the post or grazed its flange, and which one turned on its jitter. It
-        # leaves on the side of the post the drum stands, FEED_CLEAR or a little more off the
-        # post's centre: the flange's 0.115 and its jitter, the feed's 0.1, and air.
-        FEED_CLEAR = 0.27
-        s = stream(f"Feed{n}")
-        post = min(post_ys, key=lambda p: abs(p - y))
-        fy = post + (1 if y >= post else -1) * (FEED_CLEAR + s.uniform(0, 0.15))
-        pipe(f"Feed{n}", [(MX + MAN_W / 2, fy, SLAB + 0.42),
-                          (s.jitter(-0.7, 0.15), fy, SLAB + s.jitter(0.4, 0.03)),
-                          (DX - r * 0.7, y, SLAB + 0.45)], 0.1, "energy", glow=True)
+    # -- THE DRUMS: bare metal, two rib bands, a weld seam, a bolted cap with its bolts, relief
+    # valve and lugs, a segmented casing under the cap, a gauge box on the south flank, a drain.
+    CASING = (DRUM_TOP - 0.27, DRUM_TOP - 0.03)
+    RIBS = {"Low": 2.55, "High": 2.82}
+    BOX = (2.15, 2.45)                       # the gauge box's foot and top
+    GLAND = BOX[0] - 0.04
+    gauges = {}
+    for name, d in DRUMS.items():
+        dx = d["x"]
+        height = DRUM_TOP - DECK
+        shell = cyl(f"Drum{name}", DRUM_R, height, (dx, DRUM_Y, DECK + height / 2), "metal", verts=72)
+        ribs = [torus(f"Drum{name}Rib{k}", DRUM_R + 0.015, 0.035, (dx, DRUM_Y, z), "dark")
+                for k, z in RIBS.items()]
+        weld = stream(f"Drum{name}Weld")
+        (wx, wy), wphi = at_flank(dx, -0.62 if d["gauge"] > 0 else 0.62, DRUM_R - 0.012)
+        seam(f"Drum{name}Weld", (0.05, 0.05, RIBS["Low"] - DECK - 0.1),
+             (wx, wy, (DECK + RIBS["Low"]) / 2), rot=(weld.jitter(0, 0.02), 0, wphi))
+        if name == "East":
+            # THE DENT, struck on the south flank between the rib bands, west of the gauge box so
+            # the box stays on whole skin. The bands are struck with the shell, so they bend into
+            # the hollow with it.
+            centre = (dx - 0.15, skin_y(-0.15), (RIBS["Low"] + RIBS["High"]) / 2)
+            for o in [shell] + ribs:
+                rf_parts.dent(o, centre, 0.36, 0.18)
+        cyl(f"Drum{name}Cap", DRUM_R + 0.06, CAP_TOP - DRUM_TOP, (dx, DRUM_Y, (DRUM_TOP + CAP_TOP) / 2), "metal",
+            verts=72, read=2 * DRUM_R)
+        rf_parts.bolts(f"Drum{name}CapBolts", rf.ring((dx, DRUM_Y, CAP_TOP), BOLT_RING, 20, phase=0.08))
+        rf_parts.casing(f"Drum{name}Casing", rf.ring((dx, DRUM_Y, sum(CASING) / 2), DRUM_R, 8, phase=0.2),
+                        DRUM_R, rf.casing_arc(8, DRUM_R, 0.06), CASING[1] - CASING[0])
+        rf_parts.lifting_lugs(f"Drum{name}Lugs", [((*on_cap(dx, a, 0.62), CAP_TOP), (0, 0, math.radians(a)))
+                                                  for a in d["lugs"]])
+        # The pressure relief valve: dark with a steam band, never a white body, and a nozzle out
+        # to the south that its vent hose leaves from.
+        vx, vy = on_cap(dx, d["relief"])
+        cyl(f"Drum{name}ReliefStem", 0.05, 0.12, (vx, vy, CAP_TOP + 0.06), "metal", verts=16)
+        cyl(f"Drum{name}Relief", 0.11, 0.22, (vx, vy, CAP_TOP + 0.23), "dark", verts=24)
+        torus(f"Drum{name}ReliefBand", 0.115, 0.035, (vx, vy, CAP_TOP + 0.23), "steam")
+        cyl(f"Drum{name}ReliefTop", 0.06, 0.08, (vx, vy, CAP_TOP + 0.38), "dark", verts=16)
+        cyl(f"Drum{name}ReliefNozzle", 0.06, 0.2, (vx, vy - 0.12, CAP_TOP + 0.18), "dark", axis="Y", verts=16)
+        # The vent hose, down the south flank to the deck, standing off the casing and the bands;
+        # each drum's bends its own way, and a wobble keeps any two from matching.
+        ox = vx - dx if d["vent"] is None else d["vent"]
+        sy = skin_y(ox)
+        hx = dx + ox
+        flange_y = DRUM_Y - math.sqrt((DRUM_R + 0.06) ** 2 - (vx - dx) ** 2)
+        hose(f"Drum{name}Vent",
+             [(vx, vy - 0.1, CAP_TOP + 0.18), (vx, vy - 0.3, CAP_TOP + 0.16),
+              ((vx + hx) / 2, min(flange_y, sy) - 0.2, CAP_TOP + 0.02),
+              (hx, sy - 0.2, CASING[0] + 0.05), (hx, sy - 0.18, RIBS["Low"] - 0.3),
+              (hx, sy - 0.15, 1.3), (hx, sy - 0.16, DECK + 0.12), (hx, sy - 0.16, DECK - 0.04)],
+             VENT_R, pitch=1.2 * VENT_R, band=(1.0, 0.38), wobble=0.03)
+        # THE GAUGE CLUSTER, on the drum's own skin: a painted box bolted to the south flank, its
+        # back sunk into the shell so no light shows between them, below the lower rib band.
+        (gx, gy), phi = at_flank(dx, d["gauge"], DRUM_R + 0.1 - 0.035)
+        gz = sum(BOX) / 2
+        box(f"Drum{name}Gauges", (0.38, 0.2, BOX[1] - BOX[0]), (gx, gy, gz), "paint", rot=(0, 0, phi), read=0.3)
+        for side, u in (("W", -0.09), ("E", 0.09)):
+            lx, ly, _ = turned((u, -0.1, 0), (0, 0, phi))
+            dial = (gx + lx, gy + ly, gz + 0.04)
+            fx, fy, _ = turned((0, -1, 0), (0, 0, phi))
+            cyl(f"Drum{name}Dial{side}", 0.07, 0.03, dial, "dark", rot=(math.pi / 2, 0, phi), verts=20, read=0.14)
+            cyl(f"Drum{name}DialFace{side}", 0.05, 0.02, (dial[0] + 0.012 * fx, dial[1] + 0.012 * fy, dial[2]),
+                "metal", rot=(math.pi / 2, 0, phi), verts=20, read=0.1)
+        corners = [((gx + p[0], gy + p[1], gz + v), (math.pi / 2, 0, phi))
+                   for u, v in ((-0.15, 0.11), (0.15, 0.11), (-0.15, -0.11), (0.15, -0.11))
+                   for p in [turned((u, -0.1, 0), (0, 0, phi))]]
+        rf_parts.bolts(f"Drum{name}GaugeBolts", corners, r=0.032, head=0.03)
+        cyl(f"Drum{name}Gland", 0.085, 0.08, (gx, gy, GLAND), "dark", verts=20)
+        gauges[name] = (gx, gy)
+        # A handwheel valve on a short drain off the drum's foot, down through the grating to the slab.
+        (rx, ry), rphi = at_flank(dx, d["drain"], DRUM_R - 0.05)
+        fx, fy, _ = turned((0, -1, 0), (0, 0, rphi))
+        pipe(f"Drum{name}Drain", [(rx, ry, DECK + 0.2), (rx + 0.3 * fx, ry + 0.3 * fy, DECK + 0.2),
+                                  (rx + 0.42 * fx, ry + 0.42 * fy, DECK + 0.1),
+                                  (rx + 0.42 * fx, ry + 0.42 * fy, SLAB - 0.03)], 0.05, "metal")
+        rf_parts.valve(f"Drum{name}DrainValve", (rx + 0.2 * fx, ry + 0.2 * fy, DECK + 0.2), (fx, fy, 0), 0.05,
+                       (0, -0.58, 0.82))
 
-    # -- steam: three corrugated hose runs, each one BENDING DOWN ONTO A DRUM CAP (Truls, #275).
-    #
-    # THE HEADER USED TO COLLECT NOTHING. It was a single hose that passed over all three drums and
-    # carried on to the outlet, touching no drum on the way -- and the outlet leg then went straight
-    # through the middle drum and through a cross rail on its way down. A header on three drums is
-    # three runs: each end drum sends its steam to the middle drum, and the middle drum sends the
-    # lot out. So the middle drum carries THREE cap connections and each end drum one.
-    #
-    # EVERY RUN LEAVES AND LANDS VERTICALLY. The first two control points of a run are stacked in z,
-    # which makes the Bezier's tangent at the cap straight down, so the hose stands on the cap
-    # instead of ending in mid-air beside it.
-    #
-    # A HOSE, BANDED AND BENT LIKE KRASTORIO 2'S. The old one was "not quite straight" with a ring
-    # every 0.45 tiles, which at 64 px a tile is a ring every 29 px on a 24 px pipe: read as a
-    # smooth tube with a few rings on it. The big hose on K2's reactor sheet -- the one crossing its
-    # lower half -- bands at roughly its own radius, stands its ribs well proud, and swings clear of
-    # its own line between supports. So 0.26 between rings on a 0.38-tile tube and a real sag in
-    # the unsupported span. Close enough together to be the pipe's character, far enough apart that
-    # the tube shows between them, which is what tells a corrugated hose from a spring. The
-    # material is unchanged; bare metal was never the complaint.
-    #
-    # EACH RING STANDS A QUARTER OF THE RADIUS PROUD, as the note asks (#806). A ring stands
-    # band[0] + band[1] - 1 of the radius proud (`rf_parts.hose`), and the band it had until
-    # #806, (1.24, 0.26), stood half. (1.06, 0.19) stands 0.25, which is 0.0475 tiles on
-    # this tube, and its ring's own diameter, 0.072, clears the raised-detail floor of 0.06. The
-    # kit's default is left alone: this header is the one run the note sets it for.
-    HEADER_R = 0.19
-    HEADER_CORRUGATE, HEADER_BAND = 0.26, (1.06, 0.19)
-    CAP_ENTRY = 0.34               # how far off a cap's centre a run lands: inside its ring of bolts
-    mid_y, mid_cap = cap_tops["Mid"]
-    # THE GOOSENECK NEEDS ROOM, and the first attempt did not give it any: a run rose 0.22 off the
-    # cap and then had to turn through ninety degrees, so the Bezier's own handles overshot and the
-    # hose curled back over itself like a candy cane. Half a tile of straight rise turns the same
-    # corner smoothly.
-    #
-    # The two drum-to-drum runs are kept LOW -- a third of a tile of rise and a shallow hang -- so
-    # they read as hoses running between the drums rather than as three loops arching over the
-    # machine. The outlet run is the one that needs height: it has to cross the middle drum's own
-    # shoulder, so it rises further and keeps its gooseneck.
-    RUN_Z = max(z for _, z in cap_tops.values()) + 0.35
-    SAG_Z = max(z for _, z in cap_tops.values()) - 0.25     # clears the frame's top rails by about 0.65
-    OUT_Z = max(z for _, z in cap_tops.values()) + 0.55
+    # -- THE STEAM HEADER: a corrugated hose a ring every radius, each ring a quarter of the radius
+    # proud. The west and east runs each rise a third of a tile off their cap and sag between the
+    # drums to a valve, its handwheel turned to the camera; the east run keeps north of the access
+    # ladder, on the drums' line.
+    RISE = 1 / 3
+    HEADER = dict(pitch=HEADER_R, band=(1.0, 0.25))
+    TO_CAMERA = (0, -0.58, 0.82)
+    wx_, mx_, ex_ = (DRUMS[n]["x"] for n in ("West", "Middle", "East"))
 
-    # The middle drum's cap carries THREE runs, so their landings are spread around it rather than
-    # stacked on one line: the two neighbours land west of the cap's centre, north and south of each
-    # other, and the outlet leaves due east. Any closer together and the three tangle on the cap.
-    for n in ("S", "N"):                    # each named for the drum it leaves (#827)
-        y, cap = cap_tops[n]
-        toward = 1 if y < mid_y else -1
-        start = (DX, y + toward * CAP_ENTRY, cap)
-        land = (DX - 0.29, mid_y - toward * 0.17)
-        # A hose slung between two nozzles hangs below them, and there is nothing under this span
-        # but open frame.
-        s = stream(f"Header{n}")             # `hose` carries on along it for the rings
-        # BOTH SWING WEST OF THE CAPS' LINE (#806). The south run swung east, over where the middle
-        # drum's relief valve now stands clear of the outlet run.
-        sag = (DX + s.jitter(-0.3, 0.06), (y + mid_y) / 2 + s.jitter(0, 0.15), SAG_Z)
-        hose(f"Header{n}", [start, (start[0], start[1], RUN_Z), sag,
-                            (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
-             HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
-        # A BLOCK VALVE AT THE SAG, the kit's (#833): the low point of the span, where the hose
-        # passes through its control point, so the valve sits on the tube. The tube runs there close
-        # to the chord between its two tops, which is what the valve is turned along: a Bezier's
-        # auto handle lies along it only where the two tops are equally far. Measured on the built
-        # model for #840, from each sag's handle: 1.8 degrees off on the south run, whose tops stand
-        # 1.99 and 2.37 away, and none on the north, whose stand 2.14 and 2.14. That was before
-        # #806 swung the south run's sag west, and it was not measured again. Its wheel turns to
-        # the camera, which in the body's frame stands east and above (TURNED; rf_blender's pitch),
-        # and with open frame under the span and nothing over it, the wheel has the air it needs.
-        valve(f"Header{n}Valve", sag, (land[0] - start[0], land[1] - start[1], 0.0), HEADER_R,
-              TOWARD_CAMERA)
+    def lift(x, y, rise):
+        return [(x, y, DRUM_TOP + 0.02), (x, y, CAP_TOP + rise * 0.5), (x, y, CAP_TOP + rise)]
 
-    # THE OUTLET RUN, AND ITS ROUTE IS THE POINT (#806). In this file's frame, which is the body's
-    # own and not the declared one: up off the middle cap, north over the drum's shoulder, down
-    # outside it at OUTLET_X, at a y with no cross rail on it, then across in front of the cut-back
-    # deck and STRAIGHT DOWN ONTO THE STEAM SOCKET, landing on a bolted flange on its crown. (The
-    # quarter turn shows the descent east of the drum and the landing on the declared south face.)
-    # No east post stands over the socket and the guard rail is cut along the whole stretch, GATE,
-    # so nothing yellow stands in front of the run from the camera. The top rail, the conduit and
-    # the cable tray still cross in front of its descent, high up, as they did before.
-    #
-    # IT USED TO STOP SHORT OF THE SOCKET, under the deck, and go down into the slab 0.45 inboard
-    # of the socket's inner end with a collar, so that the pipe going into the floor and the pipe
-    # leaving the wall would read as one. Truls read it as connected to nothing (#828), with the
-    # rail across it. It lands on the stub's crown now, just past its inner end, where the camera
-    # sees the two meet.
-    #
-    # NOT `out`: that is this script's output path, and shadowing it made Blender try to save the
-    # model to a tuple after the whole machine had been built.
-    #
-    # LAND_X is just past the stub's inner end, HALF_W - 0.5, and far enough in that the flange
-    # stops short of the stub's accent band, whose inboard end is BAND_BACK + BAND_DEPTH / 2 = 0.39
-    # in from the selection edge: over the band it would hide the one thing saying what the socket
-    # carries. The flange rests on the stub's crown, SOCKET_Z + SOCKET_R = 0.282, which stands 0.032
-    # over the slab.
-    #
-    # ITS BOLTS STAND OUTSIDE THE HOSE'S RINGS, which reach 0.2375 from the axis: at FLANGE_R less
-    # 0.04 the heads start 0.245 out. On a narrower flange the lowest ring stood in them and hid
-    # them (the first draft's pre-PR review).
-    LAND_X = HALF_W - 0.47
-    FLANGE_R, FLANGE_T = 0.32, 0.06
-    FLANGE_TOP = 0.282 + FLANGE_T
-    out_top = (DX + CAP_ENTRY, mid_y, mid_cap)
-    outlet = hose("HeaderOut", [
-        out_top,
-        (out_top[0], out_top[1], OUT_Z),                  # straight up off the cap, then over
-        (0.95, mid_y + 0.95, OUT_Z - 0.25),               # across the drum's shoulder, above its cap
-        (OUTLET_X, OUTLET_Y, SLAB + 2.10),
-        (OUTLET_X, OUTLET_Y, SLAB + 0.95),
-        (LAND_X - 0.05, STEAM_Y + 0.6, SLAB + 0.62),       # across in front of the cut-back deck
-        # Half a tile of straight drop onto the flange, stacked in z, so it lands square.
-        (LAND_X, STEAM_Y, SLAB + 0.55),
-        (LAND_X, STEAM_Y, FLANGE_TOP),
-    ], HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
-    cyl("OutletFlange", FLANGE_R, FLANGE_T, (LAND_X, STEAM_Y, FLANGE_TOP - FLANGE_T / 2), "metal",
-        read=2 * FLANGE_R)
-    bolts("OutletFlangeBolt", ring((LAND_X, STEAM_Y, FLANGE_TOP), FLANGE_R - 0.04, 8))
-    # A VALVE WHERE IT CROSSES IN FRONT OF THE DECK (#806), its handwheel lying flat on top. Turned
-    # to the camera, as the sag valves' are, its wheel would stand past the footprint's south edge:
-    # `rf_blender.valve_layout` puts it about 0.74 out from the run, whose axis there is about half
-    # a tile in from that edge. Up is the way that keeps it inside and still shows the wheel's face.
-    # Read from the landing back, since the run first passes this y on its way over the shoulder.
-    at, heading = rf.along(rf_parts.centreline(outlet)[::-1], 1, OUTLET_VALVE_Y)
-    valve("HeaderOutValve", at, heading, HEADER_R, (0.0, 0.0, 1.0))
-    # A BAND, not the half-tile steam-coloured block this used to be: near-white at that size read
-    # as a lamp on the middle drum (Truls, #252). On the descent, the stretch of the steam route
-    # standing in the open where a band can be seen best.
-    torus("HeaderBand", 0.22, 0.05, (OUTLET_X, OUTLET_Y, SLAB + 1.45), "steam")
+    def header_run(name, a, b, low):
+        """A run from the cap point `a` to the cap point `b`, sagging to `low` between them, with a
+        valve at its lowest point."""
+        way = (b[0] - a[0]) / abs(b[0] - a[0])
+        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, low)
+        near_a = (a[0] + 0.5 * way, a[1], CAP_TOP + RISE - 0.04)
+        near_b = (b[0] - 0.5 * way, b[1], CAP_TOP + RISE - 0.04)
+        o = hose(name, lift(*a, RISE) + [near_a, mid, near_b] + lift(*b, RISE)[::-1], HEADER_R, **HEADER)
+        line = rf_parts.centreline(o)
+        k = min(range(len(line)), key=lambda i: line[i][2])
+        p, q = line[max(k - 1, 0)], line[min(k + 1, len(line) - 1)]
+        rf_parts.valve(f"{name}Valve", line[k], tuple(q[j] - p[j] for j in range(3)), HEADER_R, TO_CAMERA)
 
-    # -- cabinet, south-east corner: the one asymmetry. Seams and a blue panel.
-    CAB = (0.8, 1.3, 1.7)
-    cpos = (HALF_W - 0.55, -HALF_L + 0.95, SLAB + CAB[2] / 2)
-    box("Cabinet", CAB, cpos, "paint")
-    seam("CabinetSeam", (CAB[0] + 0.02, 0.05, CAB[2] - 0.3), cpos)
-    box("CabinetPanel", (0.06, 0.7, 0.5), (cpos[0] + CAB[0] / 2, cpos[1], cpos[2] + 0.3), "water",
-        bev=0, read=0.5)
-    rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
-           (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
+    # The east run leaves and lands a little north of due west and due east, so that on the middle
+    # cap it stands clear of the outlet run, which crosses the same shoulder to the south of it.
+    header_run("HeaderWest", on_cap(wx_, 0), on_cap(mx_, 180), CAP_TOP - 0.12)
+    header_run("HeaderEast", on_cap(ex_, 160), on_cap(mx_, 20), CAP_TOP - 0.55)
 
-    # -- kit parts: the grating deck (#835), in place of the hand-placed slats: the same span, a
-    # bar at each of the thirty places they were spaced at, and its top face where theirs was.
-    # The slats were twenty-eight: the two that crossed the steam outlet's descent were left out.
-    #
-    # ITS TWO ENDS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the things
-    # a real plant paints so somebody sees it. They are its open edges too, and carry its toe
-    # boards, yellow with them. The two long sides carry neither: on the east the gauge clusters
-    # and their handwheels stand out over the edge and the guard rail closes it, except along the
-    # open bay, where the deck is cut back for the outlet run and nothing closes it (#806); and the
-    # west runs along the mid-line posts.
-    #
-    # ITS OPENINGS ARE WHERE SOMETHING PASSES THROUGH IT: the steam outlet run, from its descent to
-    # the socket, where the deck is cut back from DECK_CUT to its east edge (#806), and the cabinet,
-    # which stands on the slab through the deck's south-east corner.
-    DECK_SPAN = W - MAN_W - 0.7
-    deck_east = 0.35 + DECK_SPAN / 2
-    deck = grating_deck("Deck", (0.35, 0.0), (DECK_SPAN, L - 1.0 + 0.06), SLAB + 0.53, pitch=(L - 1.0) / 29,
-                        openings=[(((DECK_CUT + deck_east + 0.1) / 2, (STEAM_Y - 0.35 + OUTLET_Y + 0.35) / 2),
-                                   (deck_east + 0.1 - DECK_CUT, OUTLET_Y - STEAM_Y + 0.7)),
-                                  ((cpos[0], cpos[1]), (CAB[0] + 0.04, CAB[1] + 0.04))],
-                        open_edges=("-Y", "+Y"), marked_edges=("-Y", "+Y"))
-    # A WARNING PLATE ON THE CABINET'S FRONT, under its blue panel (#806): the face the camera sees,
-    # on the box a crew opens. The machine's plates are one yellow element, three plates now.
-    warning_plate("CabinetWarning", (cpos[0] + CAB[0] / 2 + 0.02, cpos[1], cpos[2] - 0.2), (0.6, 0.35), "+X")
+    # THE OUTLET RUN: up half a tile off the middle cap's south side, east over the drum's
+    # shoulder, down east of it in the open bay, south in front of the cut-back deck through its
+    # valve, and straight down onto a bolted flange on the slab over the steam socket's stub,
+    # inboard of the socket's accent band.
+    OUT_X = 0.55
+    FLANGE = (0.0, -1.76, SLAB)
+    ox_, oy_ = mx_, DRUM_Y - RUN_R
+    outlet = hose("SteamOutlet",
+                  lift(ox_, oy_, 0.47) +
+                  [(mx_ + 0.55, oy_ - 0.05, CAP_TOP + 0.42), (OUT_X - 0.2, oy_ - 0.05, CAP_TOP + 0.26),
+                   (OUT_X, oy_ - 0.05, CAP_TOP - 0.25),
+                   (OUT_X, oy_ - 0.05, 1.7), (OUT_X, oy_ - 0.05, 1.25), (OUT_X, -1.0, 1.0), (OUT_X, -1.2, 0.98),
+                   (OUT_X - 0.05, -1.45, 0.98), (FLANGE[0] + 0.05, FLANGE[1], 0.92),
+                   (FLANGE[0], FLANGE[1], 0.7), (FLANGE[0], FLANGE[1], 0.45), (FLANGE[0], FLANGE[1], SLAB - 0.04)],
+                  HEADER_R, **HEADER)
+    line = rf_parts.centreline(outlet)
+    p, d_ = rf.along(line, 1, -1.2)
+    rf_parts.valve("SteamOutletValve", p, d_, HEADER_R, (0, 0, 1))
+    p, d_ = rf.along(line, 2, 2.3)
+    torus("SteamOutletBand", HEADER_R + 0.04, 0.05, p, "steam", rot=rf_parts._facing(d_))
+    cyl("SteamOutletFlange", 0.34, 0.06, (FLANGE[0], FLANGE[1], SLAB + 0.03), "metal", verts=40, read=0.68)
+    rf_parts.bolts("SteamOutletBolts", rf.ring((FLANGE[0], FLANGE[1], SLAB + 0.06), 0.295, 8, phase=0.2))
 
-    # -- kit parts: hoses and looms (#803). Machinery a plant has "even where there is no clear
-    # reason for it" (house style); none of it reaches a footprint edge, and `pipe` holds every
-    # tube to that at save.
-    #
-    # A VENT HOSE OFF EACH RELIEF VALVE, down the drum's east flank to the deck. That flank is the
-    # one the camera sees once the body is turned, and a valve that vents into the air beside a
-    # drum reads as a part missing its pipe. Thin enough to read as a vent rather than a second
-    # header, which is why its ring is fuller than the header's: at a 0.075 radius the header's
-    # band would put each ring under the floor.
-    for d in drums:
-        vz = d["z0"] + d["h"] + 0.6
-        flank = DX + d["r"] + 0.32                 # off the weld bead, which stands proud of the flank
-        hose(f"VentHose{d['name']}", [(d["vx"] + 0.30, d["vy"], vz),
-                              (d["vx"] + 0.55, d["vy"], vz - 0.05),
-                              (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
-                              (flank, d["vy"] - 0.3, d["z0"] + d["h"] * 0.4),
-                              (flank, d["vy"] - 0.3, SLAB + 0.53)],
-             0.075, band=(1.3, 0.42), wobble=0.05)
-    # A CABLE TRAY ALONG THE TOP OF THE EAST RAIL (#834), the open side the camera looks down on
-    # once the body is turned, and the loom from the cabinet lying in it, with a drop from it to
-    # each drum's gauges. The loom used to lie on the rail's flange itself; in the tray it is
-    # carried the way a plant carries one, and the tray's rungs are a detail of their own.
-    #
-    # THE TRAY STANDS ON THE RAIL AS THE RAIL WAS BUILT. `hbeam` shifts and tilts every beam a
-    # little, so the rail's top is not at one height: `on_rail` reads it off the top flange, and the
-    # tray's brackets rest on it there. A bracket stands at each end and between each two post
-    # lines, never on one, where a cross rail's own jitter and tilt can lift its top 0.03 over the
-    # rail's (#825); the tray's rungs stand a bracket's height, 0.06, over the rail's top, so 0.03
-    # clear of a cross rail lifted that far.
-    #
-    # TRAY_X IS SET ABSOLUTELY rather than off the rail, which is jittered: the tray's outer rail
-    # stands 0.015 inside the collision box by the arithmetic. Its inner rail's outer face, at 1.965,
-    # stood about 0.09 clear of the steam outlet's rings, which reached 0.285 from the descent's
-    # axis at 1.52 and about 0.07 further with its bow (measured on the built model under #825).
-    # Since #806 the rings reach 0.2375, so it stands about 0.14 clear, by the same arithmetic. The loom
-    # no longer steps out round the outlet: the tray runs straight past it.
-    #
-    # EVERY DROP LEAVES THE TRAY INBOARD, at DROP_X, which clears the rail's flange, the conduit and
-    # its clamps under it, and the bays' rivets. The main loom leaves by the tray's open north end
-    # and goes down at END_Y, between the deck's last two bars and past the north gauges, and comes
-    # in by its open south end from the cabinet, climbing off it inboard of the conduit. Each gauge
-    # loom climbs over the tray's inner rail on its way out. The main loom carries no ties, since a
-    # tie round a loom lying in a tray passes through the rungs. The gauge looms keep theirs, which
-    # stand at their points outside the tray.
-    LOOM_HALF = rf.loom_spread(3, 0.035) + 0.035         # the bundle's half-width
-    GAUGE_HALF = rf.loom_spread(2, 0.035) + 0.035
-    TRAY_W, TRAY_X, DROP_X = 0.22, HALF_W - 0.15, EX - 0.43
-    END_Y = HALF_L - 0.73
-    from mathutils import Vector
-    top = bpy.data.objects["RailE-f1"]
-    bpy.context.view_layer.update()
+    # -- THE SERVICE PLATFORM: a grating laid on the top rails, its south and west edges marked as
+    # walkway edges, its north and east edges unmarked, a toe board on each, and the hatch the
+    # access ladder comes up through, the lid standing open beside it.
+    # THE HATCH IS CUT THROUGH THE SOUTH EDGE, not "just inside" it as the note has it: a strip of
+    # deck south of the hatch puts its marked edge bar and toe board across the ladder, which the
+    # note also says nothing may cross. The edge's marking stops either side of the hatch.
+    rf_parts.grating_deck("Platform", (sum(PLAT_X) / 2, sum(PLAT_Y) / 2), (PLAT_X[1] - PLAT_X[0], PLAT_Y[1] - PLAT_Y[0]),
+                          PLATFORM, along="X", openings=(HATCH,), open_edges=("+X", "-X", "+Y", "-Y"),
+                          marked_edges=("-X", "-Y"))
+    (hx_, hy_), (hw_, hd_) = HATCH
+    box("HatchLid", (0.04, hd_ - 0.02, hw_ - 0.1), (hx_ - hw_ / 2 - 0.04, hy_, PLATFORM + (hw_ - 0.1) / 2), "dark",
+        read=0.6)
+    # FACING NORTH, so the cage stands over the hatch and round it above the deck, and the stiles and
+    # rungs face the camera; the cage starts low enough to come up through the hatch with the climb.
+    rf_parts.access_ladder("AccessLadder", (*LADDER, DECK), PLATFORM + 1.0, (0, 1, 0), cage_from=0.45)
 
-    def on_rail(y):
-        """The point on the rail's top flange at body y, at TRAY_X."""
-        m = top.matrix_world
-        ly = (y - m[1][3] - m[1][2] * 0.5) / m[1][1]
-        _, _, z = m @ Vector((0.0, ly, 0.5))
-        return (TRAY_X, y, z)
+    # -- GUARD RAIL: one hazard rail at hand height in lengths between the posts, stopping short of
+    # the outlet run at a yellow stanchion and taking up again at the next post east.
+    STANCHION = -0.45
+    for name, (a, b) in (("W3", (-7.0, -14 / 3)), ("W2", (-14 / 3, -7 / 3)), ("W1", (-7 / 3, STANCHION)),
+                         ("E1", (7 / 3, 14 / 3)), ("E2", (14 / 3, 7.0))):
+        a_, b_ = a + 0.09, b - (0.04 if b == STANCHION else 0.09)
+        cyl(f"GuardRail{name}", 0.035, b_ - a_, ((a_ + b_) / 2, POST_Y, RAIL_Z), "hazard", axis="X", verts=16)
+    cyl("Stanchion", 0.04, RAIL_Z + 0.04 - SLAB, (STANCHION, POST_Y, (SLAB + RAIL_Z + 0.04) / 2), "hazard", verts=16)
 
-    clamps = [(p, y) for p, y in posts.items() if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
-    cab_top, cab_n = cpos[2] + CAB[2] / 2, cpos[1] + CAB[1] / 2
-    # It runs from just past the cabinet to past the north drum's gauges, so each gauge loom
-    # leaves from inside it.
-    TRAY_S, TRAY_N = cab_n + 0.5, max(clamps[-1][1] + 0.3, max(d["gy"] for d in drums) + 0.35)
-    mids = [(a + b) / 2 for a, b in zip(post_ys, post_ys[1:])]
-    held = [TRAY_S] + [y for y in mids if TRAY_S < y < TRAY_N] + [TRAY_N]
-    lift = rf.TRAY_BRACKET[1] + rf.TRAY_RUNG[1]
-    tray = cable_tray("CableTray", [(x, y, z + lift) for x, y, z in map(on_rail, held)], TRAY_W)
-    lie = rf.tray_lie(tray, LOOM_HALF)
-    LOOM_Z = lie[0][2]
-    RAIL_TOP = tray["bed"][0][2] - rf.TRAY_RUNG[1] + tray["rail_h"]
+    # -- THE CONTROL CABINET at the south-west corner, behind the post line in the end bay: taller
+    # than the guard rail, its top in inset panels, its blue panel and a warning plate under it on
+    # the face toward the camera.
+    CAB = (-6.45, -1.625, 0.8, 0.55, 2.5)     # centre x, y, width, depth, top
+    cab_face = CAB[1] - CAB[3] / 2
+    box("Cabinet", (CAB[2], CAB[3], CAB[4] - DECK), (CAB[0], CAB[1], (DECK + CAB[4]) / 2), "paint")
+    seam("CabinetDoor", (0.05, 0.05, CAB[4] - DECK - 0.3), (CAB[0] + 0.12, cab_face, (DECK + CAB[4]) / 2))
+    rf_parts.panels("CabinetTop", (CAB[0], CAB[1], CAB[4]), (CAB[2], CAB[3]), "+Z", (2, 2), material="paint")
+    box("CabinetPanel", (0.5, 0.04, 0.32), (CAB[0], cab_face - 0.01, 2.22), "water", read=0.32)
+    rf_parts.warning_plate("CabinetWarning", (CAB[0], cab_face, 1.93), (0.44, 0.2), "-Y", stripes=3)
 
-    def in_tray(y, half):
-        """The point a loom of half-width `half` follows lying in the tray at body y."""
-        (ax, ay, az), (bx, by, bz) = tray["bed"][0], tray["bed"][-1]
-        t = (y - ay) / (by - ay)
-        return (TRAY_X, y, az + (bz - az) * t + half + rf.TRAY_CLEAR)
+    # -- THE CABLE TRAY at the guard rail's height, just inside it on brackets off the posts, and the
+    # loom in it from the cabinet's top the whole way east.
+    # ITS BED IS AT 1.80, NOT 1.75: where it jogs north across the platform its brackets have to
+    # clear the platform's toe boards, which stand to 1.69.
+    # AND IT JOGS NORTH ACROSS THE PLATFORM, BEHIND THE ACCESS LADDER'S CAGE, because the note puts
+    # the tray along the south face the whole way and nothing in front of the ladder; the note does
+    # not say how the one gets past the other.
+    tray_pts = [(-5.95, TRAY_Y, TRAY_Z)] + [(x, TRAY_Y, TRAY_Z) for x in (-14 / 3, -7 / 3, STANCHION)] + [
+        (0.98, TRAY_Y, TRAY_Z), (1.06, -0.85, TRAY_Z), (2.1, -0.85, TRAY_Z), (2.25, TRAY_Y, TRAY_Z),
+        (14 / 3, TRAY_Y, TRAY_Z), (6.6, TRAY_Y, TRAY_Z)]
+    tray = rf_parts.cable_tray("CableTray", tray_pts, 0.2)
+    spread = rf.loom_spread(3, 0.035) + 0.035
+    lie = rf.tray_lie(tray, spread)
+    dense = [lie[0]]
+    for a, b in zip(lie, lie[1:]):
+        n = max(1, round(math.dist(a, b) / 0.35))
+        dense += [tuple(a[j] + (b[j] - a[j]) * (k + 1) / n for j in range(3)) for k in range(n)]
+    cab_top = (CAB[0] + 0.15, CAB[1] - 0.1)
+    loom_pts = [(*cab_top, CAB[4] - 0.05), (*cab_top, CAB[4] + 0.12), (-6.1, TRAY_Y + 0.05, CAB[4] + 0.05),
+                (-5.98, TRAY_Y, TRAY_Z + 0.35)] + dense + [
+        (6.75, TRAY_Y, lie[-1][2] - 0.05), (6.8, TRAY_Y, 1.3), (6.8, TRAY_Y, DECK + 0.1), (6.8, TRAY_Y, DECK - 0.04)]
+    rf_parts.loom("Loom", loom_pts, ties=False)
+    # A DROP TO EVERY DRUM, out of the tray, up the drum's flank and into its gauge box's gland.
+    for name, (gx, gy) in gauges.items():
+        lz = lie[0][2]
+        rf_parts.loom(f"LoomDrop{name}",
+                      [(gx, TRAY_Y, lz), (gx, TRAY_Y + 0.16, lz + 0.06), (gx, gy - 0.2, GLAND - 0.12),
+                       (gx, gy - 0.04, GLAND - 0.1), (gx, gy, GLAND - 0.04), (gx, gy, GLAND + 0.02)],
+                      cables=("cable-red", "cable-green"), twist=0.9, ties=False)
 
-    loom("Loom", [(DROP_X + 0.15, cpos[1], cab_top + 0.02), (DROP_X + 0.1, cpos[1] + 0.3, LOOM_Z),
-                  (DROP_X + 0.2, cab_n + 0.05, LOOM_Z + 0.04), (TRAY_X, TRAY_S - 0.25, lie[0][2])]
-         + lie + [(TRAY_X, TRAY_N + 0.15, lie[-1][2]), (DROP_X, END_Y - 0.3, LOOM_Z + 0.04),
-                  (DROP_X, END_Y, SLAB + 1.2), (DROP_X, END_Y, SLAB + 0.02)], ties=False)
-    # -- kit parts: inset panels (#802). Each on a face the camera sees once the body is turned.
-    for p, centre, size, yaw in bays:
-        # The plates stop 0.06 inside the backing's ends: a handwheel rim beside a bay can stand
-        # just past the backing, and plates out to its ends touched one (the branch's pre-PR
-        # review).
-        panels(f"BayPlates{p}", centre, (size[0] - 0.12, size[1]), "+X", (3, 2), "paint", yaw=yaw)
-    # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
-    # by their shadow alone. Its outer quarter tile is left bare: the conduit and the corner post's
-    # flange pass just over it, and plates there stood into both (the branch's pre-PR review).
-    panels("CabinetPlates", (cpos[0] - 0.125, cpos[1], cpos[2] + CAB[2] / 2), (CAB[0] - 0.25, CAB[1]), "+Z",
-           (2, 3), "paint")
-    # The manifold's inner face, which the feed lines run into. It carries the manifold's
-    # corrosion, since it is the same steel, and turns with its yaw.
-    panels("ManifoldPlates", (on_manifold(0) + MAN_W / 2, 0, SLAB + MAN_H / 2), (L - 0.2, MAN_H), "+X",
-           (12, 2), "body", yaw=MAN_YAW, corrode=True)
-    # A WARNING PLATE AT EACH END OF THE MANIFOLD (#838), on the upper end plate of the face above,
-    # which the camera sees between the frame's top rail and the end drum. Each plate stands 0.05 to
-    # 0.07 proud of the face, so this is placed 0.07 out, the most any can stand, and its back, 0.02
-    # behind that, meets the plate under it or is set into it; it takes none of the
-    # manifold's yaw, which moves its ends less than a hundredth of a tile across its width.
-    cells = rf.panel_grid(L - 0.2, MAN_H, 12, 2, 0.05)
-    for end, (y, z, _, _) in (("South", cells[12]), ("North", cells[23])):
-        warning_plate(f"ManifoldWarning{end}", (on_manifold(y) + MAN_W / 2 + 0.07, y, SLAB + MAN_H / 2 + z),
-                      (0.6, 0.35), "+X")
-    # -- kit parts: repeated modules (#804).
-    #
-    # A SEGMENTED CASING ROUND EACH DRUM'S SHOULDER: eight dark segments with a slot between each,
-    # the insulation jacket a hot vessel wears. Under the cap, where the camera looks down on it;
-    # at the foot it hid behind the deck. It stands above the upper rib and clear of the dent
-    # struck between the ribs.
-    for d in drums:
-        jacket_r = d["r"] + 0.02
-        at = ring((DX, d["y"], d["z0"] + d["h"] - 0.24), jacket_r, 8, phase=math.pi / 8)
-        casing(f"Drum{d['name']}Jacket", at, jacket_r, rf.casing_arc(8, jacket_r, 0.06), 0.34)
-    # TWO LIFTING LUGS ON EACH DRUM'S TOP (#837), east and west of its cap, between the cap's ring
-    # of bolts and the drum's rim, yellow as a lifting point is. The east one faces the camera once
-    # the body is turned, so its eye shows; Truls chose yellow for them, small and few (recorded on
-    # #837).
-    for d in drums:
-        lifting_lugs(f"Drum{d['name']}Lugs", ring((DX, d["y"], d["z0"] + d["h"]), d["r"] * 0.85, 2), 0.2)
-    # A FAN STACK at the deck's far end, past the last drum: four discs on a shaft, the cooler a
-    # steam plant has beside its drums. The body's north end is the declared east once turned, and
-    # the camera sees it from the south.
-    #
-    # AND ONE AT THE OTHER END TOO (#806), the same module repeated: past the south drum, between
-    # it and the end wall and west of the cabinet. Named for its end, N and S, in the body's frame.
-    for end, fan in (("N", (0.9, HALF_L - 1.05)), ("S", (0.45, -HALF_L + 1.05))):
-        cyl(f"FanShaft{end}", 0.06, 1.0, (fan[0], fan[1], SLAB + 0.5 + 0.5), "metal", verts=16)
-        fan_discs(f"FanStack{end}", stack((fan[0], fan[1], SLAB + 0.62), 4, 0.24), 0.42)
-    # A BOLT ROW along the slab's open edge, the kerb the camera looks down on. Bolts that would
-    # stand in a post's foot, a stanchion's or the steam socket's opening are left out (#804's
-    # pre-PR review; #806 for the stanchion).
-    kerb = row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36)
-    bolts("SlabBolts", [p for p in kerb
-                        if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)
-                        and all(abs(p[0][1] - y) > 0.12 for y in stanchions)])
-    # A SERVICE PLATFORM ON THE FRAME'S TOP RAILS (#806, Truls's call on the draft's layout,
-    # 2026-10-31): a second grating deck between the middle drum and the north one in the body's
-    # frame, the declared east, so a crew can reach the caps. It lies on the cross rail at its post
-    # line, its bars' undersides on the rail's top. Its span is what is free at that height: south
-    # of it the outlet's descent, whose rings reach about 1.75 with its bow; north the north drum,
-    # its skin within about 3.47 of the post line once its own jitter has stretched it; west the
-    # mid-line posts' flanges at about -1.17; east the middle drum's gauge loom, which drops past
-    # it at DROP_X, 1.70. Its two open edges a crew could step off are walkway edges: the south one over the
-    # outlet's descent, and the east one over the gauges. Open bars, so the bay under it still
-    # shows.
-    PLAT_Z = SLAB + FRAME_H + 0.08 + rf.DECK_BAR[1]
-    PLAT_X, PLAT_Y = (-1.1, 1.55), (2.0, 3.3)
-    # AN ACCESS LADDER UP TO IT FROM THE DECK (#836; moved off the middle drum by #806), through a
-    # hatch in it, its cage standing on past the platform as a guard round the hatch. It faces the
-    # camera, east in the body's frame, and stands free: the platform holds its top. Its cage
-    # reaches LADDER_CAGE[0] + its offset, about 0.52, east of the stiles, so at LADDER_X it stops
-    # about 0.37 short of the middle drum's gauge cluster, which stands past the platform's east
-    # edge. LADDER_Y keeps the cage's south bar clear of the cross rail at the post line, 2.32.
-    LADDER_X, LADDER_Y = 0.7, 2.8
-    HATCH = ((LADDER_X + 0.3, LADDER_Y), (0.75, 0.75))
-    platform = grating_deck("Platform", ((PLAT_X[0] + PLAT_X[1]) / 2, (PLAT_Y[0] + PLAT_Y[1]) / 2),
-                            (PLAT_X[1] - PLAT_X[0], PLAT_Y[1] - PLAT_Y[0]), PLAT_Z, pitch=0.3,
-                            openings=[HATCH], open_edges=("-Y", "+X"), marked_edges=("-Y", "+X"))
-    access_ladder("PlatformLadder", (LADDER_X, LADDER_Y, SLAB + 0.53), PLAT_Z + 1.0, (1.0, 0.0, 0.0))
-    for d in drums:
-        # Out over the inner rail. The tie at this point stands 0.06 past the bundle, and the
-        # loom's wobble moves the point up to 0.03 each way, so it is set 0.05 inboard of the
-        # rail, where the bundle's own edge still stands over it. What keeps the tie clear of the
-        # rail's top is height: its centre stands the bundle's half-width and 0.12 more over it.
-        # What keeps it clear of the main loom is that inboard setting: the tie reaches no further
-        # out than about 1.975, and the main loom starts at 2.021.
-        over = TRAY_X - TRAY_W / 2 - rf.TRAY_RAIL_T - 0.05
-        loom(f"GaugeLoom{d['name']}", [in_tray(d["gy"] + 0.1, GAUGE_HALF),
-                               (over, d["gy"] + 0.08, RAIL_TOP + GAUGE_HALF + 0.12),
-                               (DROP_X, d["gy"] + 0.05, LOOM_Z + 0.04),
-                               (DROP_X, d["gy"], SLAB + 1.4),
-                               (d["gx"] + 0.04, d["gy"], SLAB + 1.13)],
-             cables=("cable-red", "cable-green"), wobble=0.03)
+    # -- THE CONDUIT on clamps along the outer face of the south top rail, between two junction
+    # boxes, from the cabinet's corner to the post at the open bay.
+    CON_Y, CON_Z = POST_Y - 0.155, BEAM_Z
+    pipe("Conduit", [(-6.62, CON_Y, CON_Z), (-4.6, CON_Y, CON_Z + 0.01), (-2.68, CON_Y, CON_Z)], 0.042, "dark")
+    for name, x in (("West", -6.75), ("East", -2.55)):
+        box(f"ConduitBox{name}", (0.24, 0.07, 0.24), (x, CON_Y + 0.005, CON_Z), "paint", read=0.24)
+    for x in (-6.0, -5.2, -4.2, -3.4):
+        box(f"ConduitClamp{x:+.1f}", (0.07, 0.06, 0.12), (x, CON_Y, CON_Z), "dark", bev=0.01)
 
-    # -- the turn (see TURNED, at the top): the whole body so far, about Z, so the body's west --
-    # the manifold, the reactor contact -- becomes the declared north. -90 degrees maps (x, y) to
-    # (y, -x): west to north, east to south, north to east, south to west. matrix_world rather than
-    # location and rotation separately, so a part with its own rotation and scale (the drums, the
-    # braces, every torus) turns as one thing. The rig is not built yet, so nothing here turns it.
-    if TURNED:
-        from mathutils import Matrix
-        bpy.context.view_layer.update()            # freshly added objects have no world matrix yet
-        turn = Matrix.Rotation(-math.pi / 2, 4, "Z")
-        for o in list(scene.collection.objects):
-            o.matrix_world = turn @ o.matrix_world
-        bpy.context.view_layer.update()
+    # -- THE WEST END WALL: painted, with a vent, stopping above the west sockets' accent bands.
+    WALL_X = -7.16
+    wall_foot = 0.42
+    box("EndWall", (0.07, MAN_IN - deck_y[0] + 0.05, TOP - wall_foot), (WALL_X, (MAN_IN + deck_y[0]) / 2,
+        (wall_foot + TOP) / 2), "paint")
+    for z in (0.8, 0.92, 1.04, 1.16):
+        box(f"EndWallLouvre{z:.2f}", (0.06, 0.9, 0.06), (WALL_X - 0.04, -0.2, z), "dark", bev=0)
 
-    # -- sockets: one per declared connection, body to footprint edge, accent band. `rf_parts.socket`
-    # reads its boxes out of geometry.json, which is the DECLARED frame -- so they land after the
-    # turn, where the prototype says, and nothing here is in the body's own HALF_W / HALF_L frame.
-    #
-    # THIS MACHINE DRAWS ITS SOCKETS ONE WAY AND DRESSES THEM TWO (ADR 0036, #391). Every socket
-    # here is at models/rf_blender.SOCKET_Z and 0.249, water and energy alike; what differs is the
-    # HARDWARE. Water west, water east and steam south carry no `connection_category`, a player
-    # plumbs them, and they wear the dark rim and the flange pair vanilla puts where a pipe bolts.
-    # The three reactor-energy connections are CONTAINED (ADR 0018, #86): no pipe, tank, wagon or
-    # pump a player can build will ever join them, they bolt face to face against a reactor or the
-    # next exchanger in the row, and they wear NEITHER piece. That absence is the whole of what
-    # tells them apart, and it is a decision rather than an inheritance -- ADR 0033 says of itself
-    # that it is "vacuous for those sockets", so nothing had chosen it before.
-    #
-    # THE PAIR ON EACH SHORT END USED TO DIFFER BY HALF A TILE IN HEIGHT (#343), and the comment
-    # here said so at length because the difference invited a "fix". It was levelled instead.
-    #
-    # SINCE ADR 0036 THE THREE CONTAINED ONES ARE DRAWN LIKE THE OTHER THREE, and the pair of
-    # constants that used to sit here is gone rather than kept at equal values. They held 0.55 and
-    # 0.3 -- what every socket on this machine had before #349, kept when the plumbable ones moved.
-    # Keeping them was a choice and was written down as one; ADR 0036 reverses it. A separate name
-    # free to part from SOCKET_Z later is the fork #356 was written about, so there is no second
-    # name: one constant draws every socket, and `plumbable` now decides only the rim and the ribs.
-    def plumbable(c):
-        """Whether a player can put an ordinary pipe on this connection.
+    # -- COOLERS past each end drum: the same module at both ends, four fan discs on a shaft.
+    for name, x in (("West", -5.65), ("East", 5.65)):
+        cyl(f"Cooler{name}Plinth", 0.22, 0.1, (x, DRUM_Y, DECK + 0.05), "dark", verts=24)
+        cyl(f"Cooler{name}Shaft", 0.05, 1.1, (x, DRUM_Y, DECK + 0.55), "dark", verts=16)
+        cyl(f"Cooler{name}Cap", 0.1, 0.06, (x, DRUM_Y, DECK + 1.13), "dark", verts=16)
+        rf_parts.fan_discs(f"Cooler{name}", rf.stack((x, DRUM_Y, DECK + 0.3), 4, 0.24), 0.42)
 
-        Read off `connection_category` rather than off a list of fluids, which is the same
-        discriminator scripts/load-check.ps1's gate uses -- a connection left `default` is one a
-        player can plumb. A fourth energy face added tomorrow is contained without this being
-        touched, and a category taken off one makes it plumbable and brings it under the rule.
-        """
-        return not c["connection_category"]
-
-    # 0.249 is solved the way the height is, and in the same place: this camera draws a tube 2.449 r
-    # tall on screen, vanilla's pipe body draws 0.609 tiles, so 2.449 r = 0.609.
-    # models/house-style.md carries the arithmetic and rf-isotope-collector was the first machine to
-    # wear it. Both machines now draw every socket at these two numbers.
-    SOCKET_R = 0.249
-
-    # ONE HELPER DRAWS THE STUB, THE BAND AND THE PORT (#352), because the collector had a second
-    # copy of this loop and five more machines are coming. What stays here is the three functions
-    # above: which connections are plumbable, and how high and how thick each kind is drawn. The
-    # slab's top is at 0.25 and a lowered socket reaches through it, so a plumbable one gets a
-    # modelled, rimmed opening rather than clipping the stone (Truls, 2026-09-14); a contained
-    # socket stands clear above the slab and needs none, which is what passing `plumbable` decides.
+    # -- SOCKETS, one per declared connection, at pipe height and thickness; the three reactor-energy
+    # ones contained, so neither rim nor flanges.
     for c in geo["connections"]:
-        rf_parts.socket(bpy.data.objects["Slab"], c, geo, rf_parts.SOCKET_Z, SOCKET_R,
-                        plumbable=plumbable(c))
-    # water header along the base between the two end sockets, wherever the prototype puts them:
-    # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
-    # geometry rather than drawn down the middle.
-    UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
+        rf_parts.socket(slab, c, geo, rf_parts.SOCKET_Z, 0.249, plumbable=c["connection_category"] is None)
 
-    def inboard(c, back=0.5, z=None):
-        """`back` tiles inboard of the tile a connection stands on, at that connection's own socket
-        height unless `z` says otherwise.
+    # -- THE ENERGY FEEDS, glowing: from each short end's socket up through the slab into the
+    # manifold, and from the manifold south under the grating to the foot of each drum, beside it.
+    for name, sx in (("West", -1), ("East", 1)):
+        x = sx * 6.5
+        pipe(f"EnergyFeed{name}", [(sx * 6.85, 1.0, rf_parts.SOCKET_Z), (sx * 6.62, 1.0, rf_parts.SOCKET_Z),
+                                   (x, 1.0, 0.2), (x, 1.0, 0.38), (x, 1.2, WATER_Z), (x, MAN_IN + 0.2, WATER_Z)],
+             0.1, "energy", glow=True)
+        torus(f"EnergyFeed{name}Collar", 0.16, 0.04, (x, 1.0, SLAB + 0.01), "dark")
+    for name, d in DRUMS.items():
+        fx = d["x"] + d["feed"] * (DRUM_R + 0.15)
+        inx = d["x"] + d["feed"] * (DRUM_R - 0.4)
+        pipe(f"EnergyFeed{name}Drum", [(fx, MAN_IN + 0.2, WATER_Z), (fx, MAN_IN - 0.4, WATER_Z),
+                                       (fx, DRUM_Y + 0.25, WATER_Z), (fx - d["feed"] * 0.25, DRUM_Y, WATER_Z),
+                                       (inx, DRUM_Y, WATER_Z + 0.05), (inx, DRUM_Y, DECK + 0.2)],
+             0.08, "energy", glow=True)
 
-        NOT "the inner end of the socket", which is what this said on both machines that have one
-        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is half a
-        tile inside the collision edge -- `rf_parts.socket`'s own `inner` -- so back=0.5 lands a
-        quarter of a tile PAST it, further in, and anything larger stops shorter still. To reach
-        INTO a stub, pass a `back` smaller than 0.5.
-        """
-        ux, uy = UNIT[c["direction"]]
-        px, py = c["position"]
-        return (px - back * ux, -(py - back * uy), rf_parts.SOCKET_Z if z is None else z)
+    # -- THE WATER HEADER under the grating between its two sockets, on a pipe support either side
+    # of the middle drum, turning down into the slab short of each socket through a bolted collar.
+    WX = 6.3
+    pipe("WaterHeader", [(-WX, WATER_Y, SLAB - 0.12), (-WX, WATER_Y, SLAB + 0.08), (-WX + 0.22, WATER_Y, WATER_Z),
+                         (-5.5, WATER_Y, WATER_Z), (5.5, WATER_Y, WATER_Z), (WX - 0.22, WATER_Y, WATER_Z), (WX, WATER_Y, SLAB + 0.08), (WX, WATER_Y, SLAB - 0.12)],
+         WATER_R, "metal")
+    for name, sx in (("West", -1), ("East", 1)):
+        cyl(f"WaterCollar{name}", 0.3, 0.05, (sx * WX, WATER_Y, SLAB + 0.025), "dark", verts=32, read=0.6)
+        rf_parts.bolts(f"WaterCollar{name}Bolts", rf.ring((sx * WX, WATER_Y, SLAB + 0.05), 0.24, 6, phase=0.3))
+    rf_parts.pipe_supports("WaterSupports", [((-2.1, WATER_Y, WATER_Z), (0, 0, 0)), ((1.45, WATER_Y, WATER_Z), (0, 0, 0))],
+                           WATER_R, SLAB)
 
-    # SINCE THE WATER SOCKETS DROPPED TO PIPE HEIGHT THIS HEADER ENDS IN THE SLAB, not on a stub
-    # (#343), and it is the collector's lesson taken rather than relearnt. A header run at the
-    # sockets' own 0.033 would be buried in stone for its whole length and draw nothing; a header
-    # left where it was would stop in mid-air, above a socket that is now inside the floor. So it
-    # stays under the grating, where the south-facing sheet shows it (the north sheet all but
-    # hides it along its length, #839), and turns DOWN into the slab at each end with a collar
-    # where it goes in. A player reads a pipe entering the floor and a pipe leaving the wall
-    # as the same pipe, which is what real plant looks like.
-    #
-    # AND IT STOPS SHORT OF THE SOCKETS RATHER THAN OVER THEM, which is why `back` is 0.9 and not
-    # the 0.5 the call used to take. Mind what those mean: `inboard(c, 0.5)` is the inner edge of
-    # the TILE the connection stands on, x = 6.5 here, while the socket's inner end is a quarter
-    # tile further out at 7.25 - 0.5 = 6.75, the declared half extent less half a tile. So a floor
-    # collar at 0.5 -- a ring half a tile across --
-    # would reach exactly 6.75 and sit tangent to the tube's end cap. 0.9 puts the drop 0.4 tiles
-    # further in, clear of it with room for the tube's own radius.
-    HEADER_Z = 0.55
-    water = [c for c in geo["connections"] if c["fluid"] == "water"]
-    if len(water) == 2:
-        a, b = inboard(water[0], back=0.9, z=HEADER_Z), inboard(water[1], back=0.9, z=HEADER_Z)
-        s = stream("WaterHeader")
-        mid = ((a[0] + b[0]) / 2 + s.jitter(0, 0.1), (a[1] + b[1]) / 2 + s.jitter(0, 0.1), 0.5)
-        # Stacked control points in z at both ends, so the tube meets the floor square instead of
-        # glancing into it and showing a slanted open mouth.
-        header = pipe("WaterHeader", [(a[0], a[1], SLAB - 0.02), a, mid, b, (b[0], b[1], SLAB - 0.02)],
-                      0.13, "metal")
-        # A PIPE SUPPORT UNDER THE HEADER IN EACH SPAN BETWEEN THE DRUMS (#839), between the deck's
-        # bars. The south-facing sheet shows them as straps across the header; on the north sheet
-        # the header is all but hidden along its length, by the frame's east top rail, the conduit,
-        # the drums, the deck and the cabinet among others, and they barely show (Truls kept them
-        # here, recorded on #839). Not at the post lines, where the draft put them: there the east
-        # posts stand straight in front of a support from this camera. Each stands midway between
-        # the two deck bars nearest 2.8 off the middle, past the post line at 2.32 and short of the
-        # end drum's flank at about 3.55; at 3.0 a bar stood over it. The body's y is the declared x
-        # once it is turned. Each takes the header's own height and heading there, and stands on the slab.
-        # They are dark, not the part's frame steel: frame is near black, and under the deck in the
-        # header's shadow a frame support rendered as no change at all.
-        bar_ys = sorted({round(b["centre"][1], 6) for b in deck["bars"]})
-        gaps = [(a + b) / 2 for a, b in zip(bar_ys, bar_ys[1:])]
-        spine = rf_parts.centreline(header)
-        holds = []
-        for x in (min(gaps, key=lambda m: abs(m + 2.8)), min(gaps, key=lambda m: abs(m - 2.8))):
-            at, d = rf.along(spine, 0, x)
-            holds.append((at, (0.0, 0.0, math.atan2(d[1], d[0]))))
-        pipe_supports("WaterHeaderSupports", holds, 0.13, SLAB, material="dark")
-        # Each collar is bolted down with a ring of the kit's bolts on its crown (#806).
-        for conn, end in zip(water, (a, b)):
-            torus(f"WaterPortRim-{conn['direction']}", 0.2, 0.05, (end[0], end[1], SLAB + 0.02), "dark")
-            bolts(f"WaterPortBolt-{conn['direction']}", ring((end[0], end[1], SLAB + 0.07), 0.2, 6))
+    top = max((o.matrix_world @ v.co).z for o in scene.objects if o.type == "MESH" for v in o.data.vertices)
+    print(f"HEIGHT: tallest mesh vertex {top:.3f}")
 
-    # -- glowing feeds from the SHORT-END energy sockets into the manifold (Truls, #275).
-    #
-    # Without them those two sockets read as bare stubs bolted to the ends, carrying nothing: the
-    # water pair is joined by the header above, as the south-facing sheet shows, and the
-    # reactor-facing socket IS the manifold -- it stands inside it -- so the two chaining sockets
-    # were the only connections on the machine with no run behind them. Same material and same glow as the drum feeds, because
-    # it is the same fluid arriving the same way, and they run under the grating at the drum feeds'
-    # own height so all five read as one system.
-    #
-    # The manifold's inner face, in whichever frame the body ended up in: it was built along the
-    # body's west face, and the quarter turn maps west to declared north (see TURNED).
-    MANIFOLD_FACE = "north" if TURNED else "west"
-    MANIFOLD_INNER = MX + MAN_W / 2
-    FEED_Z = SLAB + 0.42
-
-    def into_manifold(x, y, back=0.6):
-        """A point on the manifold's inner face, `back` tiles in from (x, y) along the face."""
-        step = math.copysign(back, -x if TURNED else -y)
-        if TURNED:
-            return (x + step, -MANIFOLD_INNER, FEED_Z)
-        return (MANIFOLD_INNER, y + step, FEED_Z)
-
-    for c in geo["connections"]:
-        if rf.accent(c["fluid"]) != "energy" or c["direction"] == MANIFOLD_FACE:
-            continue
-        start = inboard(c, back=0.45)
-        end = into_manifold(start[0], start[1])
-        s = stream(f"EnergyFeed-{c['direction']}")
-        mid = ((start[0] + end[0]) / 2 + s.jitter(0, 0.08),
-               (start[1] + end[1]) / 2 + s.jitter(0, 0.08),
-               (start[2] + end[2]) / 2)
-        pipe(f"EnergyFeed-{c['direction']}", [start, mid, end], 0.13, "energy", glow=True)
-
-# THE ICON IS THE WHOLE MACHINE, not a section of it. #246 framed a 4.5-tile crop -- the middle
-# drum with the manifold beside it -- and in the inventory beside Krastorio 2's icons that read as a
-# fragment of a screenshot: no silhouette, the grating running off all four edges. Truls,
-# 2026-09-05 (#252): pull back until the whole machine sits in the square with transparent margin.
-#
-# AND IT RUNS CORNER TO CORNER. Square-on, five by fifteen fills a fifth of a square icon and reads
-# as a hairline -- measured: 829 opaque pixels of 4096. Turned 45 degrees the same machine spans the
-# diagonal, so the window shrinks from 18.5 tiles to 15.5 and the subject roughly doubles. The rig
-# carries the sun, so the icon is lit like every sheet; only the angle differs, which is what
-# vanilla does for its own long machines.
-#
-# The square is sized on the machine's SCREEN extent, not its footprint: turned, the footprint's
-# bounding box is (15 + 5)/sqrt(2) = 14.1 tiles, and the drums' height shows at 0.707 h northward,
-# so 15.5 leaves margin all round. The centre rides north by half that height, or the machine sits
-# low in the square with the margin all above it.
+# THE ICON IS THE WHOLE MACHINE, ON THE DIAGONAL (house style, Icon). Turned 35 degrees, fifteen by
+# five spans about 15.2 tiles across the screen and 15.4 up it with the height showing at 0.707 h,
+# so a 14.5-tile window holds it with a little margin, centred on the machine at half its height.
 if variant == "cube":
     tiles_w, tiles_h, icon_centre, icon_tiles, icon_yaw = 1, 1, (0, 0, 0.5), 1.5, 0.0
 else:
     tiles_w, tiles_h = geo["tiles"]
-    icon_centre, icon_tiles, icon_yaw = (0.0, 1.0, 0.0), 15.5, 45.0
+    icon_centre, icon_tiles, icon_yaw = (0.0, 0.0, 1.9), 14.5, 35.0
 rf.build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles, icon_yaw=icon_yaw)
 scene["rf_geometry_sha256"] = rf.geometry_sha256(geo_path)
-bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(out))
-print("BUILT", variant, os.path.abspath(out), scene.render.resolution_x, scene.render.resolution_y)
+bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(out_path))
+print("BUILT", variant, os.path.abspath(out_path), scene.render.resolution_x, scene.render.resolution_y)

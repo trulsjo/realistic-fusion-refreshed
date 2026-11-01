@@ -162,20 +162,20 @@
   "icon": {
     "centre": [
       0.0,
-      1.0,
-      0.0
+      0.0,
+      1.9
     ],
     "file": "heat-exchanger-icon.png",
     "size": [
       120,
       64
     ],
-    "tiles": 15.5,
-    "yaw_deg": 45.0
+    "tiles": 14.5,
+    "yaw_deg": 35.0
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "aff15d17bd87d3aa9c748eb4d35f3f8bdb2cb2d8ce0e4e1940343bd27beb075b",
+  "model_sha256": "fe4c8b0eaab02cef964aaad7ec0f396c87325f927802a165d0fcaaecf5c6de3e",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",

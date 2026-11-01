@@ -397,21 +397,19 @@ not as its arithmetic rounds.
 
 ## The look-note draft of #806
 
-Measured 2026-10-31 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
+Measured 2026-11-01 with the same command, `python tools/measure-density.py --machine heat-exchanger`,
 after [#806](https://github.com/trulsjo/realistic-fusion-refreshed/issues/806) rebuilt the exchanger
-from the draft of its look note. The changes:
-- a service platform on the frame's top rails, with the access ladder moved off the middle drum
-  to climb up through it;
-- the steam outlet run landing on its socket in an open bay, with no east post over the socket,
-  and the deck cut back where the run passes;
-- the guard rail cut along that bay, ending on a stanchion;
-- the header's rings a quarter of the radius proud instead of half;
-- a valve on the outlet run;
-- the middle drum's relief valve, gauges and handwheel moved clear of the outlet run, and the
-  south drum's header run swung west of the drums' line, as the north one's already was;
-- a second fan stack;
-- a warning plate on the cabinet;
-- bolts on the water collars.
+from the draft of its look note alone, by an agent that read no earlier build script. That was the
+fourth rebuild: Truls had the note revised after each of the first three, and kept the fourth. Every
+part is new, and the layout changed with it:
+- the drums 1.8 tiles across, set in the bays between posts, with the frame's top under the cable
+  tray, so the manifold, its channel and its corrosion show between and above them;
+- a service platform on the frame's top rails, reached by the access ladder on its south side;
+- the steam outlet run landing on its socket in an open bay, with no post over the socket, and the
+  guard rail ending on a stanchion west of it;
+- the gauge boxes on the drums' own skins, each loom drop entering its box through a gland;
+- a second fan stack, and a warning plate on the cabinet;
+- the model built in the declared frame, with no turn at the end.
 
 The "before" is #839's figures, the head of `main`. Blender 5.2.0, 64 samples for the sheet and 16
 for the normal pass.
@@ -419,50 +417,28 @@ for the normal pass.
 | `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
 |---|---:|---:|
 | before, #839 | 0.2892 | 0.5371 |
-| after, #806's draft | 0.2874 | 0.5359 |
+| after, #806's rebuild | 0.3243 | 0.6011 |
 
-**Both fell a little**, *measured*: the pixel figure by 0.0018 and the normal-pass figure by 0.0012.
-The pixel figure's fall is inside the about 0.005 that one re-roll can move it, which #827 *inferred*
-from three samples, and the normal-pass figure's is inside the about 0.003 one re-roll moved it under
-#825 (both above). Why they fell is *inferred* and measured by nothing: no sheet was rendered with
-only some of the changes. Parts came off as well as on: the middle drum's access ladder, the east
-post over the steam socket, and 1.24 of the 2.80 tiles of guard rail that stood between the posts
-either side of the socket, by `build.py`'s arithmetic. What they took with them may be about what
-the new parts add.
+**Both rose**, *measured*: the pixel figure by 0.0351 and the normal-pass figure by 0.0640, each
+several times what one re-roll moved it under #825 and #827 (both above). Why is *inferred* and
+measured by nothing: the manifold's grille, rivets and rust now show along the whole top of the
+sheet where the drums and the header hid most of them, and the gauge boxes, loom drops, platform
+and ladder add edges in the middle. The pixel figure is still below both vanilla sheets' and
+Krastorio 2's reactor's in the "before" table.
 
-The mesh-overlap test on the built model, against `main`'s, *measured*, found these pairs gone between one part and another:
-- every pair of the east post that stood over the steam socket;
-- the access ladder's brackets against the middle drum and its casing;
-- the outlet run through the middle drum, through two of the deck's bars, through the middle drum's
-  relief valve, into the slab and its seam and against the water header, which was #828's defect,
-  and the floor collar it went down through, against the run, the slab and its seam;
-- the middle drum's handwheel on the dark backing of the bay beside it;
-- the north header run's valve body against one of its rings, which went with the thinner rings,
-  since the north run's sag draws the same on both;
-- the north run against one of the south run's rings, and that ring against the middle drum's cap,
-  which went with the thinner rings or with the south run's swing west; this test cannot tell
-  which.
+The mesh-overlap test on the built model, *measured*, found 1 621 pairs against `main`'s 1 209. No
+pair can be matched with one of `main`'s, since every part was made again under a new name. Grouped
+by the part each piece belongs to, every pair between two parts is one of these:
+- a frame joint: posts, rails, cross rails and braces meeting each other, the manifold and the slab;
+- a part on what holds it: the decks on the posts and backings, the drums standing through the
+  grating, the platform on its beam, the hatch lid on the platform, the loom in the tray;
+- a run ending inside what it joins: the header runs and the outlet in the caps, the feeds in the
+  drums and the manifold, the outlet on its flange and socket, the water header in its collars;
+- a valve on its run, bolts on what they hold down, and a kit part's own pieces.
 
-The other pairs gone are a hose's rings against each other or against their own hose, on the north
-and south header runs, the outlet run and the middle drum's vent hose. The first fan stack's pairs,
-and its shaft through a deck bar, are gone under their old names and back under new ones, `FanShaftN`
-and `FanStackN`, with nothing moved.
-
-The new pairs are each new part's pieces against each other and against what it stands on or
-covers:
-- the outlet's flange on the socket's stub and on the opening cut for it, with one of the run's
-  rings on the flange and the cut;
-- the valve on the outlet run;
-- the platform's bars on the cross rail at its post line;
-- the stanchion against its rail length;
-- the bolts on each water collar;
-- the second fan's shaft through a deck bar, as the first one's goes;
-- the cabinet's warning plate over its seam.
-
-Four more pairs are not a new part's: two of the outlet run's rings against each other, the middle
-drum's vent hose against each of its last two rings, and that hose's last ring on the deck bar it
-ends on. Each is a hose meeting its own rings or what it ends on, as rings on a bend do elsewhere on
-the model.
+Three pairs are none of those, and each is a near miss between two parts: the conduit against the
+second post from the west end, one bolt of the west cap against the west drum's vent hose, and the
+east header run's first ring against the east drum's body where it lands.
 
 ## What the "before" says, and how far it goes
 
