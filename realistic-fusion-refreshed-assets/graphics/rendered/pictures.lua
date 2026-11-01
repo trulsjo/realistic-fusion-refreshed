@@ -26,9 +26,10 @@ local SCALE = 0.5
 -- know that the prototype cannot tell it -- M.boiler's `no_glow` is the other, and its own comment
 -- says why both are retyped rather than read. models/rf_blender.py MARGIN_TILES fixes it at 3 -- the
 -- heat exchanger's shadow reached 2.83 tiles past its east edge as built for #249, and 2 clipped
--- it -- and every rendered manifest records the value it used as `frame.margin_tiles`. The data stage cannot read
--- JSON, so the number is retyped here; if it ever changes, both files change together. The margin
--- is symmetric on purpose, so `shift` is zero and nothing has to be re-centred.
+-- it -- and every rendered manifest records the value it used as `frame.margin_tiles`. The data
+-- stage cannot read JSON, so the number is retyped here; if it ever changes, both files change
+-- together. The margin is symmetric on purpose, so `shift` is zero and nothing has to be
+-- re-centred.
 local MARGIN_TILES = 3
 
 local function frame_px(tiles) return (tiles + 2 * MARGIN_TILES) * PIXELS_PER_TILE end
