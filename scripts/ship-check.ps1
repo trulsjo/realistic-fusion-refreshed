@@ -217,6 +217,18 @@
     pass. It cannot see whether the source page really offers the file under CC0; the section
     comment has the rest.
 
+    SECTION 19 HAS A -SelfTest AND NO FLOOR (#852). It fails a rendered machine whose manifest's
+    model_vertices or model_bytes, which models/render.py measures, is more than twice what
+    origin/main's copy of that manifest holds, naming the machine, both figures and both refs, and
+    it fails a shallow clone or one with no origin/main. A machine new on the branch, or a manifest
+    on main without the two fields, passes, and so does a machine named by a `Model-Growth:
+    <machine>` trailer in the body of a commit origin/main..HEAD holds, which is how a branch that
+    means to grow a model says so. The model-growth-caught half plants a model whose vertices more
+    than double and whose bytes double exactly in a scratch repository, and requires the vertices
+    alone to be reported; the model-growth-passes half requires growth under double, a new machine,
+    a manifest without the fields and a doubling a trailer names to pass. It cannot see a model
+    that grows and is not rendered again; the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -226,13 +238,13 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove eleven things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove twelve things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
     of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, and section 18 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
-    memory and the planted documents and the scratch repositories of sections 16 and 17 live in the scratch
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, and section 18 in both directions, and section 19 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    memory and the planted documents and the scratch repositories of sections 16, 17 and 19 live in the scratch
     directory the run removes on its way out.
 
 .EXAMPLE
@@ -1574,6 +1586,74 @@ try {
     }
 } finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
 
+# ----------------------------------------------------------------- how big a model has grown
+# 19. NO RENDERED MODEL MORE THAN DOUBLES AGAINST origin/main UNLESS A COMMIT SAYS IT MEANS TO (#852).
+#
+# On #847 heat-exchanger.blend went from 1.9 MB to 9.8 MB through three commits, a pre-PR review and
+# a plugin pass, and was first questioned after the pull request was open: a default left in had
+# the east drum's rib bands dented with 14 cuts instead of 4 (#849). models/render.py records in
+# each manifest the built model's vertex count (`model_vertices`) and the .blend's size in bytes
+# (`model_bytes`). This reads each rendered manifest in the tree against origin/main's copy of it
+# and fails when either figure is more than twice main's, naming the machine, both figures and
+# both refs. A machine new on the branch, or a manifest on main that has neither field, passes.
+#
+# A BRANCH THAT MEANS TO GROW A MODEL SAYS SO IN A COMMIT (#852): a trailer line
+# `Model-Growth: <machine>` in the body of any commit origin/main..HEAD holds, the machine as its
+# manifest names it. That puts the reason in the reviewed history beside the change, and needs no
+# file in the model directory, where section 18 refuses anything a model is not made of. A shallow
+# clone, or one with no origin/main, fails the section, as it fails section 17.
+#
+# WHAT IT CANNOT SEE: a model that grows and is not rendered again, since the figures are the
+# render's; growth under double, however often repeated across branches; and a machine whose
+# manifest moved directory, which reads as new.
+$RENDERED = 'realistic-fusion-refreshed-assets/graphics/rendered'
+$GROWTH_FIELDS = @('model_vertices', 'model_bytes')
+
+function Find-ModelGrowth {
+    <#  A failure for each machine whose recorded model figure is more than twice main's.
+        $Rows hold Machine, Main (main's manifest as a hashtable, or $null), Branch (the tree's)
+        and Accepted (a commit on the branch carries its Model-Growth trailer).  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [object[]] $Rows, [string] $Main = 'origin/main')
+    foreach ($row in $Rows) {
+        if ($null -eq $row.Main -or $row.Accepted) { continue }
+        foreach ($field in $GROWTH_FIELDS) {
+            $was, $now = $row.Main[$field], $row.Branch[$field]
+            if ($null -eq $was -or $null -eq $now -or $was -le 0) { continue }
+            if ($now -gt 2 * $was) {
+                ("$($row.Machine): $field is $now in the working tree against $was on $Main, more than double. " +
+                 "If the branch means to grow the model, add the trailer 'Model-Growth: $($row.Machine)' to a commit's " +
+                 'body saying why; otherwise find what grew it before the review does (#852).')
+            }
+        }
+    }
+}
+
+function Get-ModelGrowthRows {
+    <#  One row per rendered manifest in the tree at $Root, with $Main's copy and whether a commit
+        $Main..HEAD carries its Model-Growth trailer. Throws where $Main cannot be read.  #>
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = 'origin/main')
+    if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') {
+        throw "$Root is a shallow clone, so $Main's manifests cannot be trusted to be its own. Fetch the whole history (git fetch --unshallow)."
+    }
+    $null = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0) { throw "git cannot resolve $Main in $Root, so no model can be held against it. Fetch it." }
+    $accepted = @(git -C $Root log --format=%B "$Main..HEAD" | Where-Object { $_ -match '^Model-Growth:\s*(\S+)\s*$' } |
+        ForEach-Object { $Matches[1] })
+    foreach ($manifest in @(Get-ChildItem -Path (Join-Path $Root $RENDERED) -Filter manifest.json -Recurse -File | Sort-Object FullName)) {
+        $rel = [IO.Path]::GetRelativePath($Root, $manifest.FullName) -replace '\\', '/'
+        $branch = Get-Content -Raw -LiteralPath $manifest.FullName | ConvertFrom-Json -AsHashtable
+        $onMain = git -C $Root show "${Main}:$rel" 2>$null
+        $mainManifest = if ($LASTEXITCODE -eq 0) { ($onMain -join "`n") | ConvertFrom-Json -AsHashtable } else { $null }
+        [pscustomobject]@{ Machine = $branch['machine']; Main = $mainManifest; Branch = $branch
+                           Accepted = $branch['machine'] -in $accepted }
+    }
+}
+
+$checks++
+try {
+    foreach ($why in Find-ModelGrowth -Rows @(Get-ModelGrowthRows -Root $repoRoot)) { $failures.Add($why) }
+} catch { $failures.Add("section 19 could not hold the rendered models against origin/main: $($_.Exception.Message)") }
+
 # ----------------------------------------------------------------- what a model directory holds
 # 18. A TEXTURE IN A MODEL DIRECTORY HAS ITS PROVENANCE, AND NOTHING ELSE IS IMPORTED (#805).
 #
@@ -1804,6 +1884,28 @@ if ($SelfTest) {
         git -C $root switch -q main
         if ($LASTEXITCODE -ne 0) { throw "could not make section 17's fixture repository in $root" }
         @{ Root = $root; On = $on; Off = $off }
+    }
+
+    # Section 19's repository: a manifest per machine committed on main, which origin/main points
+    # at, then each rewritten on a branch with the figures given. $OnMain maps a machine to main's
+    # figures ($null for a manifest main lacks, @{} for one without the fields), $Branch to the
+    # branch's, and $Trailer is a line in the body of the branch's commit.
+    function New-GrowthFixture([string] $Parent, [hashtable] $OnMain, [hashtable] $Branch, [string] $Trailer) {
+        $root = Join-Path $Parent ('growth-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $root -Force | Out-Null
+        $write = { param([string] $m, [hashtable] $f)
+            New-Item -ItemType Directory -Force -Path "$root/$RENDERED/$m" | Out-Null
+            (@{ machine = $m } + $f) | ConvertTo-Json | Set-Content -LiteralPath "$root/$RENDERED/$m/manifest.json" -Encoding utf8 }
+        git -C $root init -q -b main
+        foreach ($m in $OnMain.Keys) { if ($null -ne $OnMain[$m]) { & $write $m $OnMain[$m] } }
+        git -C $root add -A
+        git -C $root -c user.name=t -c user.email=t@t commit -q --allow-empty -m 'main'
+        git -C $root update-ref refs/remotes/origin/main HEAD
+        foreach ($m in $Branch.Keys) { & $write $m $Branch[$m] }
+        git -C $root add -A
+        git -C $root -c user.name=t -c user.email=t@t commit -q --allow-empty -m "the branch`n`n$Trailer"
+        if ($LASTEXITCODE -ne 0) { throw "could not make section 19's fixture repository in $root" }
+        $root
     }
 
     $planted = Join-Path ([IO.Path]::GetTempPath()) ('rf-shipcheck-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -2309,6 +2411,35 @@ if ($SelfTest) {
                 'a record citing a commit main never reached is not read, and a missing origin/main or a shallow clone is refused.'
             } }
 
+            @{ Name = 'model-growth-caught'; Body = {
+                # Section 19 passes on a model that never grows. A machine whose vertices more than
+                # double and whose bytes double exactly must be reported for the vertices alone,
+                # with both figures and both refs, when no commit on the branch says it means to.
+                $root = New-GrowthFixture -Parent $planted -Trailer 'no trailer here' `
+                    -OnMain @{ m = @{ model_vertices = 100; model_bytes = 1000 } } `
+                    -Branch @{ m = @{ model_vertices = 201; model_bytes = 2000 } }
+                $found = @(Find-ModelGrowth -Rows @(Get-ModelGrowthRows -Root $root))
+                if ($found.Count -ne 1 -or $found[0] -notmatch '^m: model_vertices is 201 in the working tree against 100 on origin/main') {
+                    throw "a model whose vertices went from 100 to 201 gave: '$($found -join ' | ')'."
+                }
+                'a model whose vertex count more than doubles is reported with both figures; one that doubles exactly is not.'
+            } }
+
+            @{ Name = 'model-growth-passes'; Body = {
+                # The other direction: growth under double, a machine new on the branch, a manifest
+                # on main without the fields, and a doubling a commit's Model-Growth trailer names.
+                $root = New-GrowthFixture -Parent $planted -Trailer 'Model-Growth: grown' `
+                    -OnMain @{ under = @{ model_vertices = 100; model_bytes = 1000 }; new = $null; old = @{}
+                               grown = @{ model_vertices = 100; model_bytes = 1000 } } `
+                    -Branch @{ under = @{ model_vertices = 150; model_bytes = 1999 }; new = @{ model_vertices = 9; model_bytes = 9 }
+                               old = @{ model_vertices = 900; model_bytes = 9000 }; grown = @{ model_vertices = 900; model_bytes = 9000 } }
+                $rows = @(Get-ModelGrowthRows -Root $root)
+                if ($rows.Count -ne 4) { throw "four planted manifests were read as $($rows.Count) row(s)." }
+                $found = @(Find-ModelGrowth -Rows $rows)
+                if ($found) { throw "growth that should pass was reported: $($found -join ' | ')" }
+                'growth under double, a new machine, a manifest on main without the fields and a doubling a trailer names all pass.'
+            } }
+
             @{ Name = 'unproven-texture-caught'; Body = {
                 # Section 18 passes by finding nothing. A planted model directory holds one of each
                 # thing it refuses, and each must be reported once, by name.
@@ -2371,6 +2502,7 @@ Write-Host 'grouped figure across its end, every -SelfTest help that names a hal
 Write-Host 'neither the review skills nor the markdown-only test reads the local main, and every rig'
 Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave,'
 Write-Host 'no live prose cites a commit origin/main does not reach, every texture in a model'
-Write-Host 'directory is recorded as CC0 with its own bytes and nothing else is imported there;'
+Write-Host 'directory is recorded as CC0 with its own bytes and nothing else is imported there,'
+Write-Host 'no rendered model more than doubled against origin/main without a commit saying so;'
 Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0
