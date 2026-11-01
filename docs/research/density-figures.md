@@ -30,6 +30,25 @@ count can fail (`python tools/measure-density.py --self-test`).
 count. Otherwise the blur would reach into transparency and count the silhouette, which favours a
 small machine, since its outline is a larger share of its area.
 
+## The mesh-overlap test
+
+Since [#850](https://github.com/trulsjo/realistic-fusion-refreshed/issues/850) it is
+`tools/mesh-overlap.py`, and its docstring has the method. It lists every pair of objects in a
+model whose evaluated meshes intersect, curves as the tubes their bevels draw, the ground and the
+cutters hidden from render included. `--against <ref>` prints the pairs only one side has and the
+count matched by name. Its self-test needs Blender (`python tools/mesh-overlap.py --self-test`).
+
+Run on `main`'s exchanger at the merge of #847, it gives the 1 615 pairs the section on #806 gives
+for the head of #806, and against `9c0ef40`, the exchanger before #806, the 1 209 and the 191
+matched by name, *measured* 2026-11-01.
+
+**Before #806 there was no one test.** Each section before the one on #806 that says "the
+mesh-overlap test" was measured by a script written for that ticket and never committed. Three of
+those scripts were found, and they count three ways: #806's counted cutters hidden from render,
+which is the tool's rule; one earlier one left them out; and another counted the pieces of one beam,
+hose or loom as one part. Each section's pairs are its own script's, so the tool reproduces them
+only where its rule is the one used, and which script measured which section was not recorded.
+
 ## The "before"
 
 Measured 2026-10-27, on the sheets as they stood on `main` at the merge of #807. Vanilla's sheets
@@ -178,7 +197,7 @@ samples of a re-roll.
 
 **The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
 others, as #824's re-roll had, *measured* by a mesh-overlap test on the built model before and
-after. The fixes that followed on the same branch moved parts on purpose, so they get a row of
+after, a script of the ticket's own ([The mesh-overlap test](#the-mesh-overlap-test)). The fixes that followed on the same branch moved parts on purpose, so they get a row of
 their own. The feeds now cross the mid-line posts beside them, the steam outlet comes down at 1.52
 and not 1.80, the loom rests 0.025 higher over the cross rails, and the bays stand back 0.14 and
 not 0.12, *read from source*.
@@ -427,7 +446,8 @@ sheet where the drums and the header hid most of them, and the gauge boxes, loom
 and ladder add edges in the middle. The pixel figure is still below both vanilla sheets' and
 Krastorio 2's reactor's in the "before" table.
 
-The mesh-overlap test on the built model, *measured*, found 1 615 pairs against `main`'s 1 209. Of
+The mesh-overlap test on the built model, *measured*, found 1 615 pairs against `main`'s 1 209,
+which `tools/mesh-overlap.py` reproduces ([The mesh-overlap test](#the-mesh-overlap-test)). Of
 those, 191 carry the same two names in both lists, where the rebuild named a part as `main` did:
 the sockets' bands, flanges and openings against the ground, the slab and the manifold among them.
 The rest cannot be matched pair for pair, since those parts were made again under new names.
