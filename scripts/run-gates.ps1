@@ -23,9 +23,9 @@
     WHAT IT RUNS, in this order:
 
       the Lua suites           every tests/test-*.lua, with `lua` from PATH
-      four tools' self-tests   tools/refuse-hanging-bash.py, review-usage.py, rewrap.py and
-                               review-coverage.py, each with --self-test and `python` from PATH
-                               (#659, #787)
+      six tools' self-tests    tools/refuse-hanging-bash.py, review-usage.py, rewrap.py,
+                               review-coverage.py, mesh-overlap.py and compare-sheets.py, each
+                               with --self-test and `python` from PATH (#659, #787, #850, #853)
       test_rf_blender          models/test_rf_blender.py, with `python` from PATH and no
                                argument: the render's arithmetic, without Blender (#810)
       ship-check.ps1           no game
@@ -43,15 +43,18 @@
     is not in the fingerprint. On 2026-10-27 one took about 2 s with the files in the disk cache,
     so about a minute over the 26 gates, and 25 s in a fresh clone.
 
-    THE FOUR TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
+    THE SIX TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
     any gate: one is a hook that judges every Bash tool call on a machine that registers it, and
-    three are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
-    refuses six times, and each fix was checked by running its self-test by hand. They need Python
-    and nothing installed into it.
+    five are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
+    refuses six times, and each fix was checked by running its self-test by hand. The first four
+    need Python and nothing installed into it. mesh-overlap.py's needs Blender, found the way
+    tools/render-machine.py finds it, and compare-sheets.py's needs Pillow; a missing one fails
+    that self-test with a message rather than skipping it, and neither runs in gates.yml, whose
+    runner has neither (#850, #853).
 
     MODELS/TEST_RF_BLENDER.PY IS A GATE OF ITS OWN (#810). It pins the arithmetic the rendered
     sheets are declared from, and since #809 it is the self-test of #800's footprint-edge check.
-    It touches no bpy, so it needs Python and nothing installed, the same as the four tools.
+    It touches no bpy, so it needs Python and nothing installed, the same as the first four tools.
 
     WHAT IT DOES NOT RUN. No probe: a probe asserts nothing, and exit 0 from one means it reported.
     No -SelfTest of any gate, and not load-check.ps1 -FromZips, locale-check.ps1 or name-check.ps1:
@@ -232,7 +235,7 @@ foreach ($suite in Get-ChildItem (Join-Path $repoRoot 'tests') -Filter 'test-*.l
     $gates += @{ Name = $suite.BaseName; Exe = 'lua'; Arguments = @($suite.FullName) }
 }
 # Named and not found: most of tools/*.py have no --self-test, and would read it as a file name.
-foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap', 'review-coverage') {
+foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap', 'review-coverage', 'mesh-overlap', 'compare-sheets') {
     $gates += @{ Name = $tool; Exe = 'python'
                  Arguments = @((Join-Path $repoRoot "tools/$tool.py"), '--self-test') }
 }

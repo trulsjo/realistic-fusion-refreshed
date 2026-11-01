@@ -4,7 +4,9 @@
 # not one of those gates, and its -SelfTest runs here and not there. Four tools under
 # tools/ are not gates and have a --self-test that is all that checks them; those run here, as
 # they do there (#659, #787). So does models/test_rf_blender.py, the render's and the kit's
-# arithmetic, which needs no Blender and runs as a script of its own (#810, #803).
+# arithmetic, which needs no Blender and runs as a script of its own (#810, #803). Two more
+# tools' self-tests, mesh-overlap and compare-sheets, run there and not here: this runner has no
+# Blender, and its Python no Pillow (#850, #853).
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings and, since #753, its four markers, no commit cited that is not on main, and no
