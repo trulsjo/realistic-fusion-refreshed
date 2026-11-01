@@ -116,7 +116,10 @@ for obj in scene.objects:
         world = np.array(obj.matrix_world)
         casting.append(co.reshape(-1, 3) @ world[:3, :3].T + world[:3, 3])
     evaluated.to_mesh_clear()
-shadow_reach = rf.shadow_reach(np.concatenate(casting).tolist() if casting else [], tiles_w, tiles_h)
+# A model with nothing that casts a shadow has no reach to record, and -inf is not JSON.
+if not casting:
+    sys.exit(f"{machine}: no mesh or curve casts a shadow, so there is no shadow reach to measure.")
+shadow_reach = rf.shadow_reach(np.concatenate(casting).tolist(), tiles_w, tiles_h)
 
 # Emissive materials glow only in the glow sheet. Structure and shadow render with them off, and
 # the glow renders them at rf_blender.GLOW_EMISSION whatever the model says, so the one number is
