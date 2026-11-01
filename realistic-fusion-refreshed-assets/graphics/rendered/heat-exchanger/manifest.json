@@ -39,6 +39,12 @@
     ],
     "pixels_per_tile": 64,
     "scale": 0.5,
+    "shadow_reach_tiles": {
+      "east": 1.729,
+      "north": 1.594,
+      "south": 2.142,
+      "west": 2.855
+    },
     "shift": [
       0,
       0
@@ -175,7 +181,9 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
+  "model_bytes": 9804381,
   "model_sha256": "dfd563304e11f08f97f4eff3c4d1e456c22a9d91bccd7bd5fa9a4c48eaa66b48",
+  "model_vertices": 516076,
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
