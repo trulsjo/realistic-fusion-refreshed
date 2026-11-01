@@ -29,7 +29,8 @@ about whether a change is safe. What each proves, in a line:
   #800's footprint-edge check, since #803 the kit's arithmetic, and since #825 the named streams
   parts draw from and that no file under `models/` but `rf_blender.py` imports the global
   `random`, and since #827 that neither rendered machine's build script names a part that draws
-  from a loop's counter, and since #805 a texture's provenance record, without Blender (#810).
+  from a loop's counter, and since #805 a texture's provenance record, and since #851 that every
+  rendered manifest's measured shadow reach lies inside its margin, without Blender (#810).
 - **`scripts/load-check.ps1`** creates a real map and asserts against it, and is where the
   invariants tying the simulation to the prototypes are enforced. It also fails when a rendered
   machine's `manifest.json` or any committed `models/*/geometry.json` disagrees with the live
@@ -51,7 +52,10 @@ about whether a change is safe. What each proves, in a line:
   changed, naming each path. Since #817 it also fails a commit hash cited in prose outside the
   record pages that `origin/main` does not reach, naming its file and line. Since #805 it also
   fails a file in a model directory that is not one a model is made of, a mesh included, and a
-  texture without a CC0 record in `textures.json` that matches its bytes (ADR 0043).
+  texture without a CC0 record in `textures.json` that matches its bytes (ADR 0043). Since #852
+  it also fails a rendered model whose vertex count or `.blend` size more than doubles against
+  `origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:` trailer naming
+  the machine.
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
@@ -88,7 +92,8 @@ repository's. The sets are pinned in
 in, so run it from the repository root.
 
 **`scripts/run-gates.ps1` runs them all in one step** (#567): the Lua suites, the `--self-test` of
-four scripts under `tools/` that are not gates and that nothing else checks,
+six scripts under `tools/` that are not gates and that nothing else checks, two of which need
+Blender or Pillow (#850, #853),
 `models/test_rf_blender.py` (#810), `ship-check.ps1`, the default `load-check.ps1` and every
 `scripts/check-*.ps1` it finds, one at a time, one line per gate, exiting non-zero and naming each
 gate that failed, and since #812 each tracked path that changed while it ran. **Run it on a branch
@@ -109,7 +114,8 @@ that starts reading one ends it.
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
-the `--self-test` of the same four scripts under `tools/`, and `models/test_rf_blender.py`. **It
+the `--self-test` of the first four of those six scripts under `tools/`, and
+`models/test_rf_blender.py`. **It
 can also be started by hand on any branch** with `gh workflow run gates.yml --ref <branch>` (#813),
 which runs what a push to `main` runs less the commit check. **It
 also runs the shared `pr-body-check.ps1 -SelfTest`, and on a pull request the check itself on the

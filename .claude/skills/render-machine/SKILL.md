@@ -51,6 +51,19 @@ Lua: pointing the prototype at the rendered files is a separate, reviewed edit.
    laid beside vanilla with `python models/post.py vanilla <out.png> <structure.png>`, read as the
    look note under the house style. Acceptance by eye is Truls's: show him the composite.
 
+   A render put to Truls against what came before goes through one command, so he sees it the
+   same way every time (#853):
+
+   ```
+   python tools/compare-sheets.py rf-<machine> origin/main worktree --out <out.png> \
+       [--direction north] [--crop NAME=X0,Y0,X1,Y1 ...] [--scale 3]
+   ```
+
+   It lays each ref's sheet side by side under its label, and each crop, a box in tiles of the
+   footprint with 0,0 its top-left corner, across the same refs. Name a crop for each thing he
+   is asked to check. `tools/mesh-overlap.py rf-<machine> --against origin/main` lists the pairs of
+   parts that touch which only one side has, which is how a contact a rebuild lands is found (#850).
+
 3. Hand off. Report the output directory, the manifest's `frame.north` / `frame.east` sizes
    (`pictures.lua` needs them, with `shift = {0, 0}`), and that no Lua changed.
 
@@ -58,3 +71,9 @@ Lua: pointing the prototype at the rendered files is a separate, reviewed edit.
 
 Camera, sun, margin, glow emission and the fluid-to-accent map are in `models/rf_blender.py`, once.
 The manifest records the ones a render used. Change them there, not in a build script.
+
+Three figures are measured off the model at render time rather than set: `frame.shadow_reach_tiles`,
+how far the shadow falls past the footprint in each sheet, which `models/test_rf_blender.py` holds
+under `frame.margin_tiles` (#851); and `model_vertices` and `model_bytes`, which
+`scripts/ship-check.ps1` fails when either more than doubles against `origin/main` (#852). A branch
+that means to grow a model says so with a `Model-Growth: <machine>` trailer in a commit's body.

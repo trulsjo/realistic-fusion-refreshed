@@ -451,3 +451,21 @@ One line for each change to a gate, newest last, with its date and its ticket.
   at x = 7.5, where it read a relief valve cap 3.76 up at x = 0.98 against an edge at 2.5. Its lower
   bound falls from 2.5 to 0, since the rebuilt model no longer needs more than 2 tiles. The figures
   are typed into the test, so it cannot see the model change again.
+- 2026-11-01, #851: `models/test_rf_blender.py`'s shadow-reach check reads every rendered
+  manifest's `frame.shadow_reach_tiles`, which `models/render.py` measures over every mesh and curve
+  vertex that casts a shadow, at the declared sun, and holds each sheet's above zero and under
+  `frame.margin_tiles`; a planted manifest whose reach is over the margin, and one with none, fail
+  it. The hand-typed height and position are gone. On both machines as re-rendered, sheets
+  unchanged byte for byte, each recorded reach agrees with the last shadow column of its sheet to
+  within 0.012 tiles, and the furthest is the exchanger's west sheet at 2.855, which the old check,
+  reading the north sheet's 1.60 alone, could not see.
+- 2026-11-01, #852: `ship-check.ps1` section 19 reads each rendered manifest's `model_vertices` and
+  `model_bytes`, which `models/render.py` records, against `origin/main`'s copy and fails either
+  more than doubling, naming the machine, both figures and both refs, unless a commit
+  `origin/main..HEAD` holds carries a `Model-Growth: <machine>` trailer. A machine new on the
+  branch, or a manifest on main without the fields, passes; a shallow clone or one with no
+  `origin/main` fails. Its `-SelfTest` halves `model-growth-caught` and `model-growth-passes`
+  prove it in both directions on scratch repositories.
+- 2026-11-01, #850, #853: `run-gates.ps1` runs six tools' self-tests, adding
+  `tools/mesh-overlap.py`, which needs Blender, and `tools/compare-sheets.py`, which needs Pillow;
+  `gates.yml` runs the first four still, since its runner has neither.
