@@ -6,9 +6,12 @@ the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pi
 its floors are checked, and since #825 the named streams parts draw from and that no file here
 but rf_blender.py imports the global `random`, which that one uses only for `random.Random`, and
 since #827 that neither rendered machine's build script names a part that draws from a loop's
-counter, and since #805 a texture's provenance record. It renders nothing, so it cannot see whether a part reads; it cannot
+counter, and since #805 a texture's provenance record, and since #851 that the shadow reach each rendered
+manifest records lies inside its margin. It renders nothing, so it cannot see whether a part reads; it cannot
 see what a build script draws from one stream or in what order, nor a draw from anything but
 `random`, such as `mathutils.noise`."""
+import glob
+import json
 import math
 import os
 import sys
@@ -30,13 +33,42 @@ assert rf.frame_px(15, 5) == (1344, 704)
 assert rf.frame_px(1, 1, margin=2) == (320, 320)
 assert rf.frame_px(15, 15)[0] <= 8192, "a sheet wider than the engine's 8192 px limit (#241)"
 
-# The heat exchanger's shadow reaches furthest east from its east end post, whose top is 1.81 tiles
-# up at x = 7.09 in the model #806 rebuilt; at the sun's elevation that falls this far past the east
-# footprint edge at x = 7.5, and the margin must hold it (the research's open point 6). Its tallest
-# point, the outlet run at 3.96, stands too far west to reach as far. Under #249 the exchanger's
-# relief valve caps reached 2.83, which set the margin.
-shadow_reach = 7.09 + 1.81 / math.tan(math.radians(rf.SUN_ELEVATION_DEG)) - 7.5
-assert 0 < shadow_reach < rf.MARGIN_TILES, (shadow_reach, rf.MARGIN_TILES)
+# EVERY RENDERED SHEET HOLDS ITS SHADOW (#851), read from what render.py measured on the model and
+# recorded in the manifest, so a model rebuilt taller or wider is seen here the next time it is
+# rendered. A reach at or past the margin is clipped by the frame's edge; one at or under zero means
+# the measurement saw no shadow leave the footprint, which neither rendered machine's does, so it
+# is taken for a measurement gone wrong.
+def reach_problems(manifest):
+    frame = manifest["frame"]
+    reach = frame.get("shadow_reach_tiles")
+    if not reach:
+        return [f"{manifest['machine']}: no shadow_reach_tiles in its manifest; render it again"]
+    return [f"{manifest['machine']}: the {d} sheet's shadow reaches {r} tiles, outside (0, {frame['margin_tiles']})"
+            for d, r in sorted(reach.items()) if not 0 < r < frame["margin_tiles"]]
+
+
+RENDERED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "realistic-fusion-refreshed-assets", "graphics", "rendered")
+_manifests = sorted(glob.glob(os.path.join(RENDERED, "*", "manifest.json")))
+assert len(_manifests) >= 2, _manifests
+for _path in _manifests:
+    _m = json.load(open(_path, encoding="utf-8"))
+    assert sorted(_m["frame"].get("shadow_reach_tiles", {})) == ["east", "north", "south", "west"], _path
+    assert not reach_problems(_m), reach_problems(_m)
+# And it fails: a planted manifest whose east reach is over the margin, and one with none at all.
+_planted = {"machine": "planted", "frame": {"margin_tiles": 3.0,
+            "shadow_reach_tiles": {"north": 1.0, "east": 3.2, "south": 0.5, "west": 0.4}}}
+assert reach_problems(_planted) == ["planted: the east sheet's shadow reaches 3.2 tiles, outside (0, 3.0)"]
+assert reach_problems({"machine": "planted", "frame": {"margin_tiles": 3.0}})
+
+# The reach itself: on a 2 by 2 footprint a point 1 tile up at the middle of its east edge throws
+# the shadow 1 / tan(elevation) past that edge in the north sheet. In the east and west sheets the
+# shadow falls along the edge it stands on, so it reaches that less half the footprint, and in the
+# south sheet it falls back across the whole footprint.
+_r = rf.shadow_reach([(1.0, 0.0, 1.0)], 2, 2)
+_run = 1 / math.tan(math.radians(rf.SUN_ELEVATION_DEG))
+assert abs(_r["north"] - _run) < 1e-12 and abs(_r["east"] - (_run - 1)) < 1e-12, _r
+assert abs(_r["south"] - (_run - 2)) < 1e-12 and abs(_r["west"] - (_run - 1)) < 1e-12, _r
 
 # Every fluid a mockup machine carries has an accent; an unknown one refuses rather than guesses.
 for fluid, want in (("rf-reactor-energy", "energy"), ("rf-aneutronic-reactor-energy", "energy"),

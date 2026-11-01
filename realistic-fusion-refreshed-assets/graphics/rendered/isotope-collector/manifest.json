@@ -35,6 +35,12 @@
     ],
     "pixels_per_tile": 64,
     "scale": 0.5,
+    "shadow_reach_tiles": {
+      "east": 1.074,
+      "north": 2.017,
+      "south": 0.918,
+      "west": 1.003
+    },
     "shift": [
       0,
       0
@@ -132,7 +138,9 @@
   },
   "machine": "isotope-collector",
   "model": "models/isotope-collector/isotope-collector.blend",
+  "model_bytes": 401204,
   "model_sha256": "d78be00e96d91db28ad4c61d1058daab797ed4417d7502d5b2351e04d074402f",
+  "model_vertices": 64281,
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
@@ -177,5 +185,6 @@
       "z": 0.033
     }
   ],
-  "source": "written by models/render.py"
+  "source": "written by models/render.py",
+  "textures": []
 }

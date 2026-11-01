@@ -32,7 +32,8 @@ SUN_ELEVATION_DEG = 42.0
 # Symmetric, so the sheet stays centred on the footprint and pictures.lua ships shift zero. The
 # shadow sets it: measured on the heat exchanger as built for #249 (valve caps 3.8 tiles up, sun at
 # 42 deg) the shadow reached 2.83 tiles past the east footprint edge, so 2 tiles clipped it and 3
-# held it. The exchanger rebuilt for #806 reaches 1.60, from its east end post.
+# held it. Since #851 render.py measures the reach off the model, records it in each manifest as
+# frame.shadow_reach_tiles, and models/test_rf_blender.py holds every sheet's under this.
 MARGIN_TILES = 3.0
 # Emission strength of a glowing part, applied by render.py to every emissive material. The game
 # adds the glow sheet on top of the structure, and adding whitens: 1.5 blew out (#246) and 0.6
@@ -1128,6 +1129,31 @@ def frame_px(tiles_w, tiles_h, margin=MARGIN_TILES):
     """Sheet size in px: the footprint plus the margin on every side, at 64 px per tile."""
     return (int(round((tiles_w + 2 * margin) * PX_PER_TILE)),
             int(round((tiles_h + 2 * margin) * PX_PER_TILE)))
+
+
+# THE SHEET EACH RENDERED DIRECTION IS, in render.py's order. Direction d turns the rig, sun
+# included, by +90 d degrees about Z, so the shadow that falls along the rig's +X in every sheet
+# falls along this world axis: +X, +Y, -X, -Y.
+SHADOW_AXES = (("north", (1, 0)), ("east", (0, 1)), ("south", (-1, 0)), ("west", (0, -1)))
+
+
+def shadow_reach(points, tiles_w, tiles_h, sun_elevation_deg=SUN_ELEVATION_DEG):
+    """How far past the footprint's edge, in tiles, the furthest shadow falls in each sheet (#851).
+
+    `points` are world-space (x, y, z) vertices of everything that casts a shadow, the footprint
+    centred on the origin and the ground at z = 0. A point z up throws its shadow z / tan(elevation)
+    along the sheet's shadow axis; the reach is the furthest such point less the footprint's half
+    extent along that axis. Negative when no shadow leaves the footprint at all."""
+    run = 1.0 / math.tan(math.radians(sun_elevation_deg))
+    best = {name: -math.inf for name, _ in SHADOW_AXES}
+    half = {name: (tiles_w if dx else tiles_h) / 2 for name, (dx, _) in SHADOW_AXES}
+    for x, y, z in points:
+        fall = z * run
+        for name, (dx, dy) in SHADOW_AXES:
+            reach = x * dx + y * dy + fall - half[name]
+            if reach > best[name]:
+                best[name] = reach
+    return best
 
 
 def png_rgba(image_settings):

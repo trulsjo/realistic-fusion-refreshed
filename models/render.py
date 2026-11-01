@@ -93,6 +93,31 @@ margin = float(scene["rf_margin_tiles"])
 view_layer = scene.view_layers[0]
 rig = bpy.data.objects["Rig"]
 
+# ---- what the model measures, read off the model and not typed in (#851, #852) -------------------
+# Every mesh and curve, evaluated as it renders: modifiers applied, a curve as the tube its bevel
+# draws. The vertex count is all of them, Ground and the hidden cutters included, since it measures
+# what the .blend carries. The shadow reach is only what casts a shadow: not Ground, which catches
+# it, and not an object hidden from render or from shadow rays. render.py turns the rig, never the
+# model, so world space here is the same in every sheet.
+SHADOW_CATCHER = "Ground"
+depsgraph = bpy.context.evaluated_depsgraph_get()
+vertex_count, casting = 0, []
+for obj in scene.objects:
+    if obj.type not in ("MESH", "CURVE"):
+        continue
+    evaluated = obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    if mesh is None:
+        continue
+    vertex_count += len(mesh.vertices)
+    if obj.name != SHADOW_CATCHER and not obj.hide_render and obj.visible_shadow and len(mesh.vertices):
+        co = np.empty(len(mesh.vertices) * 3, dtype=np.float64)
+        mesh.vertices.foreach_get("co", co)
+        world = np.array(obj.matrix_world)
+        casting.append(co.reshape(-1, 3) @ world[:3, :3].T + world[:3, 3])
+    evaluated.to_mesh_clear()
+shadow_reach = rf.shadow_reach(np.concatenate(casting).tolist() if casting else [], tiles_w, tiles_h)
+
 # Emissive materials glow only in the glow sheet. Structure and shadow render with them off, and
 # the glow renders them at rf_blender.GLOW_EMISSION whatever the model says, so the one number is
 # tuned in one place and applies to every machine without a rebuild.
@@ -308,12 +333,21 @@ manifest = {
     "machine": machine,
     "model": os.path.relpath(model_path, REPO).replace(os.sep, "/"),
     "model_sha256": hashlib.sha256(open(model_path, "rb").read()).hexdigest(),
+    # THE MODEL'S SIZE (#852): scripts/ship-check.ps1 fails a branch on which either more than
+    # doubles against origin/main's manifest. #847 grew the exchanger's .blend from 1.9 MB to
+    # 9.8 MB through a default left in, and nothing measured it.
+    "model_bytes": os.path.getsize(model_path),
+    "model_vertices": vertex_count,
     "geometry": geo,
     "geometry_sha256": geo_sha,
     "frame": {
         "pixels_per_tile": rf.PX_PER_TILE, "scale": 0.5, "shift": [0, 0],
         "tiles": [tiles_w, tiles_h], "margin_tiles": margin,
         "north": [w_px, h_px], "east": [h_px, w_px],
+        # HOW FAR THE SHADOW FALLS PAST THE FOOTPRINT, in tiles, per sheet, measured above at the
+        # declared sun (#851). models/test_rf_blender.py holds each above zero and under
+        # margin_tiles; past the margin the sheet clips it.
+        "shadow_reach_tiles": {d: round(r, 3) for d, r in shadow_reach.items()},
     },
     "camera": {
         "pitch_deg": rf.CAMERA_PITCH_DEG, "ground_stretch": rf.STRETCH,
