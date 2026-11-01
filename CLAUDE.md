@@ -114,7 +114,8 @@ that starts reading one ends it.
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
-the `--self-test` of the first four of those six scripts under `tools/`, and
+the `--self-test` of the four of those scripts under `tools/` that need nothing installed into
+Python, `refuse-hanging-bash.py`, `review-usage.py`, `rewrap.py` and `review-coverage.py`, and
 `models/test_rf_blender.py`. **It
 can also be started by hand on any branch** with `gh workflow run gates.yml --ref <branch>` (#813),
 which runs what a push to `main` runs less the commit check. **It
