@@ -343,10 +343,10 @@ names another role, and never an accent. A saddle cups the run's underside, a st
 its top, and a stem runs from the saddle to a pad on the floor. The strap is what a camera looking
 down on a run in view sees, since the run hides the saddle beneath it (Truls, 2026-10-31, while
 #839 was implemented, recorded on #839). A support shows only where its run does: on the
-exchanger's north sheet the water header is all but hidden along its length, by the frame's east
-top rail, the conduit, the drums, the deck and the cabinet among others, and its two supports
-show on the south-facing sheet (`docs/research/density-figures.md` has the ray cast and the pixel
-counts). Each support reaches the floor from its own height, so one call supports a run that sags
+exchanger's north sheet as #839 left it, the water header was all but hidden along its length, by
+the frame's top rail, the conduit, the drums, the deck and the cabinet among others, and its two
+supports showed on the south-facing sheet (`docs/research/density-figures.md` has the ray cast and
+the pixel counts). The model #806 rebuilt has not been measured so. Each support reaches the floor from its own height, so one call supports a run that sags
 or rises. Its width
 along the run scales with the run's radius, so a support under a run whose radius is under a tenth
 of a tile is refused unless the model gives it a width that reads. `rf_blender.along` finds where a
@@ -631,7 +631,7 @@ three referents in this repository and only one of them is a socket's:**
 | What | Where | Spelling found there |
 |---|---|---|
 | a socket's accent band | this document | *collar* -- the one #351 keeps |
-| the ring where a pipe turns down into the slab or through the deck | `models/heat-exchanger/build.py` (four times, all lower case), `models/isotope-collector/build.py`, and the `look: rf-heat-exchanger` note in `realistic-fusion-refreshed/prototypes/entities.lua` | *collar where it goes in*, once *floor collar*, and bare *collar*; the note says *with a collar* since its draft of #806 |
+| the ring where a pipe turns down into the slab or through the deck | `models/heat-exchanger/build.py` (once in its prose, *bolted collar*, and in the names of the water header's and the energy feeds' collars), `models/isotope-collector/build.py`, and the `look: rf-heat-exchanger` note in `realistic-fusion-refreshed/prototypes/entities.lua` | *collar where it goes in*, *bolted collar*, and bare *collar*; the note says *with a collar* since its draft of #806 |
 | a corrugation ring along a hose run | `models/heat-exchanger/build.py` | *collar* -- renamed *ring* by #361, to agree with `models/rf_parts.py`'s `pipe` |
 
 Neither of the other two sits on a socket, so the narrowed rule reaches none of them and nothing was

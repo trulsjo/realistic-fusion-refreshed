@@ -59,7 +59,7 @@ a bottle is. A part added at the end of a row laid at a fixed pitch leaves the o
 so their values, as they were, though not one whose pitch is a length shared out among its members;
 a part named for where it stands is renamed, and so re-rolled, when it is nudged. And no build
 script draws from one stream once per pass of a loop for one thing and then for another: the
-exchanger's drums each place their gauges from a stream named for the drum, as `Drum<name>Gauges`,
+exchanger's drums each draw their weld seam from a stream named for the drum, as `Drum<name>Weld`,
 and none from a stream shared between them. The helpers here still number a part's own pieces -- a panel set's plates, a casing's
 segments, a fan stack's discs -- from `enumerate`: those are the part's grid, fixed by the call.
 
@@ -140,12 +140,12 @@ def _check_edges(*_):
     edge, where it ENDED UP, before the model is saved. A save_pre handler, so no build script has
     to remember to call it.
 
-    WHY AT SAVE AND NOT WHEN THE RUN IS DRAWN: rf-heat-exchanger is built long axis north-south and
-    turned a quarter turn afterwards, so the points `pipe` is handed are in the body's own frame and
-    not the declared one. Read then, its east-frame conduit leaves the north edge of a five-tile box
-    it is nowhere near. Each run's points are taken through its object's `matrix_world` instead,
-    which carries the turn. A socket is placed after the turn in the declared frame, so `socket`
-    checks its own stub at once.
+    WHY AT SAVE AND NOT WHEN THE RUN IS DRAWN: a body built in a frame of its own and turned
+    afterwards hands `pipe` points in that frame and not the declared one. rf-heat-exchanger was
+    built so, long axis north-south, until #806 rebuilt it in the declared frame, and read when
+    drawn its conduit left the north edge of a five-tile box it was nowhere near. Each run's points
+    are taken through its object's `matrix_world` instead, which carries any turn. A socket is
+    placed in the declared frame, so `socket` checks its own stub at once.
 
     IT FAILS CLOSED. Blender 5.2.0 printed a ReferenceError raised in a save_pre handler and saved
     anyway (measured reviewing #800: a run whose object had been removed raised it, and the
@@ -212,7 +212,7 @@ def texture(nt, model_dir, filename, tiles=2.0, gain=(1.0, 1.0, 1.0)):
     PROJECTED IN WORLD SPACE FROM ALL THREE AXES, each weighted by the square of the surface normal
     along it. A box here is a unit cube scaled, so its own coordinates would stretch one repeat over
     a fourteen-tile manifold, and its UVs would do the same; Blender's box projection reads the
-    normal in the object's frame, which the exchanger's quarter turn takes away from the world's.
+    normal in the object's frame, which a part turned off the axes takes away from the world's.
     World space keeps one grain size on every part and every face.
 
     THE PATH IS STORED RELATIVE, `//` and the file name, so the .blend has to be saved beside it:
@@ -804,8 +804,7 @@ def panels(name, centre, size, normal, grid, material="body", seam=0.05, depth=0
 
     `centre` is the middle of the face and `normal` the way it faces: "+X", "-X", "+Y", "-Y" or
     "+Z". `size` is the face's (u, v): along X or Y and then up for a wall, X then Y for a top.
-    `yaw` turns the plates about the face's centre with a face that is itself turned, such as
-    rf-heat-exchanger's manifold.
+    `yaw` turns the plates about the face's centre with a face that is itself turned.
 
     THE PLATES STAND `depth` PROUD OF THE FACE, so the face shows between them as the floor of a
     seam `depth` deep. That is a recessed seam drawn without a boolean, and it is why `depth` must
@@ -1124,7 +1123,7 @@ def valve(name, at, direction, radius, facing, material="metal", wheel="dark", s
     ITS BODY AND FLANGES ARE HELD TO THE FOOTPRINT EDGE as a run is, on the flanges' radius: the
     run under them is checked on its own, narrower one, and a valve placed near an edge could
     stand past it where the run does not. The span between the flanges goes into `_RUNS` on the
-    body's object, so it is read at save through the turn, as every `pipe` is.
+    body's object, so it is read at save through any turn, as every `pipe` is.
 
     Returns the layout, whose `reach` and `span` say how much room the valve takes."""
     v = rf.valve_layout(name, at, direction, radius, facing)

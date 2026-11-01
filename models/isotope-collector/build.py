@@ -7,9 +7,9 @@ where the prototype declares them, and stamps that file's hash on the scene so r
 a model whose geometry has moved on. Everything is a primitive or a curve with a procedural
 material: nothing imported (ADR 0030; ADR 0043 now allows a CC0 texture, and this model uses none).
 
-THE MACHINE IS SQUARE AND IS BUILT IN THE DECLARED FRAME. There is no turn at the end the way
-models/heat-exchanger/build.py has one: five by five has no long axis to disagree about, and the
-look note's whole first point is that no face is a contact face.
+THE MACHINE IS SQUARE AND IS BUILT IN THE DECLARED FRAME, and there is no turn at the end, as
+models/heat-exchanger/build.py has none since #806: five by five has no long axis to disagree
+about, and the look note's whole first point is that no face is a contact face.
 
 THE LOOK NOTE NOW DESCRIBES THIS OBJECT, not the draft it started as. The draft was written from
 what the machine does, before anyone knew what the footprint would allow, and it was wrong in eight
