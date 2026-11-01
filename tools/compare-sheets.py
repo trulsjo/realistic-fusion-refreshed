@@ -6,8 +6,8 @@
     python tools/compare-sheets.py --self-test
 
 A change Truls judges by eye is put to him the same way every time: one picture of the sheet as each
-ref has it, left to right in the order given, each under a label naming its ref. Until #853 every
-art ticket wrote its own scratch script to do it, #847 three of them, once per rebuild round.
+ref has it, left to right in the order given, each under a label naming its ref. Until #853 a
+session wrote its own scratch scripts to do it: #847's wrote three, and ran them each rebuild round.
 
 A ref is anything `git show` reads (`origin/main`, a branch, a commit), or `worktree` for the files
 as they stand. Each ref's sheet is read from git, so nothing is checked out. The sheet is the
@@ -23,10 +23,10 @@ its box, so two refs with different margins crop the same ground. Each crop is w
 OUT.png as OUT-<name>.png, across the same refs, magnified --scale times (nearest neighbour, so a
 pixel stays a pixel).
 
---SELF-TEST builds a scratch repository whose sheet, a stand-in with one quarter marked, changes
-across two commits and the working tree, and proves the layout: three panels in ref order, each its
-ref's sheet at its own place with a gap between, each label drawn and each different, and a crop
-of the marked quarter that is the mark and nothing else, magnified as asked. It needs Pillow, as
+--SELF-TEST builds a scratch repository whose sheet, a stand-in with the footprint's top-left tile
+marked, changes colour across two commits and the working tree, and proves the layout: three panels
+in ref order, each its ref's sheet at its own place with a gap between, each label drawn and each
+different, and a crop of the marked tile that is the mark and nothing else, magnified as asked. It needs Pillow, as
 every tool here that reads a sheet does, and git. scripts/run-gates.ps1 runs it among its tools'
 self-tests. The workflow in .github/workflows/gates.yml does not: its runner's Python has no Pillow.
 """

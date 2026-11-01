@@ -27,8 +27,7 @@ name cannot be matched pair for pair.
 
 --out writes the pairs, or the comparison, to a file instead of stdout.
 
-Blender is found the way tools/render-machine.py finds it, by its own find_blender: --blender, then
-$BLENDER_EXE, then a running blender.exe, then the portable unzip in Downloads, then Program Files.
+Blender is found the way tools/render-machine.py finds it, by calling its find_blender.
 
 --SELF-TEST NEEDS BLENDER, AND A MISSING BLENDER IS A FAILURE WITH A MESSAGE, NOT A SKIP. It builds
 two models in a scratch directory: a cube, a curve whose tube runs through it, and a second cube
