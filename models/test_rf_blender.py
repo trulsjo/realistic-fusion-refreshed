@@ -30,11 +30,13 @@ assert rf.frame_px(15, 5) == (1344, 704)
 assert rf.frame_px(1, 1, margin=2) == (320, 320)
 assert rf.frame_px(15, 15)[0] <= 8192, "a sheet wider than the engine's 8192 px limit (#241)"
 
-# The heat exchanger's tallest point is a relief valve cap, 3.76 tiles up at x = 0.98 (build.py);
-# its shadow at the sun's elevation reaches this far past the east footprint edge at x = 2.5, and
-# the margin must hold it (the research's open point 6). Measured on the render for #249: 2.83.
-shadow_reach = 0.98 + 3.76 / math.tan(math.radians(rf.SUN_ELEVATION_DEG)) - 2.5
-assert 2.5 < shadow_reach < rf.MARGIN_TILES, (shadow_reach, rf.MARGIN_TILES)
+# The heat exchanger's shadow reaches furthest east from its east end post, whose top is 1.81 tiles
+# up at x = 7.09 in the model #806 rebuilt; at the sun's elevation that falls this far past the east
+# footprint edge at x = 7.5, and the margin must hold it (the research's open point 6). Its tallest
+# point, the outlet run at 3.96, stands too far west to reach as far. Under #249 the exchanger's
+# relief valve caps reached 2.83, which set the margin.
+shadow_reach = 7.09 + 1.81 / math.tan(math.radians(rf.SUN_ELEVATION_DEG)) - 7.5
+assert 0 < shadow_reach < rf.MARGIN_TILES, (shadow_reach, rf.MARGIN_TILES)
 
 # Every fluid a mockup machine carries has an accent; an unknown one refuses rather than guesses.
 for fluid, want in (("rf-reactor-energy", "energy"), ("rf-aneutronic-reactor-energy", "energy"),

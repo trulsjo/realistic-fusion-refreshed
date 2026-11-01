@@ -30,8 +30,9 @@ STRETCH = 1.0 / math.sin(math.radians(CAMERA_PITCH_DEG))
 SUN_ELEVATION_DEG = 42.0
 # Room around the footprint for the height above the north edge and the shadow to the east.
 # Symmetric, so the sheet stays centred on the footprint and pictures.lua ships shift zero. The
-# shadow sets it: measured on the heat exchanger (valve caps 3.8 tiles up, sun at 42 deg) the
-# shadow reaches 2.83 tiles past the east footprint edge, so 2 tiles clipped it and 3 hold it.
+# shadow sets it: measured on the heat exchanger as built for #249 (valve caps 3.8 tiles up, sun at
+# 42 deg) the shadow reached 2.83 tiles past the east footprint edge, so 2 tiles clipped it and 3
+# held it. The exchanger rebuilt for #806 reaches 1.60, from its east end post.
 MARGIN_TILES = 3.0
 # Emission strength of a glowing part, applied by render.py to every emissive material. The game
 # adds the glow sheet on top of the structure, and adding whitens: 1.5 blew out (#246) and 0.6
@@ -275,8 +276,8 @@ def check_edge(name, points, radius, geo):
     read, nor is anything that is not handed over as a run -- a horizontal `cyl` or a `box`. A kit
     part that is pipe-shaped and not built by `rf_parts.pipe` hands its span to `rf_parts`'
     save-time check, as `rf_parts.valve` and `rf_parts.cable_tray` do, or
-    calls this itself with its points in the DECLARED frame: rf-heat-exchanger is built in another
-    one and turned, which is why `rf_parts` checks its runs at save.
+    calls this itself with its points in the DECLARED frame: a body built in another one and turned
+    hands its runs in that frame, which is why `rf_parts` checks its runs at save.
     """
     half = (geo["tiles"][0] / 2, geo["tiles"][1] / 2)
     (cx0, cy0), (cx1, cy1) = geo["collision_box"]
