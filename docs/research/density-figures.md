@@ -408,6 +408,7 @@ part is new, and the layout changed with it:
 - the steam outlet run landing on its socket in an open bay, with no post over the socket, and the
   guard rail ending on a stanchion west of it;
 - the gauge boxes on the drums' own skins, each loom drop entering its box through a gland;
+- the lower deck's whole south edge marked as a walkway edge, the open bay's included;
 - a second fan stack, and a warning plate on the cabinet;
 - the model built in the declared frame, with no turn at the end.
 
@@ -417,28 +418,31 @@ for the normal pass.
 | `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
 |---|---:|---:|
 | before, #839 | 0.2892 | 0.5371 |
-| after, #806's rebuild | 0.3243 | 0.6011 |
+| after, #806's rebuild | 0.3271 | 0.6016 |
 
-**Both rose**, *measured*: the pixel figure by 0.0351 and the normal-pass figure by 0.0640, each
+**Both rose**, *measured*: the pixel figure by 0.0379 and the normal-pass figure by 0.0645, each
 several times what one re-roll moved it under #825 and #827 (both above). Why is *inferred* and
 measured by nothing: the manifold's grille, rivets and rust now show along the whole top of the
 sheet where the drums and the header hid most of them, and the gauge boxes, loom drops, platform
 and ladder add edges in the middle. The pixel figure is still below both vanilla sheets' and
 Krastorio 2's reactor's in the "before" table.
 
-The mesh-overlap test on the built model, *measured*, found 1 621 pairs against `main`'s 1 209. No
-pair can be matched with one of `main`'s, since every part was made again under a new name. Grouped
-by the part each piece belongs to, every pair between two parts is one of these:
+The mesh-overlap test on the built model, *measured*, found 1 615 pairs against `main`'s 1 209. Of
+those, 191 carry the same two names in both lists, where the rebuild named a part as `main` did:
+the sockets' bands, flanges and openings against the ground, the slab and the manifold among them.
+The rest cannot be matched pair for pair, since those parts were made again under new names.
+Grouped by the part each piece belongs to, every pair between two parts is one of these:
 - a frame joint: posts, rails, cross rails and braces meeting each other, the manifold and the slab;
 - a part on what holds it: the decks on the posts and backings, the drums standing through the
-  grating, the platform on its beam, the hatch lid on the platform, the loom in the tray;
+  grating, the platform on its beam, the hatch lid on the platform, the loom in the tray, and each
+  loom drop on its drum's flank as it climbs to the gland;
 - a run ending inside what it joins: the header runs and the outlet in the caps, the feeds in the
   drums and the manifold, the outlet on its flange and socket, the water header in its collars;
 - a valve on its run, bolts on what they hold down, and a kit part's own pieces.
 
-Three pairs are none of those, and each is a near miss between two parts: the conduit against the
-second post from the west end, one bolt of the west cap against the west drum's vent hose, and the
-east header run's first ring against the east drum's body where it lands.
+Two pairs are none of those, and each is a near miss between two parts: one bolt of the west cap
+against the west drum's vent hose where it leaves the relief valve, and the east header run's first
+ring against the east drum's body where the run leaves the cap.
 
 ## What the "before" says, and how far it goes
 

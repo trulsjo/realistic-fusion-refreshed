@@ -228,7 +228,8 @@ MAN_IN = 1.45                  # the manifold's inner, south-facing face
 MAN_X = 7.2
 DRUM_Y = (MAN_IN + POST_Y) / 2  # midway between the manifold and the posts
 DRUM_R = 0.9
-DRUM_TOP = TOP + 1.55               # "about 1.6": 1.6 put the outlet run's bend over the 4-tile cap
+DRUM_TOP = TOP + 1.55               # "about 1.6": 1.55 keeps the outlet run's bend under 4 tiles, a
+                                    # ceiling this script chose and the note does not ask for
 CAP_TOP = DRUM_TOP + 0.08
 TRAY_Y = -1.81
 HEADER_R = 0.2                 # two fifths of a tile across
@@ -282,9 +283,11 @@ if variant == "cube":
     box("Cube", (1, 1, 1), (0, 0, 0.5), "body")
 else:
     slab = box("Slab", (2 * TX, 2 * TY, SLAB), (0, 0, SLAB / 2), "frame")
-    # A row of BOLTS along the slab's south kerb, either side of the steam socket's opening.
+    # A row of BOLTS along the slab's south kerb, either side of the steam socket's opening, with
+    # none where a post stands on the kerb: a bolt there would stand in the post's flange.
     for side, (a, b) in (("West", (-7.1, -0.45)), ("East", (0.45, 7.1))):
-        rf_parts.bolts(f"KerbBolts{side}", rf.row((a, -2.21, SLAB), (b, -2.21, SLAB), 22))
+        rf_parts.bolts(f"KerbBolts{side}", [p for p in rf.row((a, -2.21, SLAB), (b, -2.21, SLAB), 22)
+                                             if min(abs(p[0][0] - x) for x in PLACES.values()) > 0.15])
 
     # -- THE MANIFOLD: the reactor contact, a riveted trough the full length, corroded. Its top is
     # the frame's top, with the energy channel let into it between two lips and a grille over it.
@@ -352,19 +355,19 @@ else:
         rf_parts.panels(f"BackingPanels{name}", (cx, POST_Y + 0.08, bz), (width - 0.06, BEAM_Z - 0.16 - DECK),
                         "-Y", (3, 2), material="paint")
 
-    # -- THE LOWER DECK, a grating over the slab, its south edge marked outside the open bay. In the
-    # open bay it is closed by an unmarked toe board, and between the middle drum and the platform
-    # it is cut back to the drums' feet, so the outlet run and its valve pass down in front of it.
+    # -- THE LOWER DECK, a grating over the slab, its whole south edge marked as a walkway edge, the
+    # open bay's included, since a crew could step off it there too (Truls, 2026-11-01, on #806).
+    # Between the middle drum and the platform it is cut back to the drums' feet, so the outlet run
+    # and its valve pass down in front of it.
     deck_y = (POST_Y + 0.11, MAN_IN - 0.03)
-    for name, (a, b), south, marked, holes in (
-            ("West", (-7.08, -7 / 3), deck_y[0], True, ()),
-            ("BayWest", (-7 / 3, -0.4), deck_y[0], False, ()),
-            ("BayCut", (-0.4, PLAT_X[0] - 0.05), -1.15, False, (((0.5, -0.85), (0.72, 0.8)),)),
-            ("BayEast", (PLAT_X[0] - 0.05, 7 / 3), deck_y[0], False, ()),
-            ("East", (7 / 3, 7.08), deck_y[0], True, ())):
+    for name, (a, b), south, holes in (
+            ("West", (-7.08, -7 / 3), deck_y[0], ()),
+            ("BayWest", (-7 / 3, -0.4), deck_y[0], ()),
+            ("BayCut", (-0.4, PLAT_X[0] - 0.05), -1.15, (((0.5, -0.85), (0.72, 0.8)),)),
+            ("BayEast", (PLAT_X[0] - 0.05, 7 / 3), deck_y[0], ()),
+            ("East", (7 / 3, 7.08), deck_y[0], ())):
         rf_parts.grating_deck(f"Deck{name}", ((a + b) / 2, (south + deck_y[1]) / 2), (b - a, deck_y[1] - south),
-                              DECK, along="X", openings=holes, open_edges=("-Y",),
-                              marked_edges=("-Y",) if marked else ())
+                              DECK, along="X", openings=holes, open_edges=("-Y",), marked_edges=("-Y",))
 
     # -- THE DRUMS: bare metal, two rib bands, a weld seam, a bolted cap with its bolts, relief
     # valve and lugs, a segmented casing under the cap, a gauge box on the south flank, a drain.
@@ -380,7 +383,8 @@ else:
         ribs = [torus(f"Drum{name}Rib{k}", DRUM_R + 0.015, 0.035, (dx, DRUM_Y, z), "dark")
                 for k, z in RIBS.items()]
         weld = stream(f"Drum{name}Weld")
-        (wx, wy), wphi = at_flank(dx, -0.62 if d["gauge"] > 0 else 0.62, DRUM_R - 0.012)
+        # The weld seam goes on the side of the flank away from the drain, which it would meet.
+        (wx, wy), wphi = at_flank(dx, -0.62 if d["drain"] > 0 else 0.62, DRUM_R - 0.012)
         seam(f"Drum{name}Weld", (0.05, 0.05, RIBS["Low"] - DECK - 0.1),
              (wx, wy, (DECK + RIBS["Low"]) / 2), rot=(weld.jitter(0, 0.02), 0, wphi))
         if name == "East":
@@ -413,8 +417,8 @@ else:
         flange_y = DRUM_Y - math.sqrt((DRUM_R + 0.06) ** 2 - (vx - dx) ** 2)
         hose(f"Drum{name}Vent",
              [(vx, vy - 0.1, CAP_TOP + 0.18), (vx, vy - 0.3, CAP_TOP + 0.16),
-              ((vx + hx) / 2, min(flange_y, sy) - 0.2, CAP_TOP + 0.02),
-              (hx, sy - 0.2, CASING[0] + 0.05), (hx, sy - 0.18, RIBS["Low"] - 0.3),
+              ((vx + hx) / 2, min(flange_y, sy) - 0.28, CAP_TOP + 0.02),
+              (hx, sy - 0.28, CASING[0] + 0.05), (hx, sy - 0.26, RIBS["Low"] - 0.3),
               (hx, sy - 0.15, 1.3), (hx, sy - 0.16, DECK + 0.12), (hx, sy - 0.16, DECK - 0.04)],
              VENT_R, pitch=1.2 * VENT_R, band=(1.0, 0.38), wobble=0.03)
         # THE GAUGE CLUSTER, on the drum's own skin: a painted box bolted to the south flank, its
@@ -500,9 +504,9 @@ else:
     # -- THE SERVICE PLATFORM: a grating laid on the top rails, its south and west edges marked as
     # walkway edges, its north and east edges unmarked, a toe board on each, and the hatch the
     # access ladder comes up through, the lid standing open beside it.
-    # THE HATCH IS CUT THROUGH THE SOUTH EDGE, not "just inside" it as the note has it: a strip of
-    # deck south of the hatch puts its marked edge bar and toe board across the ladder, which the
-    # note also says nothing may cross. The edge's marking stops either side of the hatch.
+    # THE HATCH IS CUT THROUGH THE SOUTH EDGE: a strip of deck south of it would put its marked edge
+    # bar and toe board across the ladder, which nothing may cross. The edge's marking stops either
+    # side of the hatch.
     rf_parts.grating_deck("Platform", (sum(PLAT_X) / 2, sum(PLAT_Y) / 2), (PLAT_X[1] - PLAT_X[0], PLAT_Y[1] - PLAT_Y[0]),
                           PLATFORM, along="X", openings=(HATCH,), open_edges=("+X", "-X", "+Y", "-Y"),
                           marked_edges=("-X", "-Y"))
@@ -563,14 +567,13 @@ else:
                        (gx, gy - 0.04, GLAND - 0.1), (gx, gy, GLAND - 0.04), (gx, gy, GLAND + 0.02)],
                       cables=("cable-red", "cable-green"), twist=0.9, ties=False)
 
-    # -- THE CONDUIT on clamps along the outer face of the south top rail, between two junction
-    # boxes, from the cabinet's corner to the post at the open bay.
-    CON_Y, CON_Z = POST_Y - 0.155, BEAM_Z
+    # -- THE CONDUIT on clamps along the outer face of the south top rail, from the cabinet's corner
+    # to the post at the open bay, held far enough out to clear the posts' flanges. Each end stops in
+    # a clamp; the note asks for no box at either (Truls, 2026-11-01, on #806).
+    CON_Y, CON_Z = POST_Y - 0.18, BEAM_Z
     pipe("Conduit", [(-6.62, CON_Y, CON_Z), (-4.6, CON_Y, CON_Z + 0.01), (-2.68, CON_Y, CON_Z)], 0.042, "dark")
-    for name, x in (("West", -6.75), ("East", -2.55)):
-        box(f"ConduitBox{name}", (0.24, 0.07, 0.24), (x, CON_Y + 0.005, CON_Z), "paint", read=0.24)
-    for x in (-6.0, -5.2, -4.2, -3.4):
-        box(f"ConduitClamp{x:+.1f}", (0.07, 0.06, 0.12), (x, CON_Y, CON_Z), "dark", bev=0.01)
+    for x in (-6.6, -6.0, -5.2, -4.2, -3.4, -2.7):
+        box(f"ConduitClamp{x:+.1f}", (0.07, 0.1, 0.12), (x, CON_Y + 0.02, CON_Z), "dark", bev=0.01)
 
     # -- THE WEST END WALL: painted, with a vent, stopping above the west sockets' accent bands.
     WALL_X = -7.16
@@ -623,9 +626,9 @@ else:
     top = max((o.matrix_world @ v.co).z for o in scene.objects if o.type == "MESH" for v in o.data.vertices)
     print(f"HEIGHT: tallest mesh vertex {top:.3f}")
 
-# THE ICON IS THE WHOLE MACHINE, ON THE DIAGONAL (house style, Icon). Turned 35 degrees, fifteen by
-# five spans about 15.2 tiles across the screen and 15.4 up it with the height showing at 0.707 h,
-# so a 14.5-tile window holds it with a little margin, centred on the machine at half its height.
+# THE ICON IS THE WHOLE MACHINE, ON THE DIAGONAL (house style, Icon). Turned 35 degrees it fills a
+# 14.5-tile window with a little margin, centred on the machine at about half its height: on the
+# 64-px icon its pixels span columns and rows 3 to 60.
 if variant == "cube":
     tiles_w, tiles_h, icon_centre, icon_tiles, icon_yaw = 1, 1, (0, 0, 0.5), 1.5, 0.0
 else:

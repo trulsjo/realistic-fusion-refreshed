@@ -446,3 +446,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   pad's height, or that is turned off upright; and a run's point and direction where it crosses a
   coordinate. It renders nothing, so
   it cannot see whether a support reads.
+- 2026-11-01, #806: `models/test_rf_blender.py`'s shadow-reach check reads the rebuilt heat
+  exchanger: its east end post, 1.81 tiles up at x = 7.09, reaching 1.60 tiles past the east edge
+  at x = 7.5, where it read a relief valve cap 3.76 up at x = 0.98 against an edge at 2.5. Its lower
+  bound falls from 2.5 to 0, since the rebuilt model no longer needs more than 2 tiles. The figures
+  are typed into the test, so it cannot see the model change again.
