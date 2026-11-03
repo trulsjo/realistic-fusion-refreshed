@@ -13,9 +13,10 @@ What it counts: every object in the scene that is a mesh or a curve, curves eval
 their bevel draws, modifiers applied, in world space. A pair is two such objects whose triangles
 intersect, found by mathutils' BVHTree.overlap after their bounding boxes are seen to meet. The
 ground plane is an object like any other, so a socket standing on it is a pair. Nothing is left
-out for being hidden from render: the scratch script the note's figures came from left nothing out,
-and a figure measured one way is reproduced the same way. Each pair is printed as `a | b`, the two
-names sorted, and the pairs sorted, one per line.
+out for being hidden from render: the scratch script that measured the note's figures for #806 left
+nothing out, and a figure measured one way is reproduced the same way. The note's earlier figures
+came from scripts of their own, and its section on this tool says how those counted. Each pair is
+printed as `a | b`, the two names sorted, and the pairs sorted, one per line.
 
 A machine is named as `rf-<machine>` or `<machine>`, meaning models/<machine>/<machine>.blend.
 
