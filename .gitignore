@@ -13,7 +13,10 @@ graphify-out/
 # how a session produces rendered art, and it is the repository's, not the machine's.
 # So is the pre-pr-review skill (#595), which runs the review docs/agents/code-review.md defines.
 # And the plugin-pass skill (#626), which runs that file's other pass.
+# settings.json is tracked (#859): it holds what every clone's sessions share. A machine's own
+# settings, hooks wired on one machine only included, go in the ignored settings.local.json.
 .claude/*
+!.claude/settings.json
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/render-machine/

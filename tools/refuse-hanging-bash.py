@@ -99,7 +99,7 @@ applies it wherever it runs, so CASES prove it on the workflow's Linux runner to
 
 NOTHING RETIRES THIS RULE BUT A PERSON. If Claude Code or Git Bash stops halving, every refusal
 of a pair is a false one. Read anthropics/claude-code#85856 first. Then take this script out of
-`.claude/settings.json` for one command and run `echo 'Z\\Z'` as a Bash tool command: `Z\Z`
+`.claude/settings.local.json` for one command and run `echo 'Z\\Z'` as a Bash tool command: `Z\Z`
 means the halving holds.
 
 #666 SET TWO FAILURES ASIDE THAT WERE THIS. It says of them that the session "had written a `\n`
