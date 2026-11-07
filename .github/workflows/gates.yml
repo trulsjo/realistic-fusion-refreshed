@@ -37,7 +37,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           fetch-depth: 0   # the check tells a commit on main from one that is not
@@ -52,7 +52,7 @@ jobs:
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: sudo apt-get install -y lua5.4
       - name: tests/test-*.lua
         run: |
@@ -69,7 +69,7 @@ jobs:
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The runner's own Python: the four import nothing that has to be installed, and
       # review-coverage's builds a repository with the runner's git.
       - name: tools/*.py --self-test
@@ -92,7 +92,7 @@ jobs:
     # Windows because that is the only place these scripts have ever passed.
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           fetch-depth: 0   # commit-check walks a range, and ship-check section 17 refuses a shallow clone
