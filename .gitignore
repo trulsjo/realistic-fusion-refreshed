@@ -7,14 +7,14 @@ graphify-out/
 # Agent orchestration state — session-scoped, machine-local
 .omc/
 
-# Claude Code's own local state — config and a scheduler lock file, neither of which
-# describes this project. If a project-scoped setting is ever worth sharing, negate it
-# here rather than dropping this rule. The render-machine skill is shared (#251): it is
-# how a session produces rendered art, and it is the repository's, not the machine's.
+# Claude Code's own local state — settings.local.json, config, a scheduler lock file, a log and
+# worktrees, none of which describes this project. What is worth sharing is negated here rather
+# than this rule dropped. settings.json is shared (#859): it holds what every clone's sessions
+# share, and a machine's own settings, hooks wired on one machine only included, go in
+# settings.local.json. The render-machine skill is shared (#251): it is how a session produces
+# rendered art, and it is the repository's, not the machine's.
 # So is the pre-pr-review skill (#595), which runs the review docs/agents/code-review.md defines.
 # And the plugin-pass skill (#626), which runs that file's other pass.
-# settings.json is tracked (#859): it holds what every clone's sessions share. A machine's own
-# settings, hooks wired on one machine only included, go in the ignored settings.local.json.
 .claude/*
 !.claude/settings.json
 !.claude/skills/
