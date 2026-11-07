@@ -469,3 +469,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-11-01, #850, #853: `run-gates.ps1` runs six tools' self-tests, adding
   `tools/mesh-overlap.py`, which needs Blender, and `tools/compare-sheets.py`, which needs Pillow;
   `gates.yml` runs the first four still, since its runner has neither.
+- 2026-11-07, #858: `gates.yml` takes `actions/checkout` at commit
+  `3d3c42e5aac5ba805825da76410c181273ba90b1`, the v7.0.1 tag, with the tag in a comment beside it,
+  in its four jobs, where it took the moving `@v4`. A tag moved upstream no longer changes what the
+  workflow runs.
