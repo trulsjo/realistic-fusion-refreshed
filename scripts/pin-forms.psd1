@@ -9,7 +9,8 @@
 # The pull request body rule in docs/agents/issue-tracker.md runs pr-body-check.ps1 on a file, and
 # no placeholder gives a form a file holding a body, so that way is not measured: the -Body form
 # below is gates.yml's. Four forms start the game and need Factorio where the harness finds it.
-# On 2026-11-14 each took 14 to 73 s at a pin, and a run of the 16 forms then listed took 22 minutes.
+# On 2026-11-14 each took 14 to 73 s at a pin, and a run of the 16 forms then listed took 22
+# minutes.
 @{
     Forms = @(
         # .githooks/commit-msg hands it the message file; gates.yml runs it over the event's range.
@@ -46,9 +47,9 @@
         # The script that reads this file.
         @{ Name = 'pin-measure-selftest'; From = 'tools'; Script = 'pin-measure.ps1'; Args = @('-SelfTest') }
         # This repository's scripts that reach into vendor/. ship-check.ps1 runs markdown-check.ps1
-        # and the shared -SelfTest runner. Its -SelfTest runs the checks first and stops when one
-        # fails, and in a clone the markdown check fails, as above, so this form measures the
-        # checks and none of the halves.
+        # and the shared -SelfTest runner. Its -SelfTest runs every check first and exits before its
+        # halves when any fails, and in a clone the markdown check fails, as above, so this form
+        # measures the checks and none of the halves.
         @{ Name = 'ship-check-selftest'; From = 'sibling'; Script = 'scripts/ship-check.ps1'; Args = @('-SelfTest') }
         # load-check.ps1 loads through scripts/factorio-lib.ps1, which dot-sources
         # load-harness-lib.ps1, and with -FromZips packs with pack-mods.ps1. Starts the game.
