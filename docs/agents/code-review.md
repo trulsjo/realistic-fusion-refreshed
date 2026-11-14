@@ -57,15 +57,17 @@ at, which is what a long link alone on its line is. A fence opened inside a bloc
 see: it reads that fence's lines as prose, and fails a long one. **A figure grouped in thousands
 stays on one line when a paragraph is rewrapped**, and since 2026-10-09 (#662) section 12 fails one
 that is split across a line end. Since #860 the shared Markdown check, section 11, fails one in
-every tracked `.md` as well, so a split in one of these files fails twice, and one in any other file
-is broken by hand, since `tools/rewrap.py` refuses that file. `python tools/rewrap.py <file> <line>`
-rewraps the paragraph that line sits in, at this width, and keeps such a figure together; section
-12's failures give the file and the line. With the file alone it lists the prose lines over the
-width that have a space to break at, and writes nothing (#680). It counts a line in UTF-16 code
-units, as section 12 does, where `awk` in Git Bash counts bytes. Neither check can tell a split
-figure from two numbers, so each also fails a line that ends in a number of one to three digits
-above a line that opens with an unrelated one of exactly three, and the way out is to break the line
-a word earlier or later. #646 has the findings that asked for a stated width.
+every tracked `.md` as well, so a split in one of these files fails twice. One in any other file is
+mended by hand: `tools/rewrap.py` refuses that file, and the tools submodule's
+`markdown-rewrap.ps1`, which takes any Markdown file, rewraps only from a line over the
+`-MaxLineLength` it is given. `python tools/rewrap.py <file> <line>` rewraps the paragraph that line
+sits in, at this width, and keeps such a figure together; section 12's failures give the file and
+the line. With the file alone it lists the prose lines over the width that have a space to break at,
+and writes nothing (#680). It counts a line in UTF-16 code units, as section 12 does, where `awk` in
+Git Bash counts bytes. Neither check can tell a split figure from two numbers, so each also fails a
+line that ends in a number of one to three digits above a line that opens with an unrelated one of
+exactly three, and the way out is to break the line a word earlier or later. #646 has the findings
+that asked for a stated width.
 
 **A file that is not one of those eight has no width** (Truls, 2026-10-11, #667). A long line in
 it is not a finding, and a reviewer does not report one. That covers the Python under `tools/`,
