@@ -62,18 +62,28 @@ and not in a tool's output. Run on the session that wrote #669 with those two te
 48 requests and 21 101 666 tokens, from a first context of 396 207. A pull request's body is
 written before the merge, so it gives `--since` alone, and its figure runs to when it was read.
 
+A slash command's turn is kept as tags, and is read as it was typed, `/<name> <args>`, so the whole
+command is such a text too (#856). The summary a compaction leaves is not read, whether it is
+flagged as one or is the copy a later turn carries, known by its first sentence: it quotes the
+command that started the work, and a part started there is short. A `--since` that no turn holds,
+or an `--until` that no turn after it holds, prints no figure for the main session and exits 1.
+
 WHAT IT CANNOT SEE: when a figure was read. The pre-PR reviewer goes on after its row is written,
 so a later run prints more than the row holds; review-figures.md says which reading a row keeps.
-Nor which turn the user typed. A subagent's hand-back, a message from another session, a task
-notice and the summary a compaction leaves are each a turn of the user's in the transcript, so a
-text that one of them holds can start or end the part there: `--until=merge` stopped #669's part
+Nor which turn the user typed. A subagent's hand-back, a message from another session and a task
+notice are each a turn of the user's in the transcript, so a text that one of them holds can start
+or end the part there: `--until=merge` stopped #669's part
 at a hand-back, 34 requests in. Give a text that the user's own turn holds and those do not.
+Nor a compaction's summary whose copy opens with other words than the first sentence held in
+`SUMMARY`: it is read as the user's, and can start the part.
 
-`--self-test` builds a session of seven subagents and five requests of its own in a temporary
-directory and exits non-zero when a figure printed for it is not the one worked out by hand
-below. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
+`--self-test` builds a session of seven subagents and eight requests of its own in a temporary
+directory and exits non-zero when a figure printed for it, or an exit code, is not the one worked
+out by hand below. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
 """
+import contextlib
 import glob
+import io
 import json
 import os
 import re
@@ -83,6 +93,9 @@ import tempfile
 GROUPS = {"step": "steps", "reviewer": "reviewers", "scorer": "scorers", "verifier": "verifier"}
 CELLS = (("steps", "the three steps"), ("reviewers", "reviewers"), ("scorers", "scorers"),
          ("verifier", "the verifier"))
+SUMMARY = "This session is being continued from a previous conversation that ran out of context."
+COMMAND = re.compile(r"<command-name>(.*?)</command-name>", re.S)
+ARGS = re.compile(r"<command-args>(.*?)</command-args>", re.S)
 NOTICE = re.compile(r"<tool-use-id>(\w+)</tool-use-id>.*?<subagent_tokens>(\d+)</subagent_tokens>",
                     re.S)
 
@@ -123,15 +136,24 @@ def notices(directory):
 
 
 def typed(entry):
-    """What a user's turn says, a tool's output left out."""
+    """What a user's turn says, a tool's output and a compaction's summary left out.
+
+    A slash command's turn also says the command as typed, `/<name> <args>` (#856)."""
     m = entry.get("message") or {}
-    if m.get("role") != "user":
+    if m.get("role") != "user" or entry.get("isCompactSummary"):
         return ""
     content = m.get("content")
-    if isinstance(content, str):
-        return content
-    return "\n".join(c.get("text", "") for c in content or []
-                     if isinstance(c, dict) and c.get("type") == "text")
+    if not isinstance(content, str):
+        content = "\n".join(c.get("text", "") for c in content or []
+                            if isinstance(c, dict) and c.get("type") == "text")
+    if content.lstrip().startswith(SUMMARY):       # the copy a later turn carries, unflagged
+        return ""
+    name = COMMAND.search(content)
+    if name:
+        args = ARGS.search(content)
+        content += "\n" + " ".join(filter(None, (name.group(1).strip(),
+                                                 args.group(1).strip() if args else "")))
+    return content
 
 
 def main_session(directory, since=None, until=None):
@@ -139,13 +161,14 @@ def main_session(directory, since=None, until=None):
     session = os.path.dirname(os.path.abspath(directory)) + ".jsonl"
     if not os.path.exists(session):
         return None
-    order, use, on = [], {}, since is None
+    order, use, on, ended = [], {}, since is None, False
     for line in open(session, encoding="utf-8"):
         entry = json.loads(line)
         said = typed(entry)
         if not on:
             on = since in said
         elif until and until in said:
+            ended = True
             break
         m = entry.get("message") or {}
         if on and m.get("role") == "assistant" and total(m.get("usage") or {}):
@@ -155,7 +178,8 @@ def main_session(directory, since=None, until=None):
     first = use[order[0]] if order else {}
     return {"requests": len(order), "all": sum(map(total, use.values())),
             "reads": sum(u.get("cache_read_input_tokens", 0) for u in use.values()),
-            "first": total(first) - first.get("output_tokens", 0)}
+            "first": total(first) - first.get("output_tokens", 0),
+            "since found": on, "until found": ended or until is None}
 
 
 def collect(directory, texts=()):
@@ -209,9 +233,12 @@ def report_session(found, since, until):
     out = ["", f"THE MAIN SESSION, for the pull request's body: {span}"]
     if found is None:
         out.append("  no transcript beside the directory, so not measured")
+    elif not found["since found"]:
+        out.append(f'  not measured: no turn of the user says "{since}"')
+    elif not found["until found"]:
+        out.append(f'  not measured: no turn of the user after the first says "{until}"')
     elif not found["requests"]:
-        out.append("  no request there: no turn of the user says the first text, or none "
-                   "follows it")
+        out.append("  no request there: the turn that says the first text has none after it")
     else:
         out.append(f"  {found['requests']} requests, {n(found['all'])} tokens over all of them; of "
                    f"that, cache reads {share(found['reads'], found['all'])}; the context of the "
@@ -318,7 +345,23 @@ def self_test():
                     said("s3", usage(10, 1, 20, 100)), said("s3", usage(10, 5, 20, 100)),
                     said("s4", usage(0, 1, 0, 200)),
                     {"message": {"role": "user", "content": "merged #9"}},
-                    said("s5", usage(1000, 0, 0, 0))):
+                    said("s5", usage(1000, 0, 0, 0)),
+                    # A slash command is kept as tags, so "/implement #10 #11" is in no turn as
+                    # typed (#856). The summary a compaction leaves quotes it, once with the flag
+                    # and once in a later turn without; neither starts a part, and a text only
+                    # they hold is not found. The flagged one opens with other words, so that the
+                    # flag alone has to keep it out.
+                    {"message": {"role": "user", "content":
+                        "<command-message>implement</command-message>\n<command-name>/implement"
+                        "</command-name>\n<command-args>#10 #11</command-args>"}},
+                    said("s6", usage(10000, 0, 0, 0)),
+                    {"isCompactSummary": True, "message": {"role": "user", "content":
+                        "The conversation so far: the user ran `/implement #10 #11`, then said "
+                        "write #12."}},
+                    said("s7", usage(20000, 0, 0, 0)),
+                    {"message": {"role": "user", "content": [{"type": "text", "text":
+                        SUMMARY + " The user ran `/implement #10 #11`, then said write #13."}]}},
+                    said("s8", usage(40000, 0, 0, 0))):
                 f.write(json.dumps(entry) + "\n")
         sums = summarise(collect(directory))
         only = summarise(collect(directory, ["#9"]))
@@ -326,6 +369,15 @@ def self_test():
         part = main_session(directory, "write #9", "merged #9")
         open_ended = main_session(directory, "write #9")
         never = main_session(directory, "write #7")
+        slash = main_session(directory, "/implement #10 #11")
+        flagged = main_session(directory, "write #12")
+        unflagged = main_session(directory, "write #13")
+        # A text no turn holds is a failure, not a figure of nothing (#856).
+        quiet = io.StringIO()
+        with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
+            exits = {"since": main([directory, "--since=write #7"]),
+                     "until": main([directory, "--since=write #9", "--until=write #7"]),
+                     "both": main([directory, "--since=write #9", "--until=merged #9"])}
     got = {
         "steps reported": sums["steps"]["reported"], "steps all": sums["steps"]["all"],
         "reviewers reported": sums["reviewers"]["reported"], "reviewers all": sums["reviewers"]["all"],
@@ -342,6 +394,11 @@ def self_test():
         "part requests": part["requests"], "part all": part["all"], "part reads": part["reads"],
         "part first context": part["first"], "part to the end, all": open_ended["all"],
         "part never started, requests": never["requests"],
+        "slash command's part, requests": slash["requests"], "slash command's part, all": slash["all"],
+        "only the flagged summary holds it, requests": flagged["requests"],
+        "only the unflagged copy holds it, requests": unflagged["requests"],
+        "exit, --since no turn holds": exits["since"],
+        "exit, --until no turn holds": exits["until"], "exit, both found": exits["both"],
     }
     want = {
         "steps reported": 11, "steps all": 10,
@@ -353,10 +410,16 @@ def self_test():
         "unsorted all": 1007, "unsorted reported": 999,     # the two with no word to sort by
         # The pre-PR reviewer, "PR #95 eligibility check" and the one with no description.
         "left out with #9 given": 3, "plugin all with #9 given": 250,
-        "session requests": 5, "session all": 1348,     # 10 + 2 + 135 + 201 + 1000
+        # 10 + 2 + 135 + 201 + 1000, and s6 to s8's 10 000 + 20 000 + 40 000.
+        "session requests": 8, "session all": 71348,
         # s3 and s4. s3 is streamed twice and counts once; its context is 10 + 20 + 100.
         "part requests": 2, "part all": 336, "part reads": 300, "part first context": 130,
-        "part to the end, all": 1336, "part never started, requests": 0,
+        "part to the end, all": 71336, "part never started, requests": 0,
+        # From the command's own turn: s6, s7 and s8. From the flagged summary it would be 2.
+        "slash command's part, requests": 3, "slash command's part, all": 70000,
+        "only the flagged summary holds it, requests": 0,
+        "only the unflagged copy holds it, requests": 0,
+        "exit, --since no turn holds": 1, "exit, --until no turn holds": 1, "exit, both found": 0,
     }
     wrong = [f"{k}: {got[k]}, wanted {want[k]}" for k in want if got[k] != want[k]]
     for w in wrong:
@@ -365,16 +428,17 @@ def self_test():
     return 1 if wrong else 0
 
 
-def main():
-    if sys.argv[1:] == ["--self-test"]:
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv == ["--self-test"]:
         return self_test()
-    if len(sys.argv) < 2 or not os.path.isdir(sys.argv[1]):
+    if not argv or not os.path.isdir(argv[0]):
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         print("Give the session's subagents directory.", file=sys.stderr)
         return 2
     bound = {"--since": None, "--until": None}
     texts = []
-    for arg in sys.argv[2:]:
+    for arg in argv[1:]:
         key, _, value = arg.partition("=")
         if not arg.startswith("--"):
             texts.append(arg)
@@ -383,13 +447,18 @@ def main():
         else:       # a mistyped option would otherwise be a text no subagent holds
             print(f"{arg}: the options are --since=<text> and --until=<text>.", file=sys.stderr)
             return 2
-    rows = collect(sys.argv[1], texts)
+    rows = collect(argv[0], texts)
     if not rows:
-        print(f"No agent-*.meta.json in {sys.argv[1]}.", file=sys.stderr)
+        print(f"No agent-*.meta.json in {argv[0]}.", file=sys.stderr)
         return 2
     print(report(rows))
-    print(report_session(main_session(sys.argv[1], bound["--since"], bound["--until"]),
-                         bound["--since"], bound["--until"]))
+    found = main_session(argv[0], bound["--since"], bound["--until"])
+    print(report_session(found, bound["--since"], bound["--until"]))
+    if found and not (found["since found"] and found["until found"]):
+        missed = bound["--since"] if not found["since found"] else bound["--until"]
+        print(f'No turn of the user says "{missed}", so the main session is not measured.',
+              file=sys.stderr)
+        return 1
     return 0
 
 
