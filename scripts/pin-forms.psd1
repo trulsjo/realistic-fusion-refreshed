@@ -9,8 +9,8 @@
 # The pull request body rule in docs/agents/issue-tracker.md runs pr-body-check.ps1 on a file, and
 # no placeholder gives a form a file holding a body, so that way is not measured: the -Body form
 # below is gates.yml's. Four forms start the game and need Factorio where the harness finds it.
-# On 2026-11-14 each took 14 to 73 s at a pin, and a run of the 16 forms then listed took 22
-# minutes.
+# In two runs on 2026-11-14 each took 12 to 73 s at a pin, and a whole run took 22 minutes for
+# the 16 forms of the first and 21 min 30 s for the 19 of the second.
 @{
     Forms = @(
         # .githooks/commit-msg hands it the message file; gates.yml runs it over the event's range.
