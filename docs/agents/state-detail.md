@@ -473,3 +473,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `3d3c42e5aac5ba805825da76410c181273ba90b1`, the v7.0.1 tag, with the tag in a comment beside it,
   in its four jobs, where it took the moving `@v4`. A tag moved upstream no longer changes what the
   workflow runs.
+- 2026-11-14, #860: the tools pin moves from `36b34f7` to `664cbbb`, measured with
+  `pin-measure.ps1` and `scripts/pin-forms.psd1`. The shared Markdown check, which
+  `.githooks/pre-commit` and `ship-check.ps1` run, now also fails a figure grouped in thousands
+  split across a line end, in every tracked `.md`: the rule holds with a line limit or none, and
+  neither runs the check with one. The tools repository lifted the rule from section 12 (#662),
+  which still holds it for the wrapped files, so a split there fails in both sections. No tracked
+  `.md` here held such a split at the move.

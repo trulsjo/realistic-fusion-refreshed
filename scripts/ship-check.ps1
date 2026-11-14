@@ -158,8 +158,10 @@
     unwrappable-line-not-flagged halves plant what the scan of the lines must and must not report.
     Since #662 it also fails a figure grouped in thousands that is split across a line end in
     those files, and the split-figure-caught and unsplit-figure-not-flagged halves plant what that
-    scan must and must not report. Its failures name tools/rewrap.py, which rewraps a paragraph,
-    and it fails when that tool's width is not this script's.
+    scan must and must not report. Since #860 section 11's shared check fails such a split in
+    every tracked .md as well, so in these files one fails in both sections. Section 12's
+    failures name tools/rewrap.py, which rewraps a paragraph, and it fails when that tool's width
+    is not this script's.
     The sentence check, the tool's width and a missing file have no half: like sections 1 to 4
     they name what they require, so a mistake in them fails and does not go quiet. It cannot tell
     two numbers from a split figure when the second has three digits; the section comment has the
@@ -1240,10 +1242,12 @@ foreach ($row in $figureRows.Found) {
 #
 # vendor/grado-factorio-tools/scripts/markdown-check.ps1, the tools submodule's, run with -All: emphasis or a code span left
 # open at the end of its paragraph, a table row whose column count is not its header's, a link
-# to a file git does not track, and since #710 a link whose #fragment names no heading of its
-# file, with the anchor GitHub gives the heading. Its header says what it reads as what and what
-# it cannot see. The pre-commit hook runs the same script on the staged files; this is where a
-# clone that never opted into the hooks, and the workflow, are held to it.
+# to a file git does not track, since #710 a link whose #fragment names no heading of its file,
+# with the anchor GitHub gives the heading, and since #860 a figure grouped in thousands split
+# across a line end, in every file and not only the wrapped ones section 12 reads. Its header
+# says what it reads as what and what it cannot see. The pre-commit hook runs the same script on
+# the staged files; this is where a clone that never opted into the hooks, and the workflow, are
+# held to it.
 #
 # IT REPLACED THIS SECTION'S OWN TABLE CHECK (#649, #652), ruled by Truls on 2026-10-09: the shared
 # check runs in its place, not beside it. One thing that check caught is not caught now, a row of
