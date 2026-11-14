@@ -1,4 +1,5 @@
-"""Print the token figures a pull request's two rows in docs/agents/review-figures.md need (#661).
+"""Print the token figures a pull request's two rows in docs/agents/review-figures.md need (#661),
+or one subagent's replies (#857).
 
     python tools/review-usage.py <subagents directory> [<text> ...]
                                  [--since=<text>] [--until=<text>]
@@ -77,18 +78,19 @@ them out of its context: they are read from the reviewer's own transcript, where
 SendMessage call held whole, not from the session's, where a reply can arrive cut off in an idle
 notice and share a turn with another. A call the transcript repeats, in a streamed line or in the
 blob of the request after it, is printed once. A message that is not text, a shutdown response,
-is left out and counted on stderr. A name no subagent has, or that two have, exits 1. Output is in
-UTF-8 whatever the console's encoding, since a reply can hold `→`, which cp1252 cannot.
+is left out and counted on stderr. A name no subagent has, or that two have, and a subagent that
+sent no text, each exit 1. This mode's output is in UTF-8 whatever the console's encoding, since a
+reply can hold `→`, which cp1252 cannot; the figures are printed in the console's, as before.
 
-It does not print the text a subagent ends its turn with, which reaches the session in the idle
-notice, cut off where it is long, and says again what the reply said.
-
-WHAT IT CANNOT SEE: when a figure was read. The pre-PR reviewer goes on after its row is written,
-so a later run prints more than the row holds; review-figures.md says which reading a row keeps.
-Nor which turn the user typed. A subagent's hand-back, a message from another session and a task
-notice are each a turn of the user's in the transcript, so a text that one of them holds can start
-or end the part there: `--until=merge` stopped #669's part
-at a hand-back, 34 requests in. Give a text that the user's own turn holds and those do not.
+WHAT IT CANNOT SEE: the text a subagent ends its turn with, which `--replies` does not print. It
+reaches the session in the idle notice, cut off where it is long, and says again what the reply
+said; a subagent that answered only there is one that sent no text. Nor when a figure was read.
+The pre-PR reviewer goes on after its row is written, so a later run prints more than the row
+holds; review-figures.md says which reading a row keeps. Nor which turn the user typed. A
+subagent's hand-back, a message from another session, a task notice, a loaded skill's text and a
+system reminder are each a turn of the user's in the transcript, so a text that one of them holds
+can start or end the part there: `--until=merge` stopped #669's part at a hand-back, 34 requests
+in. Give a text that the user's own turn holds and those do not.
 Nor a compaction's summary whose copy opens with other words than the first sentence held in
 `SUMMARY`: it is read as the user's, and can start the part.
 
@@ -286,9 +288,11 @@ def report_session(found, since, until):
     elif not found["since found"]:
         out.append(f'  not measured: no turn of the user says "{since}"')
     elif not found["until found"]:
-        out.append(f'  not measured: no turn of the user after the first says "{until}"')
+        out.append(f'  not measured: no turn of the user says "{until}"' +
+                   (f' after the one that says "{since}"' if since else ""))
     elif not found["requests"]:
-        out.append("  no request there: the turn that says the first text has none after it")
+        out.append("  no request there" + (f': the turn that says "{since}" has none after it'
+                                           if since else ": the transcript holds none"))
     else:
         out.append(f"  {found['requests']} requests, {n(found['all'])} tokens over all of them; of "
                    f"that, cache reads {share(found['reads'], found['all'])}; the context of the "
@@ -366,12 +370,14 @@ def replies_test(directory):
             send("toolu_r3", "team-lead", None, {"type": "shutdown_response", "approve": True})]}},
     ]
     os.makedirs(directory)
-    for file, name in (("agent-aprepr-9-1", "prepr-9"), ("agent-atwin-1", "twin"),
-                       ("agent-atwin-2", "twin")):
+    # The fourth answered only in the text it ended its turn with, which is not printed.
+    for file, name, kept in (("agent-aprepr-9-1", "prepr-9", lines),
+                             ("agent-atwin-1", "twin", lines), ("agent-atwin-2", "twin", lines),
+                             ("agent-asilent-1", "silent", lines[:2] + lines[4:5])):
         with open(os.path.join(directory, file + ".meta.json"), "w", encoding="utf-8") as f:
             json.dump({"description": "Pre-PR review of a-branch", "name": name}, f)
         with open(os.path.join(directory, file + ".jsonl"), "w", encoding="utf-8") as f:
-            f.write("".join(json.dumps(line) + "\n" for line in lines))
+            f.write("".join(json.dumps(line) + "\n" for line in kept))
     # Printed through a console that cannot encode the arrow, as #854's could not.
     run = subprocess.run(
         [sys.executable, os.path.abspath(__file__), directory, "--replies=prepr-9"],
@@ -380,7 +386,9 @@ def replies_test(directory):
     with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
         nobody = main([directory, "--replies=prepr-8"])
         twice = main([directory, "--replies=twin"])
-    return {"replies, exit with cp1252 output": run.returncode,
+        silent = main([directory, "--replies=silent"])
+    return {"replies, exit for a subagent that sent no text": silent,
+            "replies, exit with cp1252 output": run.returncode,
             "replies, printed in UTF-8":
                 run.stdout.decode("utf-8", "replace").replace("\r\n", "\n"),
             "replies, exit for a name no subagent has": nobody,
@@ -497,7 +505,8 @@ def self_test():
         "part requests": part["requests"], "part all": part["all"], "part reads": part["reads"],
         "part first context": part["first"], "part to the end, all": open_ended["all"],
         "part never started, requests": never["requests"],
-        "slash command's part, requests": slash["requests"], "slash command's part, all": slash["all"],
+        "slash command's part, requests": slash["requests"],
+        "slash command's part, all": slash["all"],
         "only the flagged summary holds it, requests": flagged["requests"],
         "only the unflagged copy holds it, requests": unflagged["requests"],
         "exit, --since no turn holds": exits["since"],
@@ -528,6 +537,7 @@ def self_test():
         # not the second streamed line, not the shutdown response, not the closing text (#857).
         "replies, exit with cp1252 output": 0, "replies, printed in UTF-8": REPLIES_WANTED,
         "replies, exit for a name no subagent has": 1, "replies, exit for a name two have": 1,
+        "replies, exit for a subagent that sent no text": 1,
     }
     wrong = [f"{k}: {got[k]}, wanted {want[k]}" for k in want if got[k] != want[k]]
     for w in wrong:
@@ -567,6 +577,13 @@ def main(argv=None):
                   + ", ".join(map(os.path.basename, found)), file=sys.stderr)
             return 1
         sent, other = found
+        if not sent:        # an empty print would read as a reviewer that said nothing
+            print(f'"{bound["--replies"]}" sent no text with SendMessage.', file=sys.stderr)
+            return 1
+        # A reply holds what the console's own encoding may not, `→` in cp1252 (#857).
+        for stream in (sys.stdout, sys.stderr):
+            if hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8")
         print(report_replies(sent))
         if other:
             print(f"Left out: {other} message(s) that are not text, such as a shutdown response.",
@@ -588,7 +605,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    # A reply holds what the console's own encoding may not, `→` in cp1252 (#857).
-    for stream in (sys.stdout, sys.stderr):
-        stream.reconfigure(encoding="utf-8")
     sys.exit(main())
