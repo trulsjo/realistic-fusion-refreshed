@@ -3,11 +3,13 @@
 # script's header (grado-factorio-tools#247). It reads this file from its clones of GitHub's main,
 # so a change here measures nothing until it is merged.
 #
-# One form for each way .githooks/, .github/workflows/gates.yml and the pull request body rule in
-# docs/agents/issue-tracker.md run a tools script, the -SelfTest of every tools script this
-# repository runs (grado-factorio-tools#318, ruling 3), and each script of this repository's own
-# that a gate runs and that reaches into vendor/. Four forms start the game: they need Factorio
-# where the harness finds it, and take minutes where the rest take seconds.
+# One form for each way .githooks/ and .github/workflows/gates.yml run a tools script, the
+# -SelfTest of every tools script this repository runs or loads (grado-factorio-tools#318, ruling
+# 3), and each script of this repository's own that a gate runs and that reaches into vendor/.
+# The pull request body rule in docs/agents/issue-tracker.md runs pr-body-check.ps1 on a file, and
+# no placeholder gives a form a file holding a body, so that way is not measured: the -Body form
+# below is gates.yml's. Four forms start the game and need Factorio where the harness finds it.
+# On 2026-11-14 each took 14 to 73 s at a pin, and a run of the 16 forms then listed took 22 minutes.
 @{
     Forms = @(
         # .githooks/commit-msg hands it the message file; gates.yml runs it over the event's range.
@@ -38,10 +40,15 @@
         # load-harness-lib.ps1 has no -SelfTest. Run as a file it only defines its functions, so
         # this form proves no more than that it parses; load-check-fromzips below is what runs it.
         @{ Name = 'load-harness-lib'; From = 'tools'; Script = 'load-harness-lib.ps1'; Args = @() }
+        # load-harness-lib.ps1 dot-sources both, and pack-mods.ps1 mod-info.ps1.
+        @{ Name = 'mod-info-selftest'; From = 'tools'; Script = 'mod-info.ps1'; Args = @('-SelfTest') }
+        @{ Name = 'self-test-halves-selftest'; From = 'tools'; Script = 'self-test-halves.ps1'; Args = @('-SelfTest') }
         # The script that reads this file.
         @{ Name = 'pin-measure-selftest'; From = 'tools'; Script = 'pin-measure.ps1'; Args = @('-SelfTest') }
         # This repository's scripts that reach into vendor/. ship-check.ps1 runs markdown-check.ps1
-        # and the shared -SelfTest runner; its -SelfTest runs the checks first.
+        # and the shared -SelfTest runner. Its -SelfTest runs the checks first and stops when one
+        # fails, and in a clone the markdown check fails, as above, so this form measures the
+        # checks and none of the halves.
         @{ Name = 'ship-check-selftest'; From = 'sibling'; Script = 'scripts/ship-check.ps1'; Args = @('-SelfTest') }
         # load-check.ps1 loads through scripts/factorio-lib.ps1, which dot-sources
         # load-harness-lib.ps1, and with -FromZips packs with pack-mods.ps1. Starts the game.
