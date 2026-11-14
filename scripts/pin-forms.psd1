@@ -18,6 +18,9 @@
         # it reads none. scripts/ship-check.ps1 runs it with -All.
         @{ Name = 'markdown-check-selftest'; From = 'tools'; Script = 'markdown-check.ps1'; Args = @('-SelfTest') }
         @{ Name = 'markdown-check-hook'; From = 'tools'; Script = 'markdown-check.ps1'; Args = @() }
+        # A clone's vendor/grado-factorio-tools holds scripts/ alone, so the two links this
+        # repository has into the submodule's docs/ fail at both pins, here and in
+        # ship-check-selftest below.
         @{ Name = 'markdown-check-all'; From = 'tools'; Script = 'markdown-check.ps1'; Args = @('-All') }
         # gates.yml runs both; the body form once for each of the last two merged pull requests.
         @{ Name = 'pr-body-check-selftest'; From = 'tools'; Script = 'pr-body-check.ps1'; Args = @('-SelfTest') }
@@ -35,6 +38,8 @@
         # load-harness-lib.ps1 has no -SelfTest. Run as a file it only defines its functions, so
         # this form proves no more than that it parses; load-check-fromzips below is what runs it.
         @{ Name = 'load-harness-lib'; From = 'tools'; Script = 'load-harness-lib.ps1'; Args = @() }
+        # The script that reads this file.
+        @{ Name = 'pin-measure-selftest'; From = 'tools'; Script = 'pin-measure.ps1'; Args = @('-SelfTest') }
         # This repository's scripts that reach into vendor/. ship-check.ps1 runs markdown-check.ps1
         # and the shared -SelfTest runner; its -SelfTest runs the checks first.
         @{ Name = 'ship-check-selftest'; From = 'sibling'; Script = 'scripts/ship-check.ps1'; Args = @('-SelfTest') }
