@@ -95,9 +95,10 @@ Nor a compaction's summary whose copy opens with other words than the first sent
 `SUMMARY`: it is read as the user's, and can start the part.
 
 `--self-test` builds a session of seven subagents and eight requests of its own in a temporary
-directory, and beside it one of three subagents whose replies `--replies` prints through a console
-that is told it is cp1252. It exits non-zero when a figure printed for either, an exit code or the
-replies' text, is not the one worked out by hand below. It is run by scripts/run-gates.ps1 and
+directory, and beside it a second directory of four subagents for `--replies`: one whose replies it
+prints through a console that is told it is cp1252, two that share a name, and one that sent no
+text. It exits non-zero when a figure printed for either, an exit code or the replies' text, is not
+the one worked out by hand below. It is run by scripts/run-gates.ps1 and
 by .github/workflows/gates.yml.
 """
 import contextlib
