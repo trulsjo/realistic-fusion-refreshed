@@ -122,7 +122,12 @@ pass.
    (#648). End the turn to receive it; the message starts the session's next turn. A question
    put to the user does not end the turn, and nothing from the reviewer arrives while one is
    pending. If something else starts the next turn first, or the reply came cut off and asking
-   does not get the rest, read it from the reviewer's transcript, the file step 6 names.
+   does not get the rest, print every reply the reviewer has sent, whole, from its own
+   transcript (#857), with the `subagents` directory step 6 names and the name from this step:
+
+   ```
+   python tools/review-usage.py "<that directory>" --replies=<name>
+   ```
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:
@@ -224,7 +229,9 @@ pass.
    list has an outcome written for it.
 
 6. **Write the findings table** and put it in the pull request's body under the same heading,
-   below step 5's outcomes, every finding in it:
+   below step 5's outcomes, every finding in it. After a compaction, write it from the replies
+   step 3's command prints, not from the summary, which keeps a finding's number and not its
+   words (#857):
 
    | # | Finding | Where | Fixed |
    |---|---|---|---|

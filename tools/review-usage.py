@@ -2,6 +2,7 @@
 
     python tools/review-usage.py <subagents directory> [<text> ...]
                                  [--since=<text>] [--until=<text>]
+    python tools/review-usage.py <subagents directory> --replies=<name>
 
 The directory is the session's own, `projects/<project>/<session id>/subagents` under the Claude
 configuration directory. Each `agent-*.jsonl` there is one subagent's transcript, and the
@@ -68,6 +69,20 @@ flagged as one or is the copy a later turn carries, known by its first sentence:
 command that started the work, and a part started there is short. A `--since` that no turn holds,
 or an `--until` that no turn after it holds, prints no figure for the main session and exits 1.
 
+THE REPLIES OF ONE SUBAGENT (#857), with `--replies=<name>` and nothing else: every message the
+subagent whose `.meta.json` has that `name` sent with SendMessage, whole and in the order sent, each
+under a line with its number, its recipient and its summary, and nothing else. It prints no
+figure. It is how a session gets back the pre-PR reviewer's replies once a compaction has taken
+them out of its context: they are read from the reviewer's own transcript, where each is a
+SendMessage call held whole, not from the session's, where a reply can arrive cut off in an idle
+notice and share a turn with another. A call the transcript repeats, in a streamed line or in the
+blob of the request after it, is printed once. A message that is not text, a shutdown response,
+is left out and counted on stderr. A name no subagent has, or that two have, exits 1. Output is in
+UTF-8 whatever the console's encoding, since a reply can hold `→`, which cp1252 cannot.
+
+It does not print the text a subagent ends its turn with, which reaches the session in the idle
+notice, cut off where it is long, and says again what the reply said.
+
 WHAT IT CANNOT SEE: when a figure was read. The pre-PR reviewer goes on after its row is written,
 so a later run prints more than the row holds; review-figures.md says which reading a row keeps.
 Nor which turn the user typed. A subagent's hand-back, a message from another session and a task
@@ -78,8 +93,10 @@ Nor a compaction's summary whose copy opens with other words than the first sent
 `SUMMARY`: it is read as the user's, and can start the part.
 
 `--self-test` builds a session of seven subagents and eight requests of its own in a temporary
-directory and exits non-zero when a figure printed for it, or an exit code, is not the one worked
-out by hand below. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
+directory, and beside it one of three subagents whose replies `--replies` prints through a console
+that is told it is cp1252. It exits non-zero when a figure printed for either, an exit code or the
+replies' text, is not the one worked out by hand below. It is run by scripts/run-gates.ps1 and
+by .github/workflows/gates.yml.
 """
 import contextlib
 import glob
@@ -87,6 +104,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -180,6 +198,38 @@ def main_session(directory, since=None, until=None):
             "reads": sum(u.get("cache_read_input_tokens", 0) for u in use.values()),
             "first": total(first) - first.get("output_tokens", 0),
             "since found": on, "until found": ended or until is None}
+
+
+def replies(directory, name):
+    """Every text message the subagent called `name` sent, in order, and how many were not text.
+
+    None when no subagent has that name, and the matching transcripts' paths when more than one
+    does."""
+    found = [p[:-len(".meta.json")] + ".jsonl"
+             for p in sorted(glob.glob(os.path.join(directory, "agent-*.meta.json")))
+             if json.load(open(p, encoding="utf-8")).get("name") == name]
+    if len(found) != 1:
+        return found or None
+    sent, seen, other = [], set(), 0
+    for line in open(found[0], encoding="utf-8"):
+        content = (json.loads(line).get("message") or {}).get("content")
+        for c in content if isinstance(content, list) else []:
+            if not (isinstance(c, dict) and c.get("type") == "tool_use"
+                    and c.get("name") == "SendMessage") or c.get("id") in seen:
+                continue
+            # A streamed line, and the blob of the request after it, repeat the call they hold.
+            seen.add(c.get("id"))
+            said = c.get("input") or {}
+            if isinstance(said.get("message"), str):
+                sent.append((said.get("to"), said.get("summary"), said["message"]))
+            else:
+                other += 1
+    return sent, other
+
+
+def report_replies(sent):
+    return "\n\n".join(f"=== {i} of {len(sent)}, to {to}: {summary or '(no summary)'}\n{message}"
+                       for i, (to, summary, message) in enumerate(sent, 1))
 
 
 def collect(directory, texts=()):
@@ -285,6 +335,58 @@ def report(rows):
     return "\n".join(out)
 
 
+REPLIES_WANTED = ("=== 1 of 2, to team-lead: two findings\n"
+                  "1. a.py: the arrow → is wrong.\n2. b.md: so is the dash — here.\n\n"
+                  "=== 2 of 2, to team-lead: both fixed\n"
+                  "Both are fixed.\n")
+
+
+def replies_test(directory):
+    """What --replies prints for a subagent whose replies are kept the ways a real one's are."""
+    def send(tool, to, summary, message):
+        return {"type": "tool_use", "id": tool, "name": "SendMessage",
+                "input": {"to": to, "summary": summary, "message": message,
+                          "content": str(message)[:20] + "…"}}
+
+    first = send("toolu_r1", "team-lead", "two findings",
+                 "1. a.py: the arrow → is wrong.\n2. b.md: so is the dash — here.")
+    second = send("toolu_r2", "team-lead", "both fixed", "Both are fixed.")
+    lines = [
+        {"type": "user", "message": {"role": "user", "content": "review this"}},
+        {"type": "assistant", "message": {"role": "assistant", "id": "r1", "content": [
+            {"type": "tool_use", "id": "toolu_b", "name": "Bash", "input": {"command": "ls"}}]}},
+        {"type": "assistant", "message": {"role": "assistant", "id": "r2", "content": [first]}},
+        # The request that follows carries the same call again, as a real transcript does.
+        {"type": "api-request-blob", "message": {"role": "assistant", "content": [first]}},
+        {"type": "assistant", "message": {"role": "assistant", "id": "r3", "content": [
+            {"type": "text", "text": "I sent the team lead two findings."}]}},
+        {"type": "assistant", "message": {"role": "assistant", "id": "r4", "content": [second]}},
+        {"type": "assistant", "message": {"role": "assistant", "id": "r4", "content": [second]}},
+        {"type": "assistant", "message": {"role": "assistant", "id": "r5", "content": [
+            send("toolu_r3", "team-lead", None, {"type": "shutdown_response", "approve": True})]}},
+    ]
+    os.makedirs(directory)
+    for file, name in (("agent-aprepr-9-1", "prepr-9"), ("agent-atwin-1", "twin"),
+                       ("agent-atwin-2", "twin")):
+        with open(os.path.join(directory, file + ".meta.json"), "w", encoding="utf-8") as f:
+            json.dump({"description": "Pre-PR review of a-branch", "name": name}, f)
+        with open(os.path.join(directory, file + ".jsonl"), "w", encoding="utf-8") as f:
+            f.write("".join(json.dumps(line) + "\n" for line in lines))
+    # Printed through a console that cannot encode the arrow, as #854's could not.
+    run = subprocess.run(
+        [sys.executable, os.path.abspath(__file__), directory, "--replies=prepr-9"],
+        capture_output=True, env={**os.environ, "PYTHONIOENCODING": "cp1252"})
+    quiet = io.StringIO()
+    with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
+        nobody = main([directory, "--replies=prepr-8"])
+        twice = main([directory, "--replies=twin"])
+    return {"replies, exit with cp1252 output": run.returncode,
+            "replies, printed in UTF-8":
+                run.stdout.decode("utf-8", "replace").replace("\r\n", "\n"),
+            "replies, exit for a name no subagent has": nobody,
+            "replies, exit for a name two have": twice}
+
+
 def self_test():
     """Seven subagents with small figures, and the sums of them worked out by hand."""
     def usage(i, o, w, r):
@@ -378,6 +480,7 @@ def self_test():
             exits = {"since": main([directory, "--since=write #7"]),
                      "until": main([directory, "--since=write #9", "--until=write #7"]),
                      "both": main([directory, "--since=write #9", "--until=merged #9"])}
+        replied = replies_test(os.path.join(scratch, "replies", "subagents"))
     got = {
         "steps reported": sums["steps"]["reported"], "steps all": sums["steps"]["all"],
         "reviewers reported": sums["reviewers"]["reported"], "reviewers all": sums["reviewers"]["all"],
@@ -399,6 +502,7 @@ def self_test():
         "only the unflagged copy holds it, requests": unflagged["requests"],
         "exit, --since no turn holds": exits["since"],
         "exit, --until no turn holds": exits["until"], "exit, both found": exits["both"],
+        **replied,
     }
     want = {
         "steps reported": 11, "steps all": 10,
@@ -420,6 +524,10 @@ def self_test():
         "only the flagged summary holds it, requests": 0,
         "only the unflagged copy holds it, requests": 0,
         "exit, --since no turn holds": 1, "exit, --until no turn holds": 1, "exit, both found": 0,
+        # The two replies whole, in order, and nothing else: not the copy in the request blob,
+        # not the second streamed line, not the shutdown response, not the closing text (#857).
+        "replies, exit with cp1252 output": 0, "replies, printed in UTF-8": REPLIES_WANTED,
+        "replies, exit for a name no subagent has": 1, "replies, exit for a name two have": 1,
     }
     wrong = [f"{k}: {got[k]}, wanted {want[k]}" for k in want if got[k] != want[k]]
     for w in wrong:
@@ -436,7 +544,7 @@ def main(argv=None):
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         print("Give the session's subagents directory.", file=sys.stderr)
         return 2
-    bound = {"--since": None, "--until": None}
+    bound = {"--since": None, "--until": None, "--replies": None}
     texts = []
     for arg in argv[1:]:
         key, _, value = arg.partition("=")
@@ -445,8 +553,25 @@ def main(argv=None):
         elif key in bound and value:
             bound[key] = value
         else:       # a mistyped option would otherwise be a text no subagent holds
-            print(f"{arg}: the options are --since=<text> and --until=<text>.", file=sys.stderr)
+            print(f"{arg}: the options are --since=<text>, --until=<text> and --replies=<name>.",
+                  file=sys.stderr)
             return 2
+    if bound["--replies"]:
+        if texts or bound["--since"] or bound["--until"]:
+            print("--replies=<name> takes the directory and nothing else.", file=sys.stderr)
+            return 2
+        found = replies(argv[0], bound["--replies"])
+        if not isinstance(found, tuple):
+            print(f'No subagent in {argv[0]} is named "{bound["--replies"]}".' if found is None else
+                  f'{len(found)} subagents are named "{bound["--replies"]}": '
+                  + ", ".join(map(os.path.basename, found)), file=sys.stderr)
+            return 1
+        sent, other = found
+        print(report_replies(sent))
+        if other:
+            print(f"Left out: {other} message(s) that are not text, such as a shutdown response.",
+                  file=sys.stderr)
+        return 0
     rows = collect(argv[0], texts)
     if not rows:
         print(f"No agent-*.meta.json in {argv[0]}.", file=sys.stderr)
@@ -463,4 +588,7 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    # A reply holds what the console's own encoding may not, `→` in cp1252 (#857).
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8")
     sys.exit(main())
