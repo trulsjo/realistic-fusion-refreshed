@@ -230,8 +230,8 @@ pass.
 
 6. **Write the findings table** and put it in the pull request's body under the same heading,
    below step 5's outcomes, every finding in it. After a compaction, write it from the replies
-   step 3's command prints, not from the summary, which keeps a finding's number and not its
-   words (#857):
+   step 3's command prints, not from the summary: on #854 it kept each finding's number and topic
+   and not its words (#857):
 
    | # | Finding | Where | Fixed |
    |---|---|---|---|
