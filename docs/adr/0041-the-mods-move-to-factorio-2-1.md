@@ -17,19 +17,23 @@ game** from 2.0 to 2.1 and leaves its Space Age decision alone. ADR 0026 and ADR
 dated notes.
 
 **Amended 2026-11-15 by [#869](https://github.com/trulsjo/realistic-fusion-refreshed/issues/869):
-the floor is `base >= 2.1.24`, and new documentation and API claims pin to `/2.1.24/`.** By #869's
-account, which no later reading can check, Steam updated the development machine's Factorio from 2.1.23 to 2.1.24
-at a time not known, and it was found on 2026-11-14 during #860. On 2026-11-15 the
+the floor is `base >= 2.1.24`, and new documentation and API claims pin to `/2.1.24/`.** Steam
+updated the development machine's Factorio, and #860 found it on 2026-11-14. On 2026-11-15 the
 `Factorio.exe` the harness falls back to printed `Version: 2.1.24 (build 87808, win64, steam)`
-for `--version`, with `FACTORIO_EXE` unset (*Measured*). So 2.1.24 is the build the gates run on
-on that machine (*Inferred*, from that reading and from `Resolve-FactorioExe` taking the fallback
-where the variable is unset), and the floor is that build for the reason the Decision gives.
+for `--version`, with `FACTORIO_EXE` unset; the file was last written on 2026-10-29 at 14:26, and
+Steam's `logs/content_log.txt` has its last update of Factorio (app 427520) finishing at 14:29 that
+day, which names no version (*Measured*). So the machine has run 2.1.24 since 2026-10-29
+(*Inferred*, from those three readings), and 2.1.24 is the build the gates run on there
+(*Inferred*, from the first reading and from `Resolve-FactorioExe` taking the fallback where the
+variable is unset). The floor is that build for the reason the Decision gives.
 Truls decided it in [#869's
 triage](https://github.com/trulsjo/realistic-fusion-refreshed/issues/869#issuecomment-6893892757).
 An existing `/2.1.23/` link keeps its pin, as a `/2.0.77/` one kept its own, and a figure measured
-on 2.1.23 keeps its version. The Decision and the Consequences below are left as they were
-written, 2.1.23 included: where they say a claim pins to 2.1.23 or a figure is re-measured on it,
-read 2.1.24 from 2026-11-15.
+on 2.1.23 keeps its version. A record made on that machine from 2026-10-29 to 2026-11-14 that says
+2.1.23 may have been made on 2.1.24 (*Inferred*, from the dates above); which records those are has
+not been checked. The Decision and the Consequences below are left as they were written, 2.1.23
+included: where they say a claim pins to 2.1.23 or a figure is re-measured on it, read 2.1.24 from
+2026-11-15.
 
 ## Context
 
