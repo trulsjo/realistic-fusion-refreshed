@@ -1619,7 +1619,7 @@ $SINCE_CLAUSE_FLOOR = 0
 $SINCE_CLAUSE = '(?i)since #\d*'
 
 function Find-SinceClauses {
-    <#  Each clause of $File that dates a check by its ticket, with its line.  #>
+    <#  Each clause of $File that dates something by its ticket, with its line.  #>
     param([Parameter(Mandatory)] [string] $File)
 
     $n = 0

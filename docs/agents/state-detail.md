@@ -10,7 +10,7 @@ self-test is being changed, and when a sentence of the State section is wanted w
 ticket. Working on a mod does not need it.
 
 **#874 moved more on 2026-11-15**, from the whole of `CLAUDE.md` and not the State section alone:
-the clauses that dated a check by its ticket, in *The clauses moved on 2026-11-15*, which says how
+the clauses that dated something by its ticket, in *The clauses moved on 2026-11-15*, which says how
 it holds them. The paragraph below is about #591's five.
 
 **Each of the five passages below is as it stood in `CLAUDE.md` when it was moved**, word for word,
@@ -165,8 +165,8 @@ through one rung walk since #424.
 
 #874 moved the history that had grown back into `CLAUDE.md` after #591: 16 clauses dating
 something by its ticket, "since #" and a number, on `main` at `cbadaca`, most of them a gate's
-check. Each passage below is the sentence or the part of one that held them, word for word as it
-stood there, with where it stood and what `CLAUDE.md` says in its place named before it.
+check. Each passage below is the sentences, or the part of a sentence, that held them, word for
+word as it stood there, with where it stood and what `CLAUDE.md` says in its place named before it.
 `scripts/ship-check.ps1` section 20 now fails the file when it holds more such clauses than that
 section's floor.
 
