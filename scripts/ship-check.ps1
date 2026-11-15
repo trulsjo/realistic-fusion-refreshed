@@ -232,7 +232,7 @@
     that grows and is not rendered again; the section comment has the rest.
 
     SECTION 20 HAS A -SelfTest AND A FLOOR THAT IS ITS LIMIT (#874). It counts the clauses in the
-    root CLAUDE.md that date one of its checks by ticket, "since #" and a number, case ignored, and
+    root CLAUDE.md that date something by its ticket, "since #" and a number, case ignored, and
     fails when there are more than the floor written in the section, naming each clause's line,
     because that history belongs in docs/agents/state-detail.md and grew back after #591 moved it
     there. The since-clause-over-floor-caught half plants a CLAUDE.md one clause over a floor and
@@ -1600,11 +1600,11 @@ try {
 } finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
 
 # ----------------------------------------------------------------- the gate history in CLAUDE.md
-# 20. THE ROOT CLAUDE.md DATES NO MORE OF ITS CHECKS BY TICKET THAN ITS FLOOR ALLOWS (#874).
+# 20. THE ROOT CLAUDE.md HOLDS NO MORE "since #" CLAUSES THAN ITS FLOOR ALLOWS (#874).
 #
 # #591 moved the gate history out of the State section of the root CLAUDE.md, which loads on every
 # turn, into docs/agents/state-detail.md. It grew back: on cbadaca the file held 16 clauses of the
-# form "since #" and a ticket, seven of them in one bullet, each written in good faith under the
+# form "since #" and a ticket, five of them in one bullet, each written in good faith under the
 # sentence there that says a line changes only when what its gate proves has changed. #874 moved
 # them to state-detail.md again, and this holds them out. It counts the clauses, case ignored, the
 # way `grep -o -i 'since #[0-9]*' CLAUDE.md` does, and fails when there are more than
@@ -1639,7 +1639,7 @@ function Get-SinceClauseFailures {
     $found = @(Find-SinceClauses -File $File)
     if ($found.Count -le $Floor) { return }
     $where = ($found | ForEach-Object { "line $($_.Line) '$($_.Text)'" }) -join ', '
-    ("$(Split-Path $File -Leaf) holds $($found.Count) clause(s) dating a check by its ticket, over the floor of " +
+    ("$(Split-Path $File -Leaf) holds $($found.Count) clause(s) dating something by its ticket, over the floor of " +
         "${Floor}: $where. The history belongs in docs/agents/state-detail.md (#874); CLAUDE.md says what the gate proves.")
 }
 
@@ -2335,7 +2335,7 @@ if ($SelfTest) {
                 if ($failed.Count -ne 1 -or $failed[0] -notmatch "line 2 .*line 3 .*line 3 .*line 4 '$($s.ToUpper())104'") {
                     throw "four clauses against a floor of three were reported as: '$($failed -join ' / ')'."
                 }
-                'a CLAUDE.md with one clause dating a check by ticket over the floor fails, naming each clause.'
+                'a CLAUDE.md with one clause dating something by ticket over the floor fails, naming each clause.'
             } }
 
             @{ Name = 'since-clause-at-floor-passes'; Body = {
@@ -2606,6 +2606,6 @@ Write-Host 'dot-sources the library that keeps its report, which a stand-in rig 
 Write-Host 'no live prose cites a commit origin/main does not reach, every texture in a model'
 Write-Host 'directory is recorded as CC0 with its own bytes and nothing else is imported there,'
 Write-Host 'no rendered model more than doubled against origin/main without a commit saying so,'
-Write-Host 'the root CLAUDE.md dates no more of its checks by ticket than its floor allows;'
+Write-Host 'the root CLAUDE.md holds no more clauses dating something by ticket than its floor allows;'
 Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0
