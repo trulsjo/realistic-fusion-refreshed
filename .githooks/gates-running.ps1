@@ -52,5 +52,5 @@ if ($live) {
     [Console]::Error.WriteLine('pre-commit: a commit now moves the tree its gates are reading. Wait for it to finish, or stop it, and commit again.')
     exit 1
 }
-[Console]::Error.WriteLine("pre-commit: $marker names process $id, started $started, which is not running, so the marker is stale and is ignored.")
+[Console]::Error.WriteLine("pre-commit: $marker names process $id, started $started, and no process with that ID and start time is running, so the marker is stale and is ignored.")
 exit 0
