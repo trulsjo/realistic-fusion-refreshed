@@ -1224,7 +1224,7 @@ try {
                 New-Item -ItemType Directory -Path $canary -Force | Out-Null
                 @{
                     name = 'rf-namecheck-canary'; version = '0.0.1'; title = 'Name-check canary'
-                    author = 'name-check.ps1'; factorio_version = '2.1'; dependencies = @('base >= 2.1.23')
+                    author = 'name-check.ps1'; factorio_version = '2.1'; dependencies = @('base >= 2.1.24')
                 } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
                 # One of each failure: a NEW prototype with no prefix, and a REPLACED vanilla one. iron-plate
                 # is chosen because nothing in this repo touches it, so a hit is unambiguous.

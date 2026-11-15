@@ -1437,7 +1437,7 @@ try {
                 New-Item -ItemType Directory -Path $canary -Force | Out-Null
                 @{
                     name = 'rf-loadcheck-canary'; version = '0.0.1'; title = 'Load-check canary'
-                    author = 'load-check.ps1'; factorio_version = '2.1'; dependencies = @('base >= 2.1.23')
+                    author = 'load-check.ps1'; factorio_version = '2.1'; dependencies = @('base >= 2.1.24')
                 } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
                 # INTO THE HARNESS'S OWN LIST, or the harness could neither enable it nor name it
                 # disabled -- and a mod in the directory that mod-list.json leaves out is auto-enabled,

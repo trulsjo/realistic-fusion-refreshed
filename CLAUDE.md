@@ -6,7 +6,7 @@ mod is and where it came from; this file is how to work in the repo.
 ## State
 
 **In development.** `realistic-fusion-refreshed-core` and `realistic-fusion-refreshed` load against
-Factorio 2.1.23, on top of `realistic-fusion-refreshed-assets`, which holds every sprite the two of
+Factorio 2.1.24, on top of `realistic-fusion-refreshed-assets`, which holds every sprite the two of
 them draw and nothing else (ADR 0023). All four of ADR 0010's reactions are playable: the
 water-to-deuterium extraction chain, D-D reactors that breed their own tritium and helium-3, D-T
 fusion burning it, lithium blankets breeding more, and an aneutronic tier running D-He3 and He3-He3
@@ -167,7 +167,7 @@ choosing between them is not.
   — and only Durikkan's port targets Factorio 2.0. The 1.1→2.0 break therefore runs straight through
   the material this project builds on, which is the whole reason the work exists.
 - `/stable/` and `/latest/` move, and `latest` is the **experimental** build. Pin an explicit
-  version (e.g. `/2.1.23/`, ADR 0041) when recording a fact.
+  version (e.g. `/2.1.24/`, ADR 0041) when recording a fact.
 
 ## Upstream material
 

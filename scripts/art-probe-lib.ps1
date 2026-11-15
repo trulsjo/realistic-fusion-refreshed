@@ -354,7 +354,7 @@ function Invoke-ArtProbe {
     @{
         name = $RigName; version = '0.0.1'; title = $RigTitle
         author = $Author; factorio_version = '2.1'
-        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+        dependencies = @('base >= 2.1.24', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $Control -Encoding utf8
     # A PROBE THAT ASKS A QUESTION ABOUT PROTOTYPES NEEDS THE DATA STAGE (#390): whether Factorio
