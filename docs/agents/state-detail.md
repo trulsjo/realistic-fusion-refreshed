@@ -9,6 +9,10 @@ gained each check and by which ticket, what each check cannot see, and what was 
 self-test is being changed, and when a sentence of the State section is wanted with its date or its
 ticket. Working on a mod does not need it.
 
+**#874 moved more on 2026-11-15**, from the whole of `CLAUDE.md` and not the State section alone:
+the clauses that dated a check by its ticket, in *The clauses moved on 2026-11-15*, which says how
+it holds them. The paragraph below is about #591's five.
+
 **Each of the five passages below is as it stood in `CLAUDE.md` when it was moved**, word for word,
 so "this file" and "here" in one mean `CLAUDE.md`. Four of the five were whole paragraphs. Where the
 State section keeps a shorter paragraph in a passage's place, that paragraph is what is current and
@@ -156,6 +160,66 @@ three to move a spec field a density curve depends on, which is why `control.lua
 keyed on confinement time AND heating power; the plant-efficiency ladder is the odd one out there,
 reaching `step()` as an argument and never as a spec field (ADR 0020 decision 5). All three resolve
 through one rung walk since #424.
+
+## The clauses moved on 2026-11-15
+
+#874 moved the history that had grown back into `CLAUDE.md` after #591: 16 clauses dating a check
+by its ticket, "since #" and a number, on `main` at `cbadaca`. Each passage below is the whole of
+the sentences that held them, word for word as they stood there, with what `CLAUDE.md` says in
+their place named before it. `scripts/ship-check.ps1` section 20 now fails the file when it holds
+more such clauses than that section's floor.
+
+The bullet for `models/test_rf_blender.py` in the State section's list of gates, which now names
+the same checks with no ticket but #800's and #810:
+
+- **`models/test_rf_blender.py`** pins the arithmetic the rendered sheets are declared from,
+  #800's footprint-edge check, since #803 the kit's arithmetic, and since #825 the named streams
+  parts draw from and that no file under `models/` but `rf_blender.py` imports the global
+  `random`, and since #827 that neither rendered machine's build script names a part that draws
+  from a loop's counter, and since #805 a texture's provenance record, and since #851 that every
+  rendered manifest's measured shadow reach lies inside its margin, without Blender (#810).
+
+The end of the bullet for `scripts/ship-check.ps1` in the same list, which now names the four
+checks in one sentence, with section 20 added to it:
+
+`.rig-reports/` (#794). Since #812 it also fails a run during which a tracked file or the index
+changed, naming each path. Since #817 it also fails a commit hash cited in prose outside the
+record pages that `origin/main` does not reach, naming its file and line. Since #805 it also
+fails a file in a model directory that is not one a model is made of, a mesh included, and a
+texture without a CC0 record in `textures.json` that matches its bytes (ADR 0043). Since #852
+it also fails a rendered model whose vertex count or `.blend` size more than doubles against
+`origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:` trailer naming
+the machine.
+
+The end of the first sentence of the paragraph on `scripts/run-gates.ps1`, which now also says that
+the `pre-commit` hook refuses a commit during a run (#872):
+
+`scripts/check-*.ps1` it finds, one at a time, one line per gate, exiting non-zero and naming each
+gate that failed, and since #812 each tracked path that changed while it ran.
+
+The last two sentences of the paragraph on probes:
+
+Since #589 a `probe-*.ps1` that sources `scripts/factorio-lib.ps1` leaves what it last printed in
+the git-ignored `.probe-reports/`, in a file named for the probe and its arguments: a figure in a
+note is checked against that file. Since #794 each `scripts/check-*.ps1` keeps its last run's
+output in `.rig-reports/`.
+
+A sentence of the v1 target's bullet under *The rule that matters most here*, which now cites #767
+in parentheses:
+
+The mods declare 2.1 since #767, which is what the State section describes.
+
+A sentence of the bullet on citing code by symbol under Conventions, which now has no ticket in it:
+
+Since #303 `scripts/ship-check.ps1` gates **two** of the three shapes this takes — a path with a
+line number on it, and a backticked `:155` continuation inheriting a path named earlier on the same
+line — across every tracked `.md`, `.lua`, `.ps1`, `.py` and `.js`.
+
+The end of the first sentence of the paragraph on `.githooks/pre-commit` under Commit messages,
+which now also says the hook refuses a commit during a run:
+
+to a file git does not track, since #710 a link whose `#fragment` names no heading, or since #860
+a figure grouped in thousands split across a line end.
 
 ## Added since 2026-10-12
 
@@ -491,3 +555,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   now also fails on a marker left behind, and two halves are new: `commit-refused-during-run`, a
   stand-in committing in its scratch tree through `.githooks`, and `stale-marker-ignored`. An edit
   with no commit is not refused; #812's fingerprint stays the guard for it.
+- 2026-11-15, #874: `ship-check.ps1` section 20 counts the clauses in the root `CLAUDE.md` that
+  date a check by its ticket, "since #" and a number, case ignored, and fails when there are more
+  than its floor, 0, naming each with its line. Its `-SelfTest` halves
+  `since-clause-over-floor-caught` and `since-clause-at-floor-passes` prove it in both directions
+  on planted documents. The 16 clauses `CLAUDE.md` held at `cbadaca` are in *The clauses moved on
+  2026-11-15* above.
