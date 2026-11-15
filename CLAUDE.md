@@ -54,8 +54,9 @@ about whether a change is safe. What each proves, in a line:
   of, a mesh included, and a texture without a CC0 record in `textures.json` that matches its bytes
   (ADR 0043); a rendered model whose vertex count or `.blend` size more than doubles against
   `origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:` trailer naming
-  the machine; and this file, when more of its clauses open with "since" and a ticket than the floor
-  the script holds, because that history is `docs/agents/state-detail.md`'s.
+  the machine; and this file, when it holds more clauses that date something with "since" and a
+  ticket, wherever they stand, than the floor the script holds, because that history is
+  `docs/agents/state-detail.md`'s.
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
