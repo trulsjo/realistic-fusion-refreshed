@@ -36,7 +36,8 @@ on 2.1.23 keeps its version. A record made on that machine from 2026-10-29 to 20
 the author date `git blame` gives each line at `74c1850`, every line of a tracked file that names
 2.1.23 was last written on 2026-10-27 or before, or on 2026-11-15 for #869; no line added by a
 commit of the window names a version of 2.1, whether the window is read by committer date (127
-commits) or by author date (123), the only matches being model coordinates such as `2.1, -0.85`;
+commits) or by author date (123), the only matches being model coordinates such as `2.1, -0.85`
+and, by committer date alone, figures in a table such as `72.1`;
 and outside this amendment no date in the window stands within six lines of a 2.1.23
 (*Measured*). Four files that name 2.1.23 changed in the
 window, `docs/research/density-figures.md`, `docs/agents/state-detail.md`,
