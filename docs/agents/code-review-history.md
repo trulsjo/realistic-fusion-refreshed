@@ -463,3 +463,18 @@ One line for each, newest last. The passages above are not edited.
   raised it. Truls decided in #871's triage that #870's "one-off, no rule" grade is revisited, that
   the rule lives in the second rule and that the pre-PR brief points at it, restating none of its
   reasons. The pre-PR brief has that pointer, with the gitlink as its condition. No gate reads it.
+- **2026-11-15, #878: when the plugin pass is over, the session removes each clean worktree its
+  own isolated spawns made, or that refused one of them, and every `worktree-agent-*` branch with
+  no commit off `origin/main`, earlier sessions' included.** On #876 four isolated worktrees, a
+  fifth locked by the session's own process, and six older branches were left, and Truls had them
+  removed by hand. Truls decided in #878's triage that a worktree locked by the session's own
+  process is unlocked and removed, and that the branch sweep takes earlier sessions' branches. In
+  the session that implemented it, on #881, after its plugin pass found the sweep could take a
+  live helper's checkout, he narrowed the worktrees to the pass's own; the comment on #878 records
+  it. `plugin-pass.md`'s isolation item states it and step 4 of `/plugin-pass` carries it out. No
+  gate reads it.
+- **2026-11-15, #879: the #716 paragraph says its history line is written after the plugin
+  pass's fixes.** On #876 the plugin pass's verifier read that paragraph alone and took the line as
+  due before them; the words that place the reading were #663's, in the paragraph before. Truls
+  decided in #879's triage that the timing goes in the #716 paragraph alone, and that this page's
+  head is unchanged. No gate reads it.
