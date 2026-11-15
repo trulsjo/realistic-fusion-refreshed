@@ -37,8 +37,8 @@ git branch -D plugin-pass-<n>
 ```
 
 Elsewhere spawn each with `isolation: "worktree"`. Where herdr's command fails or a hook refuses
-the isolated spawn, do not go round it, and do not run `git worktree` yourself: ask the user to
-make one worktree for the pass, outside the repository, and to remove it after step 4:
+the isolated spawn, do not go round it, and make no worktree yourself: ask the user to make one
+worktree for the pass, outside the repository, and to remove it after step 4:
 
 ```
 ! git worktree add --detach "<scratch>/plugin-pass-<n>" <hash>
