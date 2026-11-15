@@ -181,8 +181,8 @@ it. They are outside the repository, so a worktree does not lack them."
    `git reflog -20`: the pull request's body says whether it shows a checkout since step 2.
 
    **Then remove what this pass's isolated spawns left** (#878), in the session's checkout. Its
-   worktrees are the one each reviewer's and the verifier's completion notice names as its
-   `worktreePath`, and one that a refusal of this pass's isolated spawn names. Each line runs
+   worktrees are the one each isolated spawn's completion notice names as its `worktreePath`, and
+   one that a refusal of this pass's isolated spawn names. Each line runs
    unchanged in Git Bash and in PowerShell but the last, which is PowerShell's:
 
    ```
