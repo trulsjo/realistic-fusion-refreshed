@@ -54,7 +54,14 @@ pass.
      `git diff --name-only --no-renames origin/main...HEAD` prints ends in `.md`, runs
      `scripts/ship-check.ps1` alone however many tickets it combines (#618).
 
-   Done when every figure or pass the branch claims has its output in a file.
+   **Either branch also saves the output of every command a ticket's acceptance criteria name**
+   (#880), for each ticket the branch resolves. Read the criteria in the issue and in its triage
+   brief, which the *Read an issue* command of `docs/agents/issue-tracker.md` fetches together. A
+   gate's `-SelfTest` that a criterion names is one of them. A criterion that names no command adds
+   nothing here.
+
+   Done when every figure or pass the branch claims, and every command a ticket's acceptance
+   criteria name, has its output in a file.
 
 3. **Spawn one fresh reviewer** with the Agent tool: `general-purpose`, never a fork, since a fork
    has already read the author's reasoning. Give it a `name` so step 4 can reach it, and a
