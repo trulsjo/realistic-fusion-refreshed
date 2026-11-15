@@ -397,8 +397,9 @@ worktree sweep to the pass's own worktrees the same day:
   `claude.exe`. Whether a worktree is locked while its agent runs was not measured, so a clean,
   unlocked tree is not shown to be a finished one (*Inferred*, from those two readings).
 - **Each isolated reviewer's completion notice named its worktree as `worktreePath`**, under
-  `.claude/worktrees/agent-<id>`, and the refusal named the path it refused. The pass's own
-  worktrees can be listed from those alone.
+  `.claude/worktrees/agent-<id>`, and the refusal named the path it refused. The pass's verifier
+  ran without isolation, so no verifier's notice was read; that it carries the same field, from
+  the same tool, is *Inferred*.
 
 ### What the verdict of 2026-10-07 rested on (#593)
 
