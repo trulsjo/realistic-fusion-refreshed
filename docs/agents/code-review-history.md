@@ -454,3 +454,12 @@ One line for each, newest last. The passages above are not edited.
   pre-PR reviewer's own report.** On #815 the session inferred the class, and the reviewer showed
   it false. Truls approved the wording in the session that implemented it; the comment on #820
   records it. The fourth rule says so, and step 7 of `/plugin-pass` points at it. No gate reads it.
+- **2026-11-15, #871: on a branch that moves the tools pin, a claim about what a tool can or
+  cannot do is checked against the submodule at the new pin as well as against `tools/` and
+  `scripts/`.** A branch moves the pin when its diff changes the `vendor/grado-factorio-tools`
+  gitlink, and the submodule's own diff between the two commits shows what moved. On #870 the
+  pre-PR review's confirmation passed a reason checked against this repository's `tools/rewrap.py`
+  alone, which the new pin's `markdown-rewrap.ps1` made false, and the plugin pass's reviewer 4
+  raised it. Truls decided in #871's triage that #870's "one-off, no rule" grade is revisited, that
+  the rule lives in the second rule and that the pre-PR brief points at it, restating none of its
+  reasons. The pre-PR brief has that pointer, with the gitlink as its condition. No gate reads it.
