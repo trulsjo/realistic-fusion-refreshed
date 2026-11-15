@@ -58,6 +58,12 @@ make one worktree for the pass, outside the repository, and to remove it after s
 `<what it lacks>` is "It has no submodule contents and no git-ignored file. Read one of those
 from `<this session's checkout>` by its full path, and run no command there."
 
+`<scratch>`, here and in the commands above, is the session's scratchpad directory, outside the
+repository. `<files>` in the two briefs below is the subagent's own directory under it (#877):
+`<scratch>/plugin-pass-<n>-files/reviewer-<k>/` for reviewer `<k>`, and
+`<scratch>/plugin-pass-<n>-files/verifier/` for the verifier. It is in no worktree in any of the
+three cases, the user's at `<scratch>/plugin-pass-<n>` included.
+
 `<api>`, in both briefs, is this (#793): "A claim about a Factorio API class, method, parameter
 or attribute is checked in the game's own reference, `runtime-api.json` and
 `prototype-api.json` in the `doc-html` directory of the install, beside the `bin` that holds
@@ -106,7 +112,8 @@ it. They are outside the repository, so a worktree does not lack them."
    >
    > `<where>` You are read-only: edit and commit nothing. Run no `git checkout` but one named
    > above, and no `git switch`, `stash`, `reset` or `worktree`. Run no gate, leave nothing
-   > running in the background, and send no message to another agent.
+   > running in the background, and send no message to another agent. Scratch files go in
+   > `<files>`.
    >
    > Return a list of issues. For each: the file, the quoted words or code, what is wrong, the one
    > source that shows it, and why it was flagged. Leave out a pre-existing issue, a nitpick, and
@@ -155,7 +162,8 @@ it. They are outside the repository, so a worktree does not lack them."
    >
    > `<where>` You are read-only: edit and commit nothing. Run no `git checkout` but one named
    > above, and no `git switch`, `stash`, `reset` or `worktree`. Run no gate, leave nothing
-   > running in the background, and ask no other agent: send no message.
+   > running in the background, and ask no other agent: send no message. Scratch files go in
+   > `<files>`.
    >
    > A candidate about another mod's versions, dependencies or releases is checked against its
    > portal entry, `https://mods.factorio.com/api/mods/<name>/full`, and its line names the
