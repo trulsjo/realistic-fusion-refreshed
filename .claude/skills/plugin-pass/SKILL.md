@@ -190,7 +190,7 @@ it. They are outside the repository, so a worktree does not lack them."
    git -C "<path>" status --short              # prints nothing: the worktree is clean
    git worktree unlock "<path>"                # only where the lock names this session
    git worktree remove "<path>"
-   git branch --list "worktree-agent-*"
+   git branch --list "worktree-agent-*" --format="%(refname:short)"
    git rev-list --count origin/main..<branch>  # 0: it holds no commit off origin/main
    git branch -d <branch>
    $p = $PID; while ($p) { $q = Get-CimInstance Win32_Process -Filter "ProcessId=$p"; if (-not $q) { break }; "$p $($q.Name)"; $p = $q.ParentProcessId }
@@ -198,8 +198,8 @@ it. They are outside the repository, so a worktree does not lack them."
 
    Each of this pass's worktrees whose `status` prints nothing is removed, never with `--force`. A
    locked one is unlocked first where the lock names this session: its reason ends `(pid <p>)`,
-   and `<p>` is one of the processes the last line prints, which are the shell's and its
-   ancestors. Every other `.claude/worktrees/agent-*` worktree is left, clean or not (Truls,
+   and `<p>` is the first `claude.exe` the last line prints, which lists the shell and then its
+   ancestors, nearest first. Every other `.claude/worktrees/agent-*` worktree is left, clean or not (Truls,
    2026-11-15, in #881). Then every `worktree-agent-*` branch whose count is `0` is deleted with
    `-d`, never `-D`, earlier sessions' included; one checked out in a worktree left above is
    refused by git and left with it. A worktree of the pass's with changes, a lock that names any
