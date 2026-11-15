@@ -34,9 +34,11 @@ on 2.1.23 keeps its version. A record made on that machine from 2026-10-29 to 20
 [#875](https://github.com/trulsjo/realistic-fusion-refreshed/issues/875) listed those records on
 2026-11-15 and found none, so none is marked (*Inferred*, from a search that found nothing). By
 the author date `git blame` gives each line at `74c1850`, every line of a tracked file that names
-2.1.23 was last written on 2026-10-27 or before, or on 2026-11-15 for #869; no line that a commit
-of the window added names a version of 2.1; and outside this amendment no date in the window
-stands within six lines of a 2.1.23 (*Measured*). Four files that name 2.1.23 changed in the
+2.1.23 was last written on 2026-10-27 or before, or on 2026-11-15 for #869; no line added by a
+commit of the window names a version of 2.1, whether the window is read by committer date (127
+commits) or by author date (123), the only matches being model coordinates such as `2.1, -0.85`;
+and outside this amendment no date in the window stands within six lines of a 2.1.23
+(*Measured*). Four files that name 2.1.23 changed in the
 window, `docs/research/density-figures.md`, `docs/agents/state-detail.md`,
 `docs/agents/review-figures.md` and `realistic-fusion-refreshed/prototypes/entities.lua`, and
 none of what the window added to them takes its version from an older line: the density note's
