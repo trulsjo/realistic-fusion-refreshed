@@ -163,11 +163,12 @@ through one rung walk since #424.
 
 ## The clauses moved on 2026-11-15
 
-#874 moved the history that had grown back into `CLAUDE.md` after #591: 16 clauses dating a check
-by its ticket, "since #" and a number, on `main` at `cbadaca`. Each passage below is the whole of
-the sentences that held them, word for word as they stood there, with what `CLAUDE.md` says in
-their place named before it. `scripts/ship-check.ps1` section 20 now fails the file when it holds
-more such clauses than that section's floor.
+#874 moved the history that had grown back into `CLAUDE.md` after #591: 16 clauses dating
+something by its ticket, "since #" and a number, on `main` at `cbadaca`, most of them a gate's
+check. Each passage below is the sentence or the part of one that held them, word for word as it
+stood there, with where it stood and what `CLAUDE.md` says in its place named before it.
+`scripts/ship-check.ps1` section 20 now fails the file when it holds more such clauses than that
+section's floor.
 
 The bullet for `models/test_rf_blender.py` in the State section's list of gates, which now names
 the same checks with no ticket but #800's and #810:
@@ -556,7 +557,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   stand-in committing in its scratch tree through `.githooks`, and `stale-marker-ignored`. An edit
   with no commit is not refused; #812's fingerprint stays the guard for it.
 - 2026-11-15, #874: `ship-check.ps1` section 20 counts the clauses in the root `CLAUDE.md` that
-  date a check by its ticket, "since #" and a number, case ignored, and fails when there are more
+  date something by its ticket, "since #" and a number, case ignored, and fails when there are more
   than its floor, 0, naming each with its line. Its `-SelfTest` halves
   `since-clause-over-floor-caught` and `since-clause-at-floor-passes` prove it in both directions
   on planted documents. The 16 clauses `CLAUDE.md` held at `cbadaca` are in *The clauses moved on
