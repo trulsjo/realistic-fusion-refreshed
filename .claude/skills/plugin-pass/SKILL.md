@@ -147,7 +147,7 @@ it. They are outside the repository, so a worktree does not lack them."
    noticed and not raised is a mention and goes to no verifier. Two reviewers raising the same
    fault is one candidate. Letter them A, B, C.
 
-   **No candidate, no verifier**: do the last two lines of step 4, then go to step 5.
+   **No candidate, no verifier**: do what step 4 does after its done-when, then go to step 5.
 
 4. **Spawn one verifier for all of them**, on Sonnet. Its brief:
 
@@ -179,6 +179,28 @@ it. They are outside the repository, so a worktree does not lack them."
    every candidate has a verdict. Then remove the worktree, or have it removed, if one
    was made, and read
    `git reflog -20`: the pull request's body says whether it shows a checkout since step 2.
+
+   **Then remove what the isolated spawns left** (#878), in the session's checkout. Each line runs
+   unchanged in Git Bash and in PowerShell but the last, which is PowerShell's:
+
+   ```
+   git worktree list --porcelain               # each .claude/worktrees/agent-* path, and its lock
+   git -C "<path>" status --short              # prints nothing: the worktree is clean
+   git worktree unlock "<path>"                # only where the lock names this session
+   git worktree remove "<path>"
+   git branch --list "worktree-agent-*"
+   git rev-list --count origin/main..<branch>  # 0: it holds no commit off origin/main
+   git branch -d <branch>
+   $p = $PID; while ($p) { $q = Get-CimInstance Win32_Process -Filter "ProcessId=$p"; if (-not $q) { break }; "$p $($q.Name)"; $p = $q.ParentProcessId }
+   ```
+
+   Each `.claude/worktrees/agent-*` worktree whose `status` prints nothing is removed, never with
+   `--force`. A locked one is unlocked first where the lock names this session: its reason ends
+   `(pid <p>)`, and `<p>` is one of the processes the last line prints, which are the shell's and
+   its ancestors. Then every `worktree-agent-*` branch whose count is `0` is deleted with `-d`,
+   never `-D`, earlier sessions' included. A worktree with changes, a lock that names any other
+   process, a branch with a commit off `origin/main`, and a branch `-d` refuses are left, and the
+   pull request's body names each one left and why.
 
 5. **Check eligibility again** with step 1's second line, and **post two comments** with
    `gh pr comment <n> --body-file`. The first:

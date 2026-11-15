@@ -1,13 +1,13 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but nineteen was part of that file and is as it stood there, so "this file" in one is
+but twenty was part of that file and is as it stood there, so "this file" in one is
 `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 but one of those were moved on 2026-10-10 (#672), and the one on what the threshold dropped on
-2026-10-11 (#626). The nineteen written for this page are the ones for #651, #653, #670, #671, #720,
-#753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820 and #879, the ones on the verdicts of
-2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the one on what the scores
-decided. What each pull request's two passes found and cost is on a third page,
+2026-10-11 (#626). The twenty written for this page are the ones for #651, #653, #670, #671, #720,
+#753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820, #878 and #879, the ones on the
+verdicts of 2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the one on what
+the scores decided. What each pull request's two passes found and cost is on a third page,
 [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
@@ -369,6 +369,22 @@ not read again.
   checked both. By #820's account the reviewer's first report listed "The tree-size figures: 556
   tracked files, 11.8 MB" as checked and holding, measured with the session's own `du`. `085cf8a`
   corrected the class.
+
+### What the isolated spawns left on #876 (#878)
+
+Under the item on the Agent tool's isolation, that the session removes those checkouts. By #878's
+account, from the retrospective on #876 of 2026-11-15, and not re-read here.
+
+- **Four worktrees stayed after the pass**, the ones isolation made for reviewers 1 to 4, each
+  detached at the head, `4fc00db`, with its `worktree-agent-*` branch at `cbadaca`.
+  `git status --short` printed nothing in any of them.
+- **A fifth was locked by the session's own process**, "claude agent agent-aac9523a95c0cf96b (pid
+  136544)", and had refused reviewer 5's isolated spawn because git could not be run to resolve
+  it. Why was not found.
+- **Six more `worktree-agent-*` branches from earlier sessions stood at `fccbcc9`**, with no
+  worktree and no commit off `origin/main`.
+- **Step 4 of `/plugin-pass` removed only herdr's worktree or the user's**, and nothing removed the
+  ones isolation made. Truls had all of them removed by hand.
 
 ### What the verdict of 2026-10-07 rested on (#593)
 

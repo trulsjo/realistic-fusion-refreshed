@@ -45,7 +45,10 @@ is for one told not to, and it adds only where such a pass runs.
   "worktree"`**, which gives it a checkout of its own. That checkout need not start at the pull
   request's head, so the brief gives the head's full hash, from `gh pr view <n> --json headRefOid`,
   and the subagent's first command is `git checkout --detach <hash>`, there. The session checks
-  before it spawns that the hash is its own `git rev-parse HEAD`.
+  before it spawns that the hash is its own `git rev-parse HEAD`. When the verifier has answered,
+  or the reviewers have and raised nothing, the session removes each such checkout that is clean,
+  and deletes each `worktree-agent-*` branch that holds no commit off `origin/main` (#878); step 4
+  of `/plugin-pass` says how, and what it leaves.
 - **Where herdr's command fails, or a hook refuses the isolated spawn, the session does not go
   round it.** The user makes one worktree for the pass: the session asks for `! git worktree add
   --detach <dir> <hash>`, in a directory outside the repository, names it in each brief as the
