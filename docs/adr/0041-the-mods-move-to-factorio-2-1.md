@@ -32,13 +32,18 @@ An existing `/2.1.23/` link keeps its pin, as a `/2.0.77/` one kept its own, and
 on 2.1.23 keeps its version. A record made on that machine from 2026-10-29 to 2026-11-14 that says
 2.1.23 may have been made on 2.1.24 (*Inferred*, from the dates above).
 [#875](https://github.com/trulsjo/realistic-fusion-refreshed/issues/875) listed those records on
-2026-11-15 and found none, so none is marked. By the author date `git blame` gave it before this
-paragraph, every line of a tracked file that names 2.1.23 was last written on 2026-10-27 or
-before, or on 2026-11-15 for #869; no line that a commit of the window added names a version of
-2.1; and outside this amendment no date in the window stands within six lines of a 2.1.23
-(*Measured*). The Decision and the Consequences below are left as they were written, 2.1.23
-included: where they say a claim pins to 2.1.23 or a figure is re-measured on it, read 2.1.24 from
-2026-11-15.
+2026-11-15 and found none, so none is marked (*Inferred*, from a search that found nothing). By
+the author date `git blame` gives each line at `74c1850`, every line of a tracked file that names
+2.1.23 was last written on 2026-10-27 or before, or on 2026-11-15 for #869; no line that a commit
+of the window added names a version of 2.1; and outside this amendment no date in the window
+stands within six lines of a 2.1.23 (*Measured*). Four files that name 2.1.23 changed in the
+window, `docs/research/density-figures.md`, `docs/agents/state-detail.md`,
+`docs/agents/review-figures.md` and `realistic-fusion-refreshed/prototypes/entities.lua`, and
+none of what the window added to them takes its version from an older line: the density note's
+2.1.23 figures were measured on 2026-10-27, and its sections of the window measure only this
+mod's sheets (*Read from source*, at `74c1850`). The Decision and the Consequences below are left
+as they were written, 2.1.23 included: where they say a claim pins to 2.1.23 or a figure is
+re-measured on it, read 2.1.24 from 2026-11-15.
 
 ## Context
 
