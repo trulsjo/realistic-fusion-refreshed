@@ -372,8 +372,10 @@ not read again.
 
 ### What the isolated spawns left on #876 (#878)
 
-Under the item on the Agent tool's isolation, that the session removes those checkouts. By #878's
-account, from the retrospective on #876 of 2026-11-15, and not re-read here.
+Under the item on the Agent tool's isolation, that the session removes those checkouts. The first
+three items and the last sentence of the fourth are by #878's account, from the retrospective on
+#876 of 2026-11-15, and not re-read here. The rest of the fourth was read from step 4 of
+`/plugin-pass` at `74c1850`.
 
 - **Four worktrees stayed after the pass**, the ones isolation made for reviewers 1 to 4, each
   detached at the head, `4fc00db`, with its `worktree-agent-*` branch at `cbadaca`.

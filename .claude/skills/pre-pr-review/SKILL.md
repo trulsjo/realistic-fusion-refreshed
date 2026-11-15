@@ -1,6 +1,6 @@
 ---
 name: pre-pr-review
-description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main, docs/agents/code-review.md, and the gate result or the probes' raw output; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
+description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main, docs/agents/code-review.md, and the gate result or the probes' raw output, with the output of each command the tickets' acceptance criteria name; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
 ---
 
 # /pre-pr-review
@@ -73,7 +73,8 @@ pass.
    > You are the pre-PR reviewer of a branch of this repository. Read `docs/agents/code-review.md`
    > in full first; its second rule, *Review the prose, not only the code*, binds you. Then review
    > `<scratch>/branch.diff` (`<the diff against origin/main | the diff of <range>>`) against
-   > `<evidence files>`, which hold `<the probes' raw output | the gate results>`.
+   > `<evidence files>`, which hold `<the probes' raw output | the gate results>`, and the output
+   > of each command a ticket's acceptance criteria name.
    >
    > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
    > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria. If the
