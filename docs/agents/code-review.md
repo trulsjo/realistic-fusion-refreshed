@@ -262,6 +262,20 @@ reviewer or a verifier that judges such a claim reads that entry and names the r
 a fix that rewrites one reads it first. [What the verifier judged on #779 from the
 tree](code-review-evidence.md#four-gaps-on-779-780-to-783) is on the evidence page.
 
+**On a branch that moves the tools pin, a claim about what a tool can or cannot do is checked
+against the submodule at the new pin** (Truls, 2026-11-15, #871). A branch moves the pin when its
+diff changes the `vendor/grado-factorio-tools` gitlink. On one, such a claim, about this
+repository's tools or the submodule's, is held against the submodule at the new pin as well as
+against `tools/` and `scripts/`, because it is the one kind of branch where what the tools can do
+changes under the prose. What moved is `git -C vendor/grado-factorio-tools diff --stat <old>
+<new>`, the two commits being the gitlink's before and after. This binds the author and the
+reviewer both. On #870 the pre-PR review's confirmation passed a sentence saying a split figure
+outside the wrapped files is mended by hand because `tools/rewrap.py` refuses the file: "That last
+part agrees with the same file's #717 sentence". It had checked the reason against this
+repository's tool, and the new pin's `markdown-rewrap.ps1` takes any Markdown file. The plugin
+pass's reviewer 4 raised it, and #870's row in the first table of
+[`review-figures.md`](review-figures.md) records the miss, graded then as one-off, no rule.
+
 **A change that adds or rewords a review rule applies it to the case that prompted it, before its
 first commit** (2026-10-15, #714). The session applies the rule to that case across the tracked
 files, by the rule's own search where it gives one, and reads each hit against the new wording; the

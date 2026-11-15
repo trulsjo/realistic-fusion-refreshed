@@ -96,6 +96,9 @@ pass.
    > installed game's, so they hold the version the gates run against; `application_version`
    > names it.
    >
+   > If the diff changes the `vendor/grado-factorio-tools` gitlink, it moves the tools pin: check
+   > each claim in it about what a tool can or cannot do as the second rule says for such a branch.
+   >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
    > files go in `<scratch>/reviewer/`.
