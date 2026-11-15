@@ -43,6 +43,12 @@
     is not in the fingerprint. On 2026-10-27 one took about 2 s with the files in the disk cache,
     so about a minute over the 26 gates, and 25 s in a fresh clone.
 
+    A COMMIT DURING A RUN IS REFUSED (#872), where .githooks/pre-commit is installed. The run
+    writes a git-ignored .gates-running at the root holding its process ID and start time, and
+    removes it in a finally; the hook refuses a commit while that names a live process, and
+    ignores one left by a run stopped from outside. An edit with no commit is not refused, and
+    the fingerprint above stays the guard against it.
+
     THE SIX TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
     any gate: one is a hook that judges every Bash tool call on a machine that registers it, and
     five are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
@@ -95,7 +101,12 @@
     first. Since #812 the stand-ins write to a scratch git repository watched in place of this
     one: `tree-change-fails` has a passing stand-in edit a tracked file there and requires a
     non-zero exit naming the file and that stand-in, and `ignored-write-clean` has one write only
-    a git-ignored file and requires exit 0.
+    a git-ignored file and requires exit 0. Since #872 every stand-in run also requires that it
+    left no .gates-running behind, a failing one's included; `commit-refused-during-run` has a
+    stand-in commit in its scratch tree through this repository's .githooks and requires
+    pre-commit to refuse it naming the process the marker holds; and `stale-marker-ignored`
+    plants a marker naming a process that has exited and requires the commit to go through, the
+    hook saying the marker was stale.
 
 .EXAMPLE
     pwsh -File scripts/run-gates.ps1
@@ -163,12 +174,26 @@ if ($SelfTest) {
     function Invoke-StandInRun([string] $Exits) {
         <#  This script as its own process over stand-in gates and a scratch tree of its own, with
             what it printed returned and its exit code left in $LASTEXITCODE.  #>
-        $out  = & $pwsh -NoProfile -File $PSCommandPath -StandInExits $Exits -StandInTree (New-ScratchGitTree -Parent $temp) 2>&1
+        $tree = New-ScratchGitTree -Parent $temp
+        $out  = & $pwsh -NoProfile -File $PSCommandPath -StandInExits $Exits -StandInTree $tree 2>&1
         $code = $LASTEXITCODE
+        # Every way out, a failing run's included, takes the run's marker with it (#872).
+        if (Test-Path -LiteralPath "$tree/.gates-running") {
+            throw "a stand-in run over '$Exits' exited $code and left its .gates-running behind:`n$($out | Out-String)"
+        }
         # A failing run keeps its logs, which a real one should; this one's are the self-test's.
         $logs = @($out | ForEach-Object { "$_" } | Where-Object { $_ -match 'Logs: (.+)$' } | ForEach-Object { $Matches[1].Trim() })[0]
         if ($logs -like '*rf-gates-*') { Remove-Item -Recurse -Force $logs -ErrorAction SilentlyContinue }
         $global:LASTEXITCODE = $code
+        return $out
+    }
+
+    function Invoke-HookedCommit([string] $Tree) {
+        <#  A commit in a scratch tree through this repository's hooks, with what git and the
+            hooks printed returned and git's exit code left in $LASTEXITCODE.  #>
+        $out = & git -C $Tree -c "core.hooksPath=$repoRoot/.githooks" -c user.name=stand-in `
+            -c user.email=stand-in@example.invalid commit -q -m stand-in 2>&1
+        $global:LASTEXITCODE = $LASTEXITCODE
         return $out
     }
 
@@ -225,6 +250,27 @@ if ($SelfTest) {
             if ($LASTEXITCODE -ne 0) { throw "the script exited $LASTEXITCODE when only a git-ignored file was written:`n$($out | Out-String)" }
             'a run that writes only a git-ignored file exits 0, as it did before the tree was watched.'
         } }
+        @{ Name = 'commit-refused-during-run'; Body = {
+            # The second stand-in commits in the scratch tree through this repository's hooks, and
+            # exits 0 only when pre-commit refuses it naming the process the run's marker holds.
+            $out = Invoke-StandInRun '0,commit,0'
+            if ($LASTEXITCODE -ne 0) { throw "a commit during a run was not refused naming the run:`n$($out | Out-String)" }
+            'a commit attempted during a live run is refused by pre-commit, naming the run.'
+        } }
+        @{ Name = 'stale-marker-ignored'; Body = {
+            # A marker naming a process that has exited, as a run stopped from outside leaves one.
+            $gone = Start-Process $pwsh -ArgumentList '-NoProfile', '-Command', 'exit 0' -PassThru -WindowStyle Hidden
+            $gone.WaitForExit()
+            $tree = New-ScratchGitTree -Parent $temp
+            "$($gone.Id)", (Get-Date).ToUniversalTime().ToString('o') | Set-Content -LiteralPath "$tree/.gates-running"
+            $out  = Invoke-HookedCommit -Tree $tree
+            $code = $LASTEXITCODE
+            if ($code -ne 0) { throw "a commit with a stale .gates-running exited ${code}:`n$($out | Out-String)" }
+            if (-not (@($out | ForEach-Object { "$_" }) -match "names process $($gone.Id),.*stale")) {
+                throw "a commit with a stale .gates-running went through without saying the marker was stale:`n$($out | Out-String)"
+            }
+            'a commit with a stale .gates-running goes through, saying the marker was stale.'
+        } }
     ) } finally { Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue }
     Write-Host '-SelfTest: PASS' -ForegroundColor Green
     exit 0
@@ -259,6 +305,12 @@ if ($StandInExits) {
         $command = switch ($exit) {
             'edit'    { "Add-Content -LiteralPath '$StandInTree/tracked.txt' -Value edited; exit 0" }
             'ignored' { "Add-Content -LiteralPath '$StandInTree/ignored.txt' -Value written; exit 0" }
+            # Exits 0 only when pre-commit refuses the commit, naming the process in the marker.
+            'commit'  { "`$m = @(Get-Content -LiteralPath '$StandInTree/.gates-running'); " +
+                        "`$o = git -C '$StandInTree' -c 'core.hooksPath=$repoRoot/.githooks' -c user.name=stand-in " +
+                        "-c user.email=stand-in@example.invalid commit -q -m stand-in 2>&1 | Out-String; " +
+                        "if (`$LASTEXITCODE -eq 0) { 'the commit went through'; exit 1 }; " +
+                        "if (`$o -notmatch ('process ' + `$m[0] + ', started')) { `$o; exit 1 }; exit 0" }
             default   { "exit $([int]$exit)" }
         }
         @{ Name = "stand-in-$i"; Exe = $pwsh; Arguments = @('-NoProfile', '-Command', $command) }
@@ -267,34 +319,44 @@ if ($StandInExits) {
 $gates = @($gates | Where-Object { $_.Name -like $Only })
 if ($gates.Count -eq 0) { throw "-Only '$Only' matches no gate." }
 
-Write-Host "Running $($gates.Count) gate(s), one at a time. Logs: $temp"
-$watch = [Diagnostics.Stopwatch]::StartNew()
-# The tree as the first gate finds it, compared after each gate until it first differs (#812).
-$treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
-$treeSeen   = $null
-$watchTree  = {
-    param([string] $Gate)
-    if ($script:treeSeen) { return }
-    $changed = @(Get-TrackedTreeChanges -Before $treeBefore -After (Get-TrackedTreeFingerprint -Root $treeRoot))
-    if ($changed) { $script:treeSeen = @{ Gate = $Gate; Paths = $changed } }
-}
-Push-Location $repoRoot
-try { $failed = Invoke-Gates -Gates $gates -LogDirectory $temp -AfterEach $watchTree } finally { Pop-Location }
-$took = '{0:hh\:mm\:ss}' -f $watch.Elapsed
-# Once more at the end, so a change undone before the end still counts and one made after the
-# first is still named.
-$moved = @(@($treeSeen.Paths) + @(Get-TrackedTreeChanges -Before $treeBefore -After (Get-TrackedTreeFingerprint -Root $treeRoot)) |
-    Where-Object { $_ } | Sort-Object -Unique)
+# A live run, for .githooks/pre-commit to refuse a commit against (#872): this process's ID and
+# start time, in the form .githooks/gates-running.ps1 reads. Git-ignored, so not in the #812
+# fingerprint, and removed on every way out a finally sees; a run stopped from outside leaves it,
+# which is why the hook ignores one whose process is gone.
+$marker = Join-Path $treeRoot '.gates-running'
+"$PID", (Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o') | Set-Content -LiteralPath $marker
+try {
+    Write-Host "Running $($gates.Count) gate(s), one at a time. Logs: $temp"
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    # The tree as the first gate finds it, compared after each gate until it first differs (#812).
+    $treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
+    $treeSeen   = $null
+    $watchTree  = {
+        param([string] $Gate)
+        if ($script:treeSeen) { return }
+        $changed = @(Get-TrackedTreeChanges -Before $treeBefore -After (Get-TrackedTreeFingerprint -Root $treeRoot))
+        if ($changed) { $script:treeSeen = @{ Gate = $Gate; Paths = $changed } }
+    }
+    Push-Location $repoRoot
+    try { $failed = Invoke-Gates -Gates $gates -LogDirectory $temp -AfterEach $watchTree } finally { Pop-Location }
+    $took = '{0:hh\:mm\:ss}' -f $watch.Elapsed
+    # Once more at the end, so a change undone before the end still counts and one made after the
+    # first is still named.
+    $moved = @(@($treeSeen.Paths) + @(Get-TrackedTreeChanges -Before $treeBefore -After (Get-TrackedTreeFingerprint -Root $treeRoot)) |
+        Where-Object { $_ } | Sort-Object -Unique)
 
-Write-Host ''
-if (@($failed).Count -gt 0) {
-    Write-Host "FAIL - $(@($failed).Count) of $($gates.Count) gate(s) failed in ${took}: $($failed -join ', ')" -ForegroundColor Red
+    Write-Host ''
+    if (@($failed).Count -gt 0) {
+        Write-Host "FAIL - $(@($failed).Count) of $($gates.Count) gate(s) failed in ${took}: $($failed -join ', ')" -ForegroundColor Red
+    }
+    if ($moved) {
+        $when = if ($treeSeen) { "first seen after $($treeSeen.Gate)" } else { 'seen at the end of the run' }
+        Write-Host "FAIL - $($moved.Count) tracked path(s) changed during the run, $when, so its result describes no one tree:" -ForegroundColor Red
+        foreach ($path in $moved) { Write-Host "         $path" }
+    }
+    if (@($failed).Count -gt 0 -or $moved) { exit 1 }
+    Remove-Item -Recurse -Force $temp
+    Write-Host "OK - all $($gates.Count) gate(s) passed in $took."
+} finally {
+    Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
 }
-if ($moved) {
-    $when = if ($treeSeen) { "first seen after $($treeSeen.Gate)" } else { 'seen at the end of the run' }
-    Write-Host "FAIL - $($moved.Count) tracked path(s) changed during the run, $when, so its result describes no one tree:" -ForegroundColor Red
-    foreach ($path in $moved) { Write-Host "         $path" }
-}
-if (@($failed).Count -gt 0 -or $moved) { exit 1 }
-Remove-Item -Recurse -Force $temp
-Write-Host "OK - all $($gates.Count) gate(s) passed in $took."

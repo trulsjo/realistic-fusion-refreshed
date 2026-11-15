@@ -44,6 +44,9 @@ __pycache__/
 .probe-reports/
 # What each scripts/check-*.ps1 rig last printed, the same way (#794).
 .rig-reports/
+# A live scripts/run-gates.ps1 run, which .githooks/pre-commit refuses a commit against (#872).
+# Ignored, so it is not in the fingerprint that run takes of the tree (#812).
+/.gates-running
 
 # Blender's save-over backups beside models/<machine>/<machine>.blend; the model is the .blend
 *.blend1

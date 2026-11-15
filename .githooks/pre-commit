@@ -1,19 +1,25 @@
 #!/bin/sh
-# Runs the shared Markdown check, vendor/grado-factorio-tools/scripts/markdown-check.ps1, on the
-# staged Markdown as it is staged (#658). What it reads and what it cannot see are in that
-# script's header; this is only the wiring. scripts/ship-check.ps1 runs the same check over every
-# tracked Markdown file, which is where a clone without this hook is held to it.
+# Refuses a commit while a scripts/run-gates.ps1 run is live (#872), through gates-running.ps1
+# beside this file, whose header says how a run is told from a stale marker. Then runs the shared
+# Markdown check, vendor/grado-factorio-tools/scripts/markdown-check.ps1, on the staged Markdown
+# as it is staged (#658). What it reads and what it cannot see are in that script's header; this
+# is only the wiring. scripts/ship-check.ps1 runs the same check over every tracked Markdown file,
+# which is where a clone without this hook is held to it.
 #
 # INSTALL: the same two steps as commit-msg, which has them.
 #
-# A missing pwsh or an uninitialised submodule says the Markdown was NOT checked and lets the
-# commit through, the posture commit-msg takes and for its reasons.
+# A missing pwsh says neither was checked and lets the commit through, and an uninitialised
+# submodule says the Markdown was NOT checked and lets it through, the posture commit-msg takes
+# and for its reasons.
 if ! command -v pwsh >/dev/null 2>&1; then
-    echo "pre-commit: pwsh not found, so the staged Markdown was NOT checked." >&2
+    echo "pre-commit: pwsh not found, so neither a live run-gates.ps1 run nor the staged Markdown was checked." >&2
     exit 0
 fi
 
-CHECK="$(git rev-parse --show-toplevel)/vendor/grado-factorio-tools/scripts/markdown-check.ps1"
+TOP="$(git rev-parse --show-toplevel)"
+pwsh -NoProfile -File "$(dirname "$0")/gates-running.ps1" -Root "$TOP" || exit 1
+
+CHECK="$TOP/vendor/grado-factorio-tools/scripts/markdown-check.ps1"
 if [ ! -f "$CHECK" ]; then
     echo "pre-commit: $CHECK not found, so the staged Markdown was NOT checked." >&2
     echo "pre-commit: run 'git submodule update --init' to wire up the shared check." >&2
