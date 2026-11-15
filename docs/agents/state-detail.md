@@ -483,3 +483,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-11-15, #869: every rig mod a `scripts/check-*.ps1` or `scripts/art-probe-lib.ps1` writes,
   and the canary mods of `load-check.ps1` and `name-check.ps1`, declare `base >= 2.1.24` where they
   declared 2.1.23, as the three mods do (ADR 0041's amendment). What each gate asserts is unchanged.
+- 2026-11-15, #872: `run-gates.ps1` writes a git-ignored `.gates-running` at the root of the tree
+  it watches, holding its process ID and start time, and removes it in a `finally`; the
+  `pre-commit` hook, through `.githooks/gates-running.ps1`, refuses a commit while it names a live
+  process and lets one through, saying so, when it is gone or its ID is another's. A run stopped
+  from outside skips its `finally` and leaves a stale marker. Every stand-in run of its `-SelfTest`
+  now also fails on a marker left behind, and two halves are new: `commit-refused-during-run`, a
+  stand-in committing in its scratch tree through `.githooks`, and `stale-marker-ignored`. An edit
+  with no commit is not refused; #812's fingerprint stays the guard for it.
