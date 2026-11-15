@@ -203,8 +203,9 @@ it. They are outside the repository, so a worktree does not lack them."
    2026-11-15, in #881). Then every `worktree-agent-*` branch whose count is `0` is deleted with
    `-d`, never `-D`, earlier sessions' included; one checked out in a worktree left above is
    refused by git and left with it. A worktree of the pass's with changes, a lock that names any
-   other process, a branch with a commit off `origin/main`, and a branch `-d` refuses are left,
-   and the pull request's body names each one left and why.
+   other process, every other `.claude/worktrees/agent-*` worktree, a branch with a commit off
+   `origin/main`, and a branch `-d` refuses are left, and the pull request's body names each one
+   left and why.
 
 5. **Check eligibility again** with step 1's second line, and **post two comments** with
    `gh pr comment <n> --body-file`. The first:
