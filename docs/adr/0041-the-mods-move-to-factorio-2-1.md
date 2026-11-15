@@ -41,8 +41,8 @@ window, `docs/research/density-figures.md`, `docs/agents/state-detail.md`,
 `docs/agents/review-figures.md` and `realistic-fusion-refreshed/prototypes/entities.lua`, and
 none of what the window added to them takes its version from an older line: the density note's
 2.1.23 figures were measured on 2026-10-27, and its sections of the window measure only this
-mod's sheets (*Read from source*, at `74c1850`). The Decision and the Consequences below are left
-as they were written, 2.1.23 included: where they say a claim pins to 2.1.23 or a figure is
+mod's sheets (*Inferred*, from each line the window added to them, read at `74c1850`). The
+Decision and the Consequences below are left as they were written, 2.1.23 included: where they say a claim pins to 2.1.23 or a figure is
 re-measured on it, read 2.1.24 from 2026-11-15.
 
 ## Context
