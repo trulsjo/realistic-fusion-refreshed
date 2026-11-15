@@ -391,8 +391,9 @@ three items and the last sentence of the fourth are by #878's account, from the 
 What #881's own pass showed, measured by its session on 2026-11-15, on which Truls narrowed the
 worktree sweep to the pass's own worktrees the same day:
 
-- **After reviewers 1 to 4 had reported, their four worktrees were clean and unlocked**, by
-  `git worktree list --porcelain`; only `agent-acfd72ccc2afe2859`, which had refused reviewer 5's
+- **After reviewers 1 to 4 had reported, their four worktrees were clean and unlocked**: clean by
+  `git -C <path> status --short`, which printed nothing in each, and unlocked by
+  `git worktree list --porcelain`. Only `agent-acfd72ccc2afe2859`, which had refused reviewer 5's
   spawn, was locked, by "claude agent agent-acfd72ccc2afe2859 (pid 216660)", the session's own
   `claude.exe`. Whether a worktree is locked while its agent runs was not measured, so a clean,
   unlocked tree is not shown to be a finished one (*Inferred*, from those two readings).
