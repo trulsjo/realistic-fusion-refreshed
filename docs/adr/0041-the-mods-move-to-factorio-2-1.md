@@ -16,6 +16,17 @@ line and keeps its scoping rule. **Moves [ADR 0003](0003-space-age-tolerated-not
 game** from 2.0 to 2.1 and leaves its Space Age decision alone. ADR 0026 and ADR 0003 also carry
 dated notes.
 
+**Amended 2026-11-15 by [#869](https://github.com/trulsjo/realistic-fusion-refreshed/issues/869):
+the floor is `base >= 2.1.24`, and new documentation and API claims pin to `/2.1.24/`.** Steam
+updated the development machine's Factorio to 2.1.24, found on 2026-11-14 during #860; its
+`Factorio.exe --version` printed `Version: 2.1.24 (build 87808, win64, steam)` on 2026-11-15
+(*Measured*), so 2.1.24 is the build the gates run on, and the floor is that build for the reason
+the Decision gives.
+Truls decided it in [#869's
+triage](https://github.com/trulsjo/realistic-fusion-refreshed/issues/869#issuecomment-6893892757).
+An existing `/2.1.23/` link keeps its pin, as a `/2.0.77/` one kept its own, and a figure measured
+on 2.1.23 keeps its version. The Decision below is left as it was written, 2.1.23 included.
+
 ## Context
 
 **ADR 0008's trigger has fired.** It deferred 2.1 to "when 2.1 is stable". On 2026-10-24

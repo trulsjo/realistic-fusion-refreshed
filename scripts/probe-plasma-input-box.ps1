@@ -243,17 +243,17 @@ New-Item -ItemType Directory -Path $rigDir, $preDir, $canaryDir -Force | Out-Nul
     name = $rigName; version = '0.0.1'; title = 'Plasma input-box probe'
     author = 'probe-plasma-input-box.ps1'; factorio_version = '2.1'
     # The canary is optional, so the rig's data-final-fixes runs after it and copies its box.
-    dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', $preName, "? $canaryName")
+    dependencies = @('base >= 2.1.24', 'realistic-fusion-refreshed', $preName, "? $canaryName")
 } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 @{
     name = $preName; version = '0.0.1'; title = 'Plasma input-box probe, the reading before the step'
     author = 'probe-plasma-input-box.ps1'; factorio_version = '2.1'
-    dependencies = @('base >= 2.1.23')
+    dependencies = @('base >= 2.1.24')
 } | ConvertTo-Json | Set-Content -Path (Join-Path $preDir 'info.json') -Encoding utf8
 @{
     name = $canaryName; version = '0.0.1'; title = 'Plasma input-box canary'
     author = 'probe-plasma-input-box.ps1'; factorio_version = '2.1'
-    dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed')
+    dependencies = @('base >= 2.1.24', 'realistic-fusion-refreshed')
 } | ConvertTo-Json | Set-Content -Path (Join-Path $canaryDir 'info.json') -Encoding utf8
 
 # THE CANARY: the one field the issue asks about, and nothing else. It asserts there was something

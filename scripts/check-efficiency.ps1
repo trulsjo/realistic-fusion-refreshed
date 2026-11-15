@@ -115,7 +115,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'Plant efficiency check'
         author = 'check-efficiency.ps1'; factorio_version = '2.1'
-        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+        dependencies = @('base >= 2.1.24', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $feed = Write-PlasmaFeed -RigDirectory $rigDir

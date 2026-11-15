@@ -184,7 +184,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'High-capacity generation check'
         author = 'check-hc.ps1'; factorio_version = '2.1'
-        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+        dependencies = @('base >= 2.1.24', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $lua = @'
@@ -879,7 +879,7 @@ function Write-Canary {
     @{
         name = $canaryName; version = '0.0.1'; title = 'High-capacity check canary'
         author = 'check-hc.ps1'; factorio_version = '2.1'
-        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed')
+        dependencies = @('base >= 2.1.24', 'realistic-fusion-refreshed')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $canaryDir 'info.json') -Encoding utf8
     $Lua | Set-Content -Path (Join-Path $canaryDir 'data-final-fixes.lua') -Encoding utf8
 }
