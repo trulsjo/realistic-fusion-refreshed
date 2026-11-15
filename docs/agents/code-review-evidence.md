@@ -1,11 +1,11 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but eighteen was part of that file and is as it stood there, so "this file" in one is
+but nineteen was part of that file and is as it stood there, so "this file" in one is
 `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 but one of those were moved on 2026-10-10 (#672), and the one on what the threshold dropped on
-2026-10-11 (#626). The eighteen written for this page are the ones for #651, #653, #670, #671, #720,
-#753, #755, #761, #780 to #783, #788, #813, #816 and #818 to #820, the ones on the verdicts of
+2026-10-11 (#626). The nineteen written for this page are the ones for #651, #653, #670, #671, #720,
+#753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820 and #879, the ones on the verdicts of
 2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the one on what the scores
 decided. What each pull request's two passes found and cost is on a third page,
 [`review-figures.md`](review-figures.md).
@@ -150,6 +150,20 @@ went to the reviewer in a message of its own, with its whole context again. The 
 change that alters a rule (#610) would have caught all three, and it binds the reviewer; step 4 of
 `/pre-pr-review` had the session read, of the second rule, only #632's paragraph before it wrote a
 fix.
+
+### A history line taken as due before the plugin pass's fixes, on #876 (#879)
+
+Under the paragraph on a change to a rule and its line on `code-review-history.md`. Read from #876's
+plugin-pass comment of 2026-11-15, posted at 17:44 UTC, on 2026-11-15.
+
+- **The verifier found the missing line real.** Its evidence, as posted: "the #716 paragraph
+  requires it at the start of the reading after the last fix commit, and the verifier took that
+  reading to have happened, since the head carries the pre-PR review's fix commits."
+- **The session posted the verdict with its own reading beside it**: "the #716 paragraph places
+  the line at the reading after the last fix commit, 'the plugin pass's fixes included', which has
+  not been made yet."
+- **The words "the plugin pass's fixes included" were the paragraph before**, #663's, which places
+  the reading. The #716 paragraph said "at the start of this reading" and nothing of when that is.
 
 ## A review before the pull request, and the plugin pass after it
 

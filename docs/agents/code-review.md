@@ -312,8 +312,9 @@ of its own to the reviewer, what that fix changed is read again, and the body na
 it.
 
 **A change to a rule writes its line on `code-review-history.md` first, at the start of this
-reading** (2026-10-15, #716), once, from the rule's final wording, and not in the commit that
-changes the rule. The line is committed, `scripts/ship-check.ps1` is run again, and the line is sent
+reading, after the plugin pass's fixes** (2026-10-15, #716; the timing stated here since
+2026-11-15, #879), once, from the rule's final wording, and not in the commit that changes the
+rule. The line is committed, `scripts/ship-check.ps1` is run again, and the line is sent
 to the reviewer in a message of its own, as a fix is, because it restates the rule and is a claim.
 The reading waits for the reviewer's answer, and a finding in it is fixed and confirmed like one
 raised in the last confirmation. The reading above is then made on the head after that. On #713 the
