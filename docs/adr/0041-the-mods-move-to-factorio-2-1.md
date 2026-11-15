@@ -30,8 +30,13 @@ Truls decided it in [#869's
 triage](https://github.com/trulsjo/realistic-fusion-refreshed/issues/869#issuecomment-6893892757).
 An existing `/2.1.23/` link keeps its pin, as a `/2.0.77/` one kept its own, and a figure measured
 on 2.1.23 keeps its version. A record made on that machine from 2026-10-29 to 2026-11-14 that says
-2.1.23 may have been made on 2.1.24 (*Inferred*, from the dates above); which records those are has
-not been checked. The Decision and the Consequences below are left as they were written, 2.1.23
+2.1.23 may have been made on 2.1.24 (*Inferred*, from the dates above).
+[#875](https://github.com/trulsjo/realistic-fusion-refreshed/issues/875) listed those records on
+2026-11-15 and found none, so none is marked. By the author date `git blame` gave it before this
+paragraph, every line of a tracked file that names 2.1.23 was last written on 2026-10-27 or
+before, or on 2026-11-15 for #869; no line that a commit of the window added names a version of
+2.1; and outside this amendment no date in the window stands within six lines of a 2.1.23
+(*Measured*). The Decision and the Consequences below are left as they were written, 2.1.23
 included: where they say a claim pins to 2.1.23 or a figure is re-measured on it, read 2.1.24 from
 2026-11-15.
 
