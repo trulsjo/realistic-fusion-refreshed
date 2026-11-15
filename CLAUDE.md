@@ -26,11 +26,11 @@ about whether a change is safe. What each proves, in a line:
 
 - **`tests/test-*.lua`** cover the pure simulation outside Factorio.
 - **`models/test_rf_blender.py`** pins the arithmetic the rendered sheets are declared from,
-  #800's footprint-edge check, since #803 the kit's arithmetic, and since #825 the named streams
-  parts draw from and that no file under `models/` but `rf_blender.py` imports the global
-  `random`, and since #827 that neither rendered machine's build script names a part that draws
-  from a loop's counter, and since #805 a texture's provenance record, and since #851 that every
-  rendered manifest's measured shadow reach lies inside its margin, without Blender (#810).
+  #800's footprint-edge check, the kit's arithmetic, the named streams parts draw from and that no
+  file under `models/` but `rf_blender.py` imports the global `random`, that neither rendered
+  machine's build script names a part that draws from a loop's counter, a texture's provenance
+  record, and that every rendered manifest's measured shadow reach lies inside its margin, without
+  Blender (#810).
 - **`scripts/load-check.ps1`** creates a real map and asserts against it, and is where the
   invariants tying the simulation to the prototypes are enforced. It also fails when a rendered
   machine's `manifest.json` or any committed `models/*/geometry.json` disagrees with the live
@@ -48,14 +48,14 @@ about whether a change is safe. What each proves, in a line:
   (#756), and that neither the two review skills nor the markdown-only test reads the local
   `main` (#762). It also checks that every `scripts/check-*.ps1` sources
   `scripts/factorio-lib.ps1`, and that a stand-in rig's run leaves its report in
-  `.rig-reports/` (#794). Since #812 it also fails a run during which a tracked file or the index
-  changed, naming each path. Since #817 it also fails a commit hash cited in prose outside the
-  record pages that `origin/main` does not reach, naming its file and line. Since #805 it also
-  fails a file in a model directory that is not one a model is made of, a mesh included, and a
-  texture without a CC0 record in `textures.json` that matches its bytes (ADR 0043). Since #852
-  it also fails a rendered model whose vertex count or `.blend` size more than doubles against
+  `.rig-reports/` (#794). It also fails a run during which a tracked file or the index changed,
+  naming each path; a commit hash cited in prose outside the record pages that `origin/main` does
+  not reach, naming its file and line; a file in a model directory that is not one a model is made
+  of, a mesh included, and a texture without a CC0 record in `textures.json` that matches its bytes
+  (ADR 0043); a rendered model whose vertex count or `.blend` size more than doubles against
   `origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:` trailer naming
-  the machine.
+  the machine; and this file, when it dates more of its checks by ticket than the floor the script
+  holds, because that history is `docs/agents/state-detail.md`'s.
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
@@ -96,7 +96,8 @@ six scripts under `tools/` that are not gates and that nothing else checks, two 
 Blender or Pillow (#850, #853),
 `models/test_rf_blender.py` (#810), `ship-check.ps1`, the default `load-check.ps1` and every
 `scripts/check-*.ps1` it finds, one at a time, one line per gate, exiting non-zero and naming each
-gate that failed, and since #812 each tracked path that changed while it ran. **Run it on a branch
+gate that failed and each tracked path that changed while it ran; the `pre-commit` hook refuses a
+commit while a run is live, and an edit with no commit fails the run. **Run it on a branch
 that combines more than one ticket, before the review**, and **before or after a subagent fan-out,
 not during one** (#617). It runs no probe, no gate's `-SelfTest`, and not `load-check.ps1
 -FromZips`, the shared `locale-check.ps1` or `name-check.ps1`.
@@ -129,10 +130,10 @@ protection, so a red one blocks no merge.
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing
 and answers a question a decision is waiting on — exit 0 means it ran and reported, never that the
 answer was the hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the
-next engine version can be asked the same question. Since #589 a `probe-*.ps1` that sources
+next engine version can be asked the same question. A `probe-*.ps1` that sources
 `scripts/factorio-lib.ps1` leaves what it last printed in the git-ignored `.probe-reports/`, in a
 file named for the probe and its arguments: a figure in a note is checked against that file.
-Since #794 each `scripts/check-*.ps1` keeps its last run's output in `.rig-reports/`.
+Each `scripts/check-*.ps1` keeps its last run's output in `.rig-reports/`.
 
 ## The rule that matters most here
 
@@ -149,7 +150,7 @@ reopens them by accident:
 - **The published name is Realistic Fusion Refreshed** (ADR 0017, superseding ADR 0009). The `rf-`
   prototype prefix is unaffected.
 - **The v1 target is the Factorio 2.1 base game, with Space Age tolerated but not integrated** (ADR
-  0003, and ADR 0041 for 2.1). The mods declare 2.1 since #767, which is what the State section
+  0003, and ADR 0041 for 2.1). The mods declare 2.1 (#767), which is what the State section
   describes. What stays open is whether that ever becomes first-class support, which is the
   item left in the list above — not the v1 target.
 
@@ -191,8 +192,8 @@ material. Two rules are kept here because they rule material out outright:
 - **Cite our own code by symbol, never by line number** — the function, field, constant or
   prototype, with a repo-relative path, because there are two `entities.lua`. A comment with no
   symbol is cited by a quoted fragment of its own words. Predecessor, vanilla and third-party
-  citations keep their line numbers; we never edit those trees. Since #303 `scripts/ship-check.ps1`
-  gates **two** of the three shapes this takes — a path with a line number on it, and a backticked
+  citations keep their line numbers; we never edit those trees. `scripts/ship-check.ps1` gates
+  **two** of the three shapes this takes — a path with a line number on it, and a backticked
   `:155` continuation inheriting a path named earlier on the same line — across every tracked `.md`,
   `.lua`, `.ps1`, `.py` and `.js`. It stays blind to "lines 196-197" written out in prose, to a
   continuation whose path is on an earlier line, and to one written without backticks; and a
@@ -276,9 +277,11 @@ before it is written; the workflow reports one after it is pushed.
 **A second hook, `.githooks/pre-commit`, reads the staged Markdown** (#658). It runs the tools
 submodule's `scripts/markdown-check.ps1` on the staged `.md` files as staged, and refuses the commit
 on emphasis or a code span left open, a table row whose column count is not its header's, a link
-to a file git does not track, since #710 a link whose `#fragment` names no heading, or since #860
-a figure grouped in thousands split across a line end. The same two steps install it, and a clone
-that set the hooks path and has no submodule is told the Markdown was not checked.
+to a file git does not track, a link whose `#fragment` names no heading, or a figure grouped in
+thousands split across a line end. Before that it refuses any commit while a
+`scripts/run-gates.ps1` run is live, and lets one through, saying so, past a marker a stopped run
+left behind (#872). The same two steps install it, and a clone that set the hooks path and has no
+submodule is told the Markdown was not checked.
 `ship-check.ps1` runs the same check over every tracked `.md`, so the workflow holds a clone without
 the hook to it.
 

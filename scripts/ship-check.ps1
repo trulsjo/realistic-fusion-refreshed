@@ -231,6 +231,15 @@
     a manifest without the fields and a doubling a trailer names to pass. It cannot see a model
     that grows and is not rendered again; the section comment has the rest.
 
+    SECTION 20 HAS A -SelfTest AND A FLOOR THAT IS ITS LIMIT (#874). It counts the clauses in the
+    root CLAUDE.md that date one of its checks by ticket, "since #" and a number, case ignored, and
+    fails when there are more than the floor written in the section, naming each clause's line,
+    because that history belongs in docs/agents/state-detail.md and grew back after #591 moved it
+    there. The since-clause-over-floor-caught half plants a CLAUDE.md one clause over a floor and
+    requires every clause named; the since-clause-at-floor-passes half requires one at its floor to
+    pass, and a ticket in parentheses not to be counted. It cannot see history written another way;
+    the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -240,12 +249,12 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove twelve things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove thirteen things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
     of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, and section 18 in both directions, and section 19 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, and section 18 in both directions, and section 19 in both directions, and section 20 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents and the scratch repositories of sections 16, 17 and 19 live in the scratch
     directory the run removes on its way out.
 
@@ -1590,6 +1599,58 @@ try {
     }
 } finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
 
+# ----------------------------------------------------------------- the gate history in CLAUDE.md
+# 20. THE ROOT CLAUDE.md DATES NO MORE OF ITS CHECKS BY TICKET THAN ITS FLOOR ALLOWS (#874).
+#
+# #591 moved the gate history out of the State section of the root CLAUDE.md, which loads on every
+# turn, into docs/agents/state-detail.md. It grew back: on cbadaca the file held 16 clauses of the
+# form "since #" and a ticket, seven of them in one bullet, each written in good faith under the
+# sentence there that says a line changes only when what its gate proves has changed. #874 moved
+# them to state-detail.md again, and this holds them out. It counts the clauses, case ignored, the
+# way `grep -o -i 'since #[0-9]*' CLAUDE.md` does, and fails when there are more than
+# $SINCE_CLAUSE_FLOOR, naming each with its line. A branch that adds one moves the history to
+# state-detail.md, or raises the floor here on purpose.
+#
+# It reads the root CLAUDE.md alone, and not .claude/CLAUDE.md, CLAUDE.local.md or
+# scripts/CLAUDE.md. WHAT IT CANNOT SEE: history written another way, "from #812 on", "as of #805"
+# or "(#852) it also", which is how the next clause would get past it; the State section's own
+# sentence on what a line there says is the rule for those.
+$SINCE_CLAUSE_FLOOR = 0
+$SINCE_CLAUSE = '(?i)since #\d*'
+
+function Find-SinceClauses {
+    <#  Each clause of $File that dates a check by its ticket, with its line.  #>
+    param([Parameter(Mandatory)] [string] $File)
+
+    $n = 0
+    foreach ($line in Get-Content -LiteralPath $File) {
+        $n++
+        foreach ($match in [regex]::Matches($line, $SINCE_CLAUSE)) {
+            [pscustomobject]@{ Line = $n; Text = $match.Value }
+        }
+    }
+}
+
+function Get-SinceClauseFailures {
+    <#  One failure naming every clause in $File when there are more than $Floor, and none when
+        there are not.  #>
+    param([Parameter(Mandatory)] [string] $File, [Parameter(Mandatory)] [int] $Floor)
+
+    $found = @(Find-SinceClauses -File $File)
+    if ($found.Count -le $Floor) { return }
+    $where = ($found | ForEach-Object { "line $($_.Line) '$($_.Text)'" }) -join ', '
+    ("$(Split-Path $File -Leaf) holds $($found.Count) clause(s) dating a check by its ticket, over the floor of " +
+        "${Floor}: $where. The history belongs in docs/agents/state-detail.md (#874); CLAUDE.md says what the gate proves.")
+}
+
+$checks++
+$rootClaude = Join-Path $repoRoot 'CLAUDE.md'
+if (-not (Test-Path -LiteralPath $rootClaude)) {
+    $failures.Add('section 20 reads CLAUDE.md, which does not exist.')
+} else {
+    foreach ($failure in Get-SinceClauseFailures -File $rootClaude -Floor $SINCE_CLAUSE_FLOOR) { $failures.Add($failure) }
+}
+
 # ----------------------------------------------------------------- how big a model has grown
 # 19. NO RENDERED MODEL MORE THAN DOUBLES AGAINST origin/main UNLESS A COMMIT SAYS IT MEANS TO (#852).
 #
@@ -2255,6 +2316,43 @@ if ($SelfTest) {
                 'a gate whose -SelfTest help names none of its halves is skipped, and none of its halves is reported.'
             } }
 
+            @{ Name = 'since-clause-over-floor-caught'; Body = {
+                # Section 20 against a planted CLAUDE.md with four clauses, one in capitals and two
+                # on a line, held to a floor of three: it must fail, naming each clause's line.
+                $doc = Join-Path $planted 'CLAUDE.md'
+                $s = 'since #'
+                @(
+                    '# State'
+                    "- **a gate** checks one thing, and ${s}101 another."
+                    "  ${s}102 a third, and ${s}103 a fourth."
+                    "$($s.ToUpper())104 nothing."
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+                $found = @(Find-SinceClauses -File $doc)
+                if (($found | ForEach-Object Line) -join ',' -ne '2,3,3,4') {
+                    throw "a planted CLAUDE.md with clauses on lines 2, 3, 3 and 4 was read as '$(($found | ForEach-Object Line) -join ',')'."
+                }
+                $failed = @(Get-SinceClauseFailures -File $doc -Floor 3)
+                if ($failed.Count -ne 1 -or $failed[0] -notmatch "line 2 .*line 3 .*line 3 .*line 4 '$($s.ToUpper())104'") {
+                    throw "four clauses against a floor of three were reported as: '$($failed -join ' / ')'."
+                }
+                'a CLAUDE.md with one clause dating a check by ticket over the floor fails, naming each clause.'
+            } }
+
+            @{ Name = 'since-clause-at-floor-passes'; Body = {
+                # The other direction: the same document at its floor passes, and a ticket cited in
+                # parentheses, or "since" before anything but a ticket, is not a clause.
+                $doc = Join-Path $planted 'CLAUDE.md'
+                $s = 'since #'
+                @(
+                    '# State'
+                    "- **a gate** checks one thing (#101), and ${s}102 another."
+                    '  It has done so since 2026-10-12, since the hook went in.'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+                $failed = @(Get-SinceClauseFailures -File $doc -Floor 1)
+                if ($failed.Count) { throw "one clause against a floor of one was reported: '$($failed -join ' / ')'." }
+                'a CLAUDE.md at its floor passes, and a ticket in parentheses is not counted.'
+            } }
+
             @{ Name = 'local-main-read-caught'; Body = {
                 # Section 14 passes by finding nothing. This plants each form it fails, one per line,
                 # and requires each to be reported with its line.
@@ -2507,6 +2605,7 @@ Write-Host 'neither the review skills nor the markdown-only test reads the local
 Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave,'
 Write-Host 'no live prose cites a commit origin/main does not reach, every texture in a model'
 Write-Host 'directory is recorded as CC0 with its own bytes and nothing else is imported there,'
-Write-Host 'no rendered model more than doubled against origin/main without a commit saying so;'
+Write-Host 'no rendered model more than doubled against origin/main without a commit saying so,'
+Write-Host 'the root CLAUDE.md dates no more of its checks by ticket than its floor allows;'
 Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0
