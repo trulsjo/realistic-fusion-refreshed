@@ -388,6 +388,18 @@ three items and the last sentence of the fourth are by #878's account, from the 
 - **Step 4 of `/plugin-pass` removed only herdr's worktree or the user's**, and nothing removed the
   ones isolation made. Truls had all of them removed by hand.
 
+What #881's own pass showed, measured by its session on 2026-11-15, on which Truls narrowed the
+worktree sweep to the pass's own worktrees the same day:
+
+- **After reviewers 1 to 4 had reported, their four worktrees were clean and unlocked**, by
+  `git worktree list --porcelain`; only `agent-acfd72ccc2afe2859`, which had refused reviewer 5's
+  spawn, was locked, by "claude agent agent-acfd72ccc2afe2859 (pid 216660)", the session's own
+  `claude.exe`. Whether a worktree is locked while its agent runs was not measured, so a clean,
+  unlocked tree is not shown to be a finished one (*Inferred*, from those two readings).
+- **Each isolated reviewer's completion notice named its worktree as `worktreePath`**, under
+  `.claude/worktrees/agent-<id>`, and the refusal named the path it refused. The pass's own
+  worktrees can be listed from those alone.
+
 ### What the verdict of 2026-10-07 rested on (#593)
 
 Five paragraphs of the section *Measured, not assumed* of that rule, until 2026-10-10. The verdict

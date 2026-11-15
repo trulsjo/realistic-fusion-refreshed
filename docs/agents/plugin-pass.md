@@ -47,12 +47,12 @@ is for one told not to, and it adds only where such a pass runs.
   and the subagent's first command is `git checkout --detach <hash>`, there. The session checks
   before it spawns that the hash is its own `git rev-parse HEAD`. **When the verifier has
   answered, or the reviewers have and raised nothing, the session removes each clean worktree
-  the pass's own isolated spawns made or were refused, and deletes every `worktree-agent-*` branch
-  that holds no commit off `origin/main`, earlier sessions' included** (Truls, 2026-11-15, #878;
-  the worktrees narrowed to the pass's own the same day, in #881). One of those locked by the
-  session's own process is unlocked and removed with them; one locked by any other is left, and
-  so is every other `.claude/worktrees/agent-*` worktree. Step 4 of `/plugin-pass` says how, and
-  what else it leaves.
+  the pass's own isolated spawns made, or that refused one of them, and deletes every
+  `worktree-agent-*` branch that holds no commit off `origin/main`, earlier sessions' included**
+  (Truls, 2026-11-15, #878; the worktrees narrowed to the pass's own the same day, in #881). One
+  of those locked by the session's own process is unlocked and removed with them; one locked by
+  any other is left, and so is every other `.claude/worktrees/agent-*` worktree. Step 4 of
+  `/plugin-pass` says how, and what else it leaves.
 - **Where herdr's command fails, or a hook refuses the isolated spawn, the session does not go
   round it.** The user makes one worktree for the pass: the session asks for `! git worktree add
   --detach <dir> <hash>`, in a directory outside the repository, names it in each brief as the
