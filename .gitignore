@@ -40,6 +40,10 @@ __pycache__/
 # rebuildable. tools/extract-geometry.py gives it a temp directory instead.
 .dump-cache/
 
+# Where tools/extract-geometry.py wrote its dump before #863, and where a clone that ran it still
+# holds one; kept ignored until #865 removes this line.
+.dump/
+
 # What each probe last printed, one file for a probe and its arguments (#589). Written by
 # Start-RunReport in scripts/factorio-lib.ps1; a rerun replaces its own.
 .probe-reports/

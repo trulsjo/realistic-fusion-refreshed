@@ -96,8 +96,9 @@ for the locale check. Neither is this repository's, and no gate runner starts th
 **Every gate here needs the submodule initialised**, the one that starts no game (`ship-check.ps1`)
 included: `git submodule update --init`, the same step the commit hook asks for. The harness under
 `load-check.ps1`, the packer, the fetcher of the third-party sets, the locale check, the Markdown
-check, the commit check, the eight session hooks, the comment-line check, the four AST lints, the
-line-citation and cited-commit checks and `get-dump.ps1` are `vendor/grado-factorio-tools`'s
+check, the commit check, the body check, `absolute-words.ps1`, the eight session hooks, the
+comment-line check, the four AST lints, the line-citation and cited-commit checks and
+`get-dump.ps1` are `vendor/grado-factorio-tools`'s
 (#861, #863); the other checks are this repository's. The sets are pinned in
 `scripts/mod-sets.psd1`, and the fetcher caches under `.mod-cache/<set>` of the directory it runs
 in, so run it from the repository root.

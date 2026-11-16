@@ -163,10 +163,8 @@ mentioned without raising. So the pull request holds the pass's whole report, an
 of the session that ran it.
 
 **The shared page's *The threshold sorts the comment, not the report* holds here, with the verdict
-as the grade**: a review that posts no issue still names each candidate it set aside, with its
-verdict and the evidence the verifier gave, and the session changes no verdict to move a
-candidate. Where it reads the source differently from the verifier, it says so beside the verdict,
-in the comment the verdict put the candidate in, and a human decides.
+as the grade.** Where the session reads the source differently from the verifier, it says so
+beside the verdict, in the comment the verdict put the candidate in, and a human decides.
 
 **Until 2026-10-11 a score sorted the comments.** The plugin's scorers gave each candidate 0, 25,
 50, 75 or 100, and the plugin's own comment took 80 or over, which of those five is 100 alone. A
@@ -366,11 +364,11 @@ request's body is last edited, the session reads each of these again against the
   review corrects. A message that a later message on the branch names and narrows is not
   contradicted, as the fourth rule says (#783).
 
-**The body then says what was read again, and on which commit**, named by its subject in quotes
-(#730). A reading that names no commit cannot be told from one made before the last fix. **What the
-reading turns up is fixed like any finding raised in the last confirmation**: the fix gets a message
-of its own to the reviewer, what that fix changed is read again, and the body names the head after
-it.
+**The body then says what was read again, and on which commit**, named as the shared
+`pr-body-convention.md`'s *Naming a branch commit* says (#730, #864). A reading that names no commit
+cannot be told from one made before the last fix. **What the reading turns up is fixed like any
+finding raised in the last confirmation**: the fix gets a message of its own to the reviewer, what
+that fix changed is read again, and the body names the head after it.
 
 **A change to a rule writes its line on `code-review-history.md` first, at the start of this
 reading, after the plugin pass's fixes** (2026-10-15, #716; the timing stated here since
@@ -411,9 +409,7 @@ evidence page.
 
 **A ticket's evidence follows the four rules of the shared
 [`claim-grades.md`](../../vendor/grado-factorio-tools/docs/claim-grades.md)'s *Tickets and ruling
-comments*** (#864): a figure carries its command, a statement is read from its source or marked
-as an account, a quantifier carries its search, and a command that printed nothing is run again
-on an input that should print something. This repository ruled the second on its own first
+comments*** (#864). This repository ruled the one on a statement not read on its own first
 (Truls, 2026-10-09, #657).
 
 **A claim in `docs/adr/` or `docs/research/` is graded** (Truls, 2026-10-16, #720). The three
@@ -509,7 +505,8 @@ is handed and not by a skill's name:
 
 - the diff against `origin/main`, fetched first (#755), and never against the local `main`,
   which git will not fetch into while it is checked out in any worktree (#758), or the diff of
-  the part of the branch it reviews (#781), and the commit messages of that range (#864);
+  the part of the branch it reviews (#781), the commit messages of that range, and a draft of
+  the pull request's body, its `Closes` lines and the template's three headings (#864);
 - this file, and the shared `code-review-rules.md` (#864);
 - on a branch that records measurements, the probes' raw output; on any other, the result of the
   gates that were run.
@@ -517,9 +514,8 @@ is handed and not by a skill's name:
 `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`, #595) runs it: it holds the reviewer's
 brief and the confirmation's as templates for the session to fill in. The list above is still the
 definition, and a review handed those three things is the pre-PR review whatever started it. The
-shared procedure's fourth step also hands a review the pull request's body or its draft; here
-none exists when the review is started, since the body is written from its findings, and a
-confirmation is handed the diff of the fixes alone, as the paragraphs below say.
+review section of the body is written from its findings, after it; a confirmation is handed the
+diff of the fixes alone, as the paragraphs below say.
 
 **Every commit on the branch is in a diff a pre-PR reviewer was handed, before the body is first
 written** (Truls, 2026-10-26, #781). A review's diff, each confirmation's and each fix sent in a
@@ -602,8 +598,9 @@ Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 **The body follows the shared
 [`pr-body-convention.md`](../../vendor/grado-factorio-tools/docs/pr-body-convention.md)** (#864),
 which says how a branch commit is named and that the body is checked before each create or edit.
-Here a branch commit is named by its subject in quotes (Truls, 2026-10-19, #730): #731's head
-reached `main` as `d87a02a`, under a hash the branch never had. The check runs before the first
+This repository named a branch commit by its subject in quotes alone from 2026-10-19 (#730) until
+Truls had its pages defer to the shared page's three ways on 2026-11-16 (#864): #731's head reached
+`main` as `d87a02a`, under a hash the branch never had. The check runs before the first
 `gh pr create` and every `gh pr edit` after it, each review pass's included. The review sections,
 the `## Pre-PR review` and what the plugin pass adds, stand below the template's `## Summary`,
 `## Evidence` and `## Merge Danger`, which the script checks and the tracker page,

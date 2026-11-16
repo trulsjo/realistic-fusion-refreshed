@@ -28,8 +28,8 @@ parts. What this repository's own rules were measured on is on
   search is `trulsjo/grado-factorio-tools`**, for a ticket about a shared script or page, with the
   same command and `-R trulsjo/grado-factorio-tools`.
 - **A command that edits a body file and the `gh` command that sends it are joined with `&&`**,
-  so a failed edit sends nothing (#713, #718). The same goes for `gh issue comment` and
-  `gh pr create`.
+  so a failed edit sends nothing (#713, #718), whichever sends it: `gh issue create`,
+  `gh issue comment`, `gh issue edit`, `gh pr create` or `gh pr edit`, the one #713 sent.
 - **A Bash command that would hang is refused before it runs** by the shared
   `refuse-hanging-bash.ps1`, which the tracked `.claude/settings.json` wires (#861): a `cat` or a
   `python -` reading the Bash tool's stdin, a heredoc over 60 lines, and on Windows two
@@ -43,8 +43,8 @@ parts. What this repository's own rules were measured on is on
   and they are written by hand where it is not. This repository adds to what it produces: above
   the template, one `Closes #<n>` line of its own for each ticket the branch resolves, where it
   resolves any; below it, the `## Pre-PR review` section the session writes in steps 5 to 7 of
-  `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`). A commit of the branch is named by
-  its subject in quotes. **Every `gh pr create --body-file` and `gh pr edit --body-file` is
+  `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`). A commit of the branch is named as
+  the shared page's *Naming a branch commit* says. **Every `gh pr create --body-file` and `gh pr edit --body-file` is
   preceded by
   `pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 <file>`, joined
   with `&&`**, as the shared page's *Before a create* says; `.github/workflows/gates.yml` runs it
