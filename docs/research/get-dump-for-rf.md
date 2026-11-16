@@ -50,9 +50,7 @@ leaves in its cache directory (since #887's review panel).
 
 *Measured*: run twice on 2026-11-16, before that change, for the five machines with a committed
 `geometry.json`, it took 5.4 s the first time, whose output was not kept, and 19.3 s the second,
-whose was. Those two read the path the script prints last, which named that same file (the run
-above printed `...\dumps\cache\realistic-fusion-refreshed-2020261170-1f7d7f2196d6.json` last).
-Each left every one of the five files unchanged, and no temp directory named
+whose was. Those two read the path the script prints last. Each left every one of the five files unchanged, and no temp directory named
 `rf-geometry-dump-*` after it. After the change, a run for the five left them unchanged and no
 such directory either; its time was not taken. A run for one machine with `--stdout`, which writes
 no file, took 39.95 s, by the pre-PR reviewer's account of #887 and not re-run here, with the
