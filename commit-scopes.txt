@@ -8,9 +8,9 @@
 #     git log --format=%s | grep -oP '^\S+ \w+\(\K[^)]+' | sort | uniq -c | sort -rn
 #
 # which printed repo 838, power 257, graphics 180, research 14, runtime 7, core 4, test 1,
-# locale 1, data 1. Truls kept CLAUDE.md's vocabulary and research, and left test out (#862,
-# 2026-11-16); weaponry, antimatter and settings had no subject yet and stay because CLAUDE.md
-# names them.
+# locale 1, data 1. Truls kept the vocabulary CLAUDE.md then named, and research, and left test
+# out (#862, 2026-11-16); weaponry, antimatter and settings had no subject yet and stay because
+# that vocabulary named them.
 core
 power
 weaponry

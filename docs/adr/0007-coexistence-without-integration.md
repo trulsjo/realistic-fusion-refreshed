@@ -350,8 +350,9 @@ was always part of the same row and is still inherited, and still read by nothin
 
 The fix **changed nothing about the loaded prototype**, measured with `dump-data.ps1` before and
 after on the base-game load the same day (that script is deleted since 2026-11-16; the shared
-`vendor/grado-factorio-tools/scripts/get-dump.ps1` takes the same base-game dump, byte for byte,
-as [`docs/research/get-dump-for-rf.md`](../research/get-dump-for-rf.md) records, #863): vanilla's boxes carry exactly those two filters, the two
+`vendor/grado-factorio-tools/scripts/get-dump.ps1` took a byte-identical base-game dump on
+2026-11-16, on 2.1.24, as [`docs/research/get-dump-for-rf.md`](../research/get-dump-for-rf.md)
+records, #863): vanilla's boxes carry exactly those two filters, the two
 boxes came back identical, and so did every other prototype type in the dump. Nothing was gated, for
 #153's reason — no set has been measured reassigning a fluid-box filter, where the containment gate
 #209 built answers a reassignment that had actually happened. `production_type` on those boxes is

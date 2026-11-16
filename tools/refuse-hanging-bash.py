@@ -2,7 +2,10 @@ r"""A PreToolUse hook for the Bash tool: refuse a command that would hang on its
 that holds a long heredoc (#666), or, on Windows, that holds two backslashes in a row (#682).
 
 Claude Code hands a hook the tool call as JSON on stdin. Exit 2 refuses the call and shows stderr
-to the model; exit 0 lets it through. Register it for the Bash tool only:
+to the model; exit 0 lets it through. It is no longer registered: since #861 the tracked
+.claude/settings.json wires its PowerShell port, vendor/grado-factorio-tools's
+scripts/refuse-hanging-bash.ps1, in its place, and #865 deletes this file. A local settings file
+that still registers it, as below, runs both:
 
     python "$CLAUDE_PROJECT_DIR/tools/refuse-hanging-bash.py"
 
@@ -52,7 +55,8 @@ had that in context sent nine Bash commands holding a heredoc on 2026-10-09 all 
 LENGTH DOES NOT PREDICT THAT FAILURE. Of those nine, the one whose longest body was 129 lines,
 in a command of 132, was cut short, and the one of 121, in a command of 124, ran; the other
 seven, of 34 lines or fewer, ran. So the 60 is not where
-heredocs start to fail. It is the tracker page's record of the earlier ones, "Every command that
+heredocs start to fail. It is the record of the earlier ones that the tracker page kept and
+docs/agents/issue-tracker-evidence.md now keeps (#864), "Every command that
 failed ran past 60 lines", taken as the size past which a body is a file and is written as one.
 It refuses long heredocs that would have worked. The log holds each command refused, and
 not how it would have ended.

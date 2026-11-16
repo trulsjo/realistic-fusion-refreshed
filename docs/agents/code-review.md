@@ -12,7 +12,8 @@ and the
 whose `main` may be ahead of the pin. Read both with this page. This page gives this repository's
 value for each of the procedure's parameters under *This repository's values*, and then its four
 rules: the steps the procedure leaves to each repository, and the prose checks kept beside the
-shared ones. A rule the shared pages hold is not restated here.
+shared ones. A rule the shared pages hold is named here in a sentence where this repository's
+own leans on it, and the shared page's wording is the rule.
 
 The four rules are conventions this repository keeps around the `code-review:code-review` plugin
 rather than changes to it; see *Why it is written here rather than fixed at source* at the foot.
@@ -123,15 +124,15 @@ The procedure's parameters, each as it holds here (#864). The rule each comes fr
   the plugin pass.
 - **Merge workflow:** `.github/workflows/gates.yml`, which is advisory: `main` has no branch
   protection.
-- **Threshold: the verdict *real*.** The plugin pass's verifier gives each candidate real, not
-  real, or not verified; one found real, or not verified, is fixed, or left with its reason in
-  the pull request's body, the first and fourth rules. The pre-PR review's threshold is every
-  finding.
+- **Threshold: the verdict *real*, and *not verified* with it.** The plugin pass's verifier gives
+  each candidate real, not real, or not verified; one found real or not verified is fixed, or
+  left with its reason in the pull request's body, the first and fourth rules. The pre-PR
+  review's threshold is every finding.
 - **Lanes:** the plugin pass's five reviewers, each with one of the plugin's five tasks; the
   pre-PR review has one reviewer.
 - **The grade:** the plugin pass's verifier's verdict. The pre-PR reviewer gives none.
-- **Who fixes the rest:** the session, all of it, but the two kinds of fix the fourth rule puts
-  to Truls first.
+- **Who fixes the rest:** the session, each finding at the threshold that is not left with its
+  reason, but the two kinds of fix the fourth rule puts to Truls first.
 - **Commit-message rewrites: yes**, as the fourth rule says, and a later message that names and
   narrows an earlier one is left.
 - **Cost records:** the two tables of [`review-figures.md`](review-figures.md), and the main
@@ -190,14 +191,12 @@ says. That gap is a review job, and it is where this repository's mistakes actua
 
 ### The rule
 
-**The shared page's *Prose* checks hold here** (#864): every number in prose checked against the
-diff by doing the arithmetic; a quantifier as an instruction to list every case, a fix that adds a
-figure walking again every quantifier that covers where it lands; every stub page read against a
-shared page the change edits; each check the pull request cites asked whether it could have failed
-on this change; and a guard deleted as dead shown dead. In this repository's terms a figure is a
-percentage of a tick, a ratio between two measurements or a share of a population, and a
-quantifier is "no run clears the floor", "every reactor pairs" or "the one sentence that did not
-need correcting". The checks below are this repository's, beside those.
+**The shared page's *Prose* checks hold here, in its wording** (#864): the arithmetic, the
+quantifier, the stub pages, the cited check that could not have failed, and the guard deleted as
+dead. In this repository's terms a figure is a percentage of a tick, a ratio between two
+measurements or a share of a population, and a quantifier is "no run clears the floor", "every
+reactor pairs" or "the one sentence that did not need correcting". The checks below are this
+repository's, beside those.
 
 **When a change supersedes a figure, grep the repository for the old one, and read every hit in a
 file that records a measurement** — start in `docs/adr/` and `docs/research/`, where most of them
@@ -505,14 +504,17 @@ is handed and not by a skill's name:
 
 - the diff against `origin/main`, fetched first (#755), and never against the local `main`,
   which git will not fetch into while it is checked out in any worktree (#758), or the diff of
-  the part of the branch it reviews (#781);
-- this file;
+  the part of the branch it reviews (#781), and the commit messages of that range (#864);
+- this file, and the shared `code-review-rules.md` (#864);
 - on a branch that records measurements, the probes' raw output; on any other, the result of the
   gates that were run.
 
 `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`, #595) runs it: it holds the reviewer's
 brief and the confirmation's as templates for the session to fill in. The list above is still the
-definition, and a review handed those three things is the pre-PR review whatever started it.
+definition, and a review handed those three things is the pre-PR review whatever started it. The
+shared procedure's fourth step also hands a review the pull request's body or its draft; here
+none exists when the review is started, since the body is written from its findings, and a
+confirmation is handed the diff of the fixes alone, as the paragraphs below say.
 
 **Every commit on the branch is in a diff a pre-PR reviewer was handed, before the body is first
 written** (Truls, 2026-10-26, #781). A review's diff, each confirmation's and each fix sent in a
