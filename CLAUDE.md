@@ -172,15 +172,18 @@ choosing between them is not.
 
 ## Factorio specifics
 
-- Mods are **Lua**. The API has **three stages**: `settings` and `prototype` run at start-up,
-  `runtime` runs during gameplay. Know which stage code belongs to before writing it.
-- API docs are published **per game version** at <https://lua-api.factorio.com/>. Check claims
-  against the version being targeted rather than from memory. Two of the three older predecessors
-  are **1.1**-era — the original and the four-module redesign, whose "2.0" is its own version number
-  — and only Durikkan's port targets Factorio 2.0. The 1.1→2.0 break therefore runs straight through
-  the material this project builds on, which is the whole reason the work exists.
-- `/stable/` and `/latest/` move, and `latest` is the **experimental** build. Pin an explicit
-  version (e.g. `/2.1.24/`, ADR 0041) when recording a fact.
+**Mods are Lua in three stages, the installed build is read and never remembered, and a fact
+pins an explicit build**: the shared
+[`factorio-facts.md`](vendor/grado-factorio-tools/docs/factorio-facts.md)
+([on GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/factorio-facts.md),
+whose `main` may be ahead of the pin) has them and their reasons. This repository's own, beside
+it (#864):
+
+- **The pinned build is `/2.1.24/`** (ADR 0041), at <https://lua-api.factorio.com/2.1.24/>.
+- **The 1.1→2.0 break runs through the predecessors.** Two of the three are **1.1**-era — the
+  original and the four-module redesign, whose "2.0" is its own version number — and only
+  Durikkan's port targets Factorio 2.0. The break therefore runs straight through the material
+  this project builds on, which is the whole reason the work exists.
 
 ## Upstream material
 
@@ -210,10 +213,15 @@ material. Two rules are kept here because they rule material out outright:
 - **Cite our own code by symbol, never by line number** — the function, field, constant or
   prototype, with a repo-relative path, because there are two `entities.lua`. A comment with no
   symbol is cited by a quoted fragment of its own words. Predecessor, vanilla and third-party
-  citations keep their line numbers; we never edit those trees. `scripts/ship-check.ps1` gates
-  **two** of the three shapes this takes — a path with a line number on it, and a backticked
-  `:155` continuation inheriting a path named earlier on the same line — across every tracked `.md`,
-  `.lua`, `.ps1`, `.py` and `.js`. It stays blind to "lines 196-197" written out in prose, to a
+  citations keep their line numbers; we never edit those trees. The shared rule, with the reason,
+  is in [`writing-agent-docs.md`](vendor/grado-factorio-tools/docs/writing-agent-docs.md)
+  (on
+  [GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/writing-agent-docs.md),
+  whose `main` may be ahead of the pin) (#864). `scripts/ship-check.ps1` gates, and in the workflow
+  the shared `line-cite-check.ps1` with this repository's exemptions, **two** of the three shapes
+  this takes — a path with a line number on it, and a backticked `:155` continuation inheriting a
+  path named earlier on the same line — across every tracked `.md`, `.lua`, `.ps1`, `.py` and
+  `.js`. It stays blind to "lines 196-197" written out in prose, to a
   continuation whose path is on an earlier line, and to one written without backticks; and a
   **mod**-relative path like `prototypes/entities.lua:119` still names two files, so only a citation
   anchored at the repo root is actually gated. See `docs/adr/0032-prose-cites-code-by-symbol.md` and
@@ -327,10 +335,14 @@ until this repo opts in.
 ### Issue tracker
 
 GitHub Issues on `trulsjo/realistic-fusion-refreshed`, via the `gh` CLI. See
-`docs/agents/issue-tracker.md`. **Read a ticket with that page's *Read an issue* command, which
-fetches its comments** (#786): a ticket's triage brief, which carries Truls's decisions, is in a
-comment where the ticket has one, and a session that implements a ticket reads it before it
-writes anything.
+`docs/agents/issue-tracker.md`, a stub of the shared
+[`tracker-conventions.md`](vendor/grado-factorio-tools/docs/tracker-conventions.md)
+(on
+[GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/tracker-conventions.md),
+whose `main` may be ahead of the pin), which it links (#864). **Read a ticket with that page's
+*Read an issue* command, which fetches its comments** (#786): a ticket's triage brief, which
+carries Truls's decisions, is in a comment where the ticket has one, and a session that
+implements a ticket reads it before it writes anything.
 
 ### Triage labels
 

@@ -26,3 +26,9 @@ anything ships, once as below and once with `-With space-age`.
 pwsh -File vendor/grado-factorio-tools/scripts/locale-check.ps1 -Prefix rf- `
     realistic-fusion-refreshed-assets realistic-fusion-refreshed-core realistic-fusion-refreshed
 ```
+
+**The mod portal's facts are the shared
+[`mod-portal.md`](../../vendor/grado-factorio-tools/docs/mod-portal.md)**
+([on GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/mod-portal.md), whose
+`main` may be ahead of the pin), read before querying the portal about a mod (#864):
+`https://mods.factorio.com/api/mods/<name>/full` for what exists and at what version.

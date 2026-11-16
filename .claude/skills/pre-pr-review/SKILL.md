@@ -29,6 +29,7 @@ pass.
    git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
+   git log --output="<scratch>/messages.txt" origin/main..HEAD   # the commit messages (#864)
    python tools/review-coverage.py record origin/main..HEAD   # the range handed; step 5 (#781, #787)
    ```
 
@@ -63,18 +64,28 @@ pass.
    Done when every figure or pass the branch claims, and every command a ticket's acceptance
    criteria name, has its output in a file.
 
-3. **Spawn one fresh reviewer** with the Agent tool: `general-purpose`, never a fork, since a fork
-   has already read the author's reasoning. Give it a `name` so step 4 can reach it, and a
+3. **Walk the absolute-words list first** (#864), as the shared procedure's *Before the reviewer
+   is started* says, and reword each line whose word does not hold for what it covers. The list
+   is for this session and is not handed to the reviewer:
+
+   ```
+   pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/absolute-words.ps1 -Range origin/main...HEAD
+   ```
+
+   **Then spawn one fresh reviewer** with the Agent tool: `general-purpose`, never a fork, since a
+   fork has already read the author's reasoning. Give it a `name` so step 4 can reach it, and a
    `description` that starts `Pre-PR review`, which step 6's script sorts it by (#661). Its brief is
    the block below with the paths filled in and nothing about what the author thinks is right,
    and nothing that excuses a commit in the diff: step 1 recorded every commit in it as handed
    (#781).
 
    > You are the pre-PR reviewer of a branch of this repository. Read `docs/agents/code-review.md`
-   > in full first; its second rule, *Review the prose, not only the code*, binds you. Then review
-   > `<scratch>/branch.diff` (`<the diff against origin/main | the diff of <range>>`) against
-   > `<evidence files>`, which hold `<the probes' raw output | the gate results>`, and the output
-   > of each command a ticket's acceptance criteria name.
+   > and `vendor/grado-factorio-tools/docs/code-review-rules.md` in full first; the second rule
+   > of the first, *Review the prose, not only the code*, binds you, and so does the second's
+   > *Prose*. Then review `<scratch>/branch.diff` (`<the diff against origin/main | the diff of
+   > <range>>`) and the commit messages in `<scratch>/messages.txt` against `<evidence files>`,
+   > which hold `<the probes' raw output | the gate results>`, and the output of each command a
+   > ticket's acceptance criteria name.
    >
    > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
    > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria. If the
@@ -119,13 +130,15 @@ pass.
    > quoted table that has lost its `>` it does not catch, and a table in the pull request's body
    > it does not read.
    >
-   > Reply with one line per finding first: its number, the file and the fault. Give
-   > the detail for a finding when you are asked for it. A long reply arrives cut off.
+   > Write the whole report to `<scratch>/reviewer/report.md`, then reply with its path and one
+   > line per finding: its number, the file and the fault. A long reply arrives cut off.
 
-   **Ask for a finding's detail with SendMessage when its line does not name the place and the
-   fault** (#668), and for the rest of any reply that stops mid-sentence. A line that names both
-   is fixed from the line. On this skill's first run a report sent whole stopped inside the sixth
-   of nine findings, and the reviewer's attempt to write the rest to a file was refused. On #664
+   **Read a finding's detail in the report file** (#864), the shared procedure's sixth step.
+   **Where the file is not there, ask for the detail with SendMessage when a line does not name
+   the place and the fault** (#668), and for the rest of any reply that stops mid-sentence. A
+   line that names both is fixed from the line. On this skill's first run a report sent whole
+   stopped inside the sixth of nine findings, and the reviewer's attempt to write the rest to a
+   file, at a path its brief did not give, was refused. On #664
    each of the 17 findings' lines named both; no detail was asked for, 16 were fixed from the
    lines and confirmed, and one, finding 11, needed no change.
 

@@ -1,48 +1,95 @@
+> **Re-running `/setup-matt-pocock-skills` rewrites this stub page in place** and drops its links
+> to the shared pages below: restore them from git.
+
 # Issue tracker: GitHub
 
 Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
+**The conventions shared with the siblings are on
+[`tracker-conventions.md`](../../vendor/grado-factorio-tools/docs/tracker-conventions.md)**, in
+the tools submodule at its pin
+([on GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/tracker-conventions.md),
+whose `main` may be ahead of the pin): reading an issue with `--json`, multi-line bodies through
+`--body-file`, searching before filing, blocked-by, closing, and the bar for a follow-up ticket.
+Read it before filing, blocking or closing an issue. What a pull request's body holds is on
+[`pr-body-convention.md`](../../vendor/grado-factorio-tools/docs/pr-body-convention.md)
+([on GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/pr-body-convention.md)),
+and what a ticket's evidence holds on
+[`claim-grades.md`](../../vendor/grado-factorio-tools/docs/claim-grades.md)'s *Tickets and ruling
+comments* ([on GitHub](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/claim-grades.md)),
+both in the same submodule. This page holds the setup template's core and this repository's own
+parts. What this repository's own rules were measured on is on
+[`issue-tracker-evidence.md`](issue-tracker-evidence.md), which filing an issue does not need.
+
 ## Conventions
 
-- **Create an issue**: `gh issue create --title "..." --body "..."`. Write a multi-line body to a file and pass `--body-file <path>`; the same goes for `gh issue comment` and `gh pr create`. Heredoc bodies passed through the Bash tool have failed here with `unexpected EOF while looking for matching '`. Every command that failed ran past 60 lines; the trigger is not pinned down. Write the file with the Write tool: a heredoc that writes the file is no safer. A command that edits a body file and the `gh` command that sends it are joined with `&&`, so a failed edit sends nothing: on #713 an `assert` in the edit script failed and the `gh pr edit --body-file` on the next line sent the old body anyway, as that session's transcript shows; #718 counts two such commands. On 2026-10-06 one command of six such heredocs ended in `here-document at line 214 delimited by end-of-file`; of the six body files, two were never written and one was cut short. A heredoc is not what makes a command hang, though (#645, reproduced 2026-10-09). The Bash tool's stdin is a pipe that is never closed, so a `cat` or a `python -` with nothing fed to it waits on that pipe, and `python -` with stdin from `/dev/null` starts the interactive prompt and never ends. `tools/refuse-hanging-bash.py` is written as a PreToolUse hook that refuses those two shapes before they run, with a message that says to use the Write tool. It applied on a machine whose `.claude/settings.local.json` registered it for the Bash tool, where #859 moved it from `.claude/settings.json` when that file came to be tracked, so a fresh clone had no hook. Since #861 the tracked `.claude/settings.json` wires its PowerShell port, the shared `refuse-hanging-bash.ps1` under `vendor/grado-factorio-tools/scripts/`, for every clone with the submodule initialised, and a `settings.local.json` that still registers the Python script runs both. The Python script was registered on Truls's machine on 2026-10-09, and refused its first live call the same day: `if false; then cat; fi; echo ran-through`, before it ran. Since #660 each refusal is appended to `.claude/refused-bash.log`, which is git-ignored, as one line of JSON with the time, the reason and the command. A refusal that looks false is read from that file, and the script's docstring lists the false refusals already known. Since #666 the hook also refuses a heredoc whose body is over 60 lines, with the same message; a shorter one is let through, and this line still says to write the file. Since #682 it also refuses, on Windows, a command that holds two backslashes in a row. A Bash tool command there loses one backslash of every two before bash runs it, inside single quotes and inside a quoted heredoc as well: `echo 'Z\\Z'` printed `Z\Z` (reproduced 2026-10-11 and 2026-10-12, GNU bash 5.1.16 (msys)). So a heredoc of 11 lines that held `r"\\s+"` reached Python as `r"\s+"`, and an edit script stopped with two of six files edited. A file written with the Write tool keeps both backslashes, and so does a command sent through the PowerShell tool. The script's docstring says where the halving happens, which upstream report has the cause, and what is refused though it would have run.
-- **Blocking between issues**: when filing tickets, set each blocking edge as a native GitHub issue dependency as the tickets are created, with the `gh api` call under Wayfinding operations below. A ticket body that has a `## Blocked by` section keeps it; the edge is set as well.
-- **Pull request body**: carries the `mattpocock-skills:pr` template's three headings, `## Summary`, `## Evidence` and `## Merge Danger`, each once, at level 2, outside a fenced block and in that order, above any review section (Truls, 2026-10-19, in trulsjo/grado-factorio-modpack#320; #730 here). The `pr` skill fills them where that plugin is installed, and they are written by hand where it is not. Other sections are free. This repository adds to what it produces: above the template, one `Closes #<n>` line of its own for each ticket the branch resolves, where it resolves any; below it, the `## Pre-PR review` section the session writes in steps 5 to 7 of `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`). A commit of the branch is named by its subject in quotes and not its hash, since a rebase merge rewrites the hash; one already on `main` is named by its hash. **Every `gh pr create --body-file` and `gh pr edit --body-file` is preceded by `pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 <file>`, joined with `&&`, and a body it fails is not sent.** It fails a missing, repeated or misordered heading, since #753 a `**Before:**` or `**After:**` missing under `## Evidence` or a `**Door:**` or `**Blast Radius:**` missing under `## Merge Danger`, a cited commit not on `main`, and a closing keyword anywhere but a lone `Closes #N` line; it does not read where the review section stands. `.github/workflows/gates.yml` runs it again on the body of each pull request, and again when the body is edited. `docs/agents/code-review.md` and `docs/agents/plugin-pass.md` say what else the pull request records once the plugin pass has run.
-- **Read an issue**: `gh issue view <number> --json title,body,labels,comments --jq '{title, body, labels: [.labels[].name], comments: [.comments[].body]}'`
-- **Read a pull request**: `gh pr view <number> --json title,body,comments --jq '{title, body, comments: [.comments[].body]}'`, and `gh pr diff <number>` for the diff.
-- **Not `--comments` without `--json`**: under the Bash tool here `gh issue view <number> --comments` prints the comments and no body, so nothing at all for an issue with no comments (gh 2.102.0, 2026-10-06).
-- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
+- **Create an issue**: `gh issue create --title "..." --body-file <path>`, the file written with
+  the Write tool, after searching the open issues as the shared page says. **The other tracker to
+  search is `trulsjo/grado-factorio-tools`**, for a ticket about a shared script or page, with the
+  same command and `-R trulsjo/grado-factorio-tools`.
+- **A command that edits a body file and the `gh` command that sends it are joined with `&&`**,
+  so a failed edit sends nothing (#713, #718). The same goes for `gh issue comment` and
+  `gh pr create`.
+- **A Bash command that would hang is refused before it runs** by the shared
+  `refuse-hanging-bash.ps1`, which the tracked `.claude/settings.json` wires (#861): a `cat` or a
+  `python -` reading the Bash tool's stdin, a heredoc over 60 lines, and on Windows two
+  backslashes in a row. Each refusal is a line in the git-ignored `.claude/refused-bash.log`.
+- **Blocking between issues**: when filing tickets, set each blocking edge as the shared page's
+  *Blocked by* says, as the tickets are created. **Run the POST with the Bash tool**: a
+  `Bash(...)` rule in the tracked `.claude/settings.json` allows it there, for a ticket of this
+  repository, `grado-factorio-modpack`, `grado-factorio-tools` or `true-nukes-refreshed` (#859).
+- **Pull request body**: the shared page's four rules, with no switch turned on here. The
+  `mattpocock-skills:pr` skill fills the template's three headings where that plugin is installed,
+  and they are written by hand where it is not. This repository adds to what it produces: above
+  the template, one `Closes #<n>` line of its own for each ticket the branch resolves, where it
+  resolves any; below it, the `## Pre-PR review` section the session writes in steps 5 to 7 of
+  `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`). A commit of the branch is named by
+  its subject in quotes. **Every `gh pr create --body-file` and `gh pr edit --body-file` is
+  preceded by
+  `pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 <file>`, joined
+  with `&&`**, as the shared page's *Before a create* says; `.github/workflows/gates.yml` runs it
+  again on the body of each pull request, and again when the body is edited.
+  `docs/agents/code-review.md` and `docs/agents/plugin-pass.md` say what else the pull request
+  records once the plugin pass has run.
+- **Read an issue**: `gh issue view <number> --json title,body,labels,comments --jq '{title, body, labels: [.labels[].name], comments: [.comments[].body]}'`,
+  not `--comments`, for the shared page's reason.
+- **Read a pull request**: `gh pr view <number> --json title,body,comments --jq '{title, body, comments: [.comments[].body]}'`,
+  and `gh pr diff <number>` for the diff.
+- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'`
+  with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
-- **A comment that records Truls's decisions on a ticket records what he decided**, and leaves the wording the session writes for it to the pull request (#716). On #713 [the comment on #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6191194343) restated the rule's wording, and its edit history shows that wording changed twice after it was posted, as the rule's moved on the branch.
+- **A comment that records Truls's decisions on a ticket records what Truls decided**, and leaves
+  the wording the session writes for it to the pull request (#716).
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
-- **Close**: `gh issue close <number> --comment "..."`
+- **Close**: `gh issue close <number> --comment "..."`, after the shared page's *Before closing*.
 
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
 
 ## Pull requests as a triage surface
 
-**PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
+**PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature
+requests; `/triage` reads this flag.)_
 
-When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
+When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr`
+equivalents:
 
 - **Read a PR**: the **Read a pull request** command under Conventions.
-- **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments` then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).
-- **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
+- **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments`
+  then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop
+  `OWNER`/`MEMBER`/`COLLABORATOR`).
+- **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`,
+  `gh pr close`.
 
-GitHub shares one number space across issues and PRs, so a bare `#42` may be either — resolve with `gh pr view 42` and fall back to `gh issue view 42`.
+GitHub shares one number space across issues and PRs, so a bare `#42` may be either — resolve with
+`gh pr view 42` and fall back to `gh issue view 42`.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue. Two things come first:
-
-- **The rule for a ticket's evidence** (#637). It is in `docs/agents/code-review.md`, under
-  *Review the prose, not only the code*: the paragraph on a ticket's evidence and a
-  retrospective's, and since #657 the one on a statement marked as an account.
-- **Search the open issues for the ticket's concept, not only for its wording** (a comment on
-  #637, 2026-10-07). This one is stated here and nowhere else. Say in the pull request or in the
-  session's report what was searched for. #639 was published on 2026-10-07 and closed as a
-  duplicate of #591, open since 2026-10-05. Both asked for the gate history to move out of the
-  State section of the root `CLAUDE.md`, under titles that share no noun but `CLAUDE.md`. The
-  session that published #639 had not searched.
+Create a GitHub issue, after the shared page's *Search the open issues before filing*. **A
+ticket's evidence** follows `claim-grades.md`'s *Tickets and ruling comments*, and this
+repository's own rules beside it are in `docs/agents/code-review.md`, under *Review the prose, not
+only the code*: the paragraph on a ticket's evidence and a retrospective's (#637), and the one on
+the four shared rules (#657).
 
 ## When a skill says "fetch the relevant ticket"
 
@@ -52,9 +99,22 @@ Run the **Read an issue** command under Conventions.
 
 Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.
 
-- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body. `gh issue create --label wayfinder:map`.
-- **Child ticket**: an issue linked to the map as a GitHub sub-issue (`gh api` on the sub-issues endpoint). Where sub-issues aren't enabled, add the child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev.
-- **Blocking**: GitHub's **native issue dependencies** — the canonical, UI-visible representation. Add an edge with `gh api --method POST repos/<owner>/<repo>/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric **database id** (`gh api repos/<owner>/<repo>/issues/<n> --jq .id`, _not_ the `#number` or `node_id`). GitHub reports `issue_dependencies_summary.blocked_by` (open blockers only — the live gate). Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is unblocked when every blocker is closed.
-- **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
+- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body.
+  `gh issue create --label wayfinder:map`.
+- **Child ticket**: an issue linked to the map as a GitHub sub-issue (`gh api` on the sub-issues
+  endpoint). Where sub-issues aren't enabled, add the child to a task list in the map body and put
+  `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>`
+  (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving
+  dev.
+- **Blocking**: GitHub's **native issue dependencies** — the canonical, UI-visible representation,
+  added as the shared page's *Blocked by* says. GitHub reports
+  `issue_dependencies_summary.blocked_by` (open blockers only — the live gate). Where dependencies
+  aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A
+  ticket is unblocked when every blocker is closed.
+- **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the
+  map's sub-issues / task list), drop any with an open blocker
+  (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an
+  assignee; first in map order wins.
 - **Claim**: `gh issue edit <n> --add-assignee @me` — the session's first write.
-- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
+- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a
+  context pointer (gist + link) to the map's Decisions-so-far.

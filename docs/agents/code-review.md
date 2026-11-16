@@ -1,7 +1,21 @@
-# Code review — four rules this repository adds
+# Code review — this repository's values and four rules
 
-All four are conventions this repository keeps around the `code-review:code-review` plugin rather
-than changes to it; see *Why it is written here rather than fixed at source* at the foot.
+**The procedure is
+[`code-review-procedure.md`](../../vendor/grado-factorio-tools/docs/code-review-procedure.md),
+and the shared rules
+[`code-review-rules.md`](../../vendor/grado-factorio-tools/docs/code-review-rules.md)**, both in
+the tools submodule at its pin (#864). Where the submodule is not initialised they are on GitHub,
+the
+[procedure](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/code-review-procedure.md)
+and the
+[rules](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/code-review-rules.md),
+whose `main` may be ahead of the pin. Read both with this page. This page gives this repository's
+value for each of the procedure's parameters under *This repository's values*, and then its four
+rules: the steps the procedure leaves to each repository, and the prose checks kept beside the
+shared ones. A rule the shared pages hold is not restated here.
+
+The four rules are conventions this repository keeps around the `code-review:code-review` plugin
+rather than changes to it; see *Why it is written here rather than fixed at source* at the foot.
 
 **Three skills answered to `/code-review` in the session that wrote this, and this file means one of
 them.** Which are installed is a fact about a machine and not about this repository.
@@ -77,6 +91,54 @@ Reviewers had raised a long line in a file with no stated width four times, thre
 `CLAUDE.md`, and scored the same fault 0 and 50; [the evidence page has the
 four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
 
+## This repository's values
+
+The procedure's parameters, each as it holds here (#864). The rule each comes from is below or on
+[`plugin-pass.md`](plugin-pass.md).
+
+- **When: both.** The pre-PR review before the pull request, and the plugin pass on it, the
+  fourth rule.
+- **Second pass: every PR**, run by `/plugin-pass` (`.claude/skills/plugin-pass/SKILL.md`).
+- **Trigger page:** this page, which the *Code review* section of `CLAUDE.md` says to read and
+  when.
+- **Brief template:** `.claude/skills/pre-pr-review/SKILL.md` for the pre-PR review, holding the
+  reviewer's brief and the confirmation's; `.claude/skills/plugin-pass/SKILL.md` for the plugin
+  pass, holding the five reviewers' and the verifier's.
+- **Reviewer's copy:** a worktree of its own, made first, as the third rule says.
+- **Further reading:**
+  [`claim-grades.md`](../../vendor/grado-factorio-tools/docs/claim-grades.md) for a claim in
+  `docs/adr/` or `docs/research/`, the second rule; [`plugin-pass.md`](plugin-pass.md) for the
+  session that runs the plugin pass. The evidence and history pages are not needed.
+- **Check run:** the session's local runs, `scripts/run-gates.ps1` on a branch that combines
+  tickets, or `scripts/ship-check.ps1` alone on a markdown-only one, as the *State* section of
+  `CLAUDE.md` says, with the output of each command a ticket's acceptance criteria name. The
+  reviewer is handed their output. Before it is started, the session walks the shared
+  `absolute-words.ps1 -Range origin/main...HEAD` list.
+- **Raw output:** a probe's last report in `.probe-reports/`, the fourth rule; a rig's in
+  `.rig-reports/`.
+- **Test claims:** a gate's `-SelfTest`, by its halves' names; a planted change in a worktree of
+  the reviewer's own, the third rule, and for the workflow on a throwaway branch.
+- **Where recorded:** the pull request's body, under `## Pre-PR review`, for the pre-PR review;
+  two comments on the pull request and its rows in [`review-figures.md`](review-figures.md) for
+  the plugin pass.
+- **Merge workflow:** `.github/workflows/gates.yml`, which is advisory: `main` has no branch
+  protection.
+- **Threshold: the verdict *real*.** The plugin pass's verifier gives each candidate real, not
+  real, or not verified; one found real, or not verified, is fixed, or left with its reason in
+  the pull request's body, the first and fourth rules. The pre-PR review's threshold is every
+  finding.
+- **Lanes:** the plugin pass's five reviewers, each with one of the plugin's five tasks; the
+  pre-PR review has one reviewer.
+- **The grade:** the plugin pass's verifier's verdict. The pre-PR reviewer gives none.
+- **Who fixes the rest:** the session, all of it, but the two kinds of fix the fourth rule puts
+  to Truls first.
+- **Commit-message rewrites: yes**, as the fourth rule says, and a later message that names and
+  narrows an earlier one is left.
+- **Cost records:** the two tables of [`review-figures.md`](review-figures.md), and the main
+  session's own cost in the pull request's body, the fourth rule.
+- **After-merge steps:** none on this page. Where the review panel of
+  [`review-panel.md`](review-panel.md) reviewed the pull request, its skill switches the IDs.
+
 ## The verdict sorts the comment, not the report
 
 Decided by Truls, 2026-08-26, settling
@@ -94,13 +156,11 @@ second comment lists each one found not real, with the verifier's reason, and wh
 mentioned without raising. So the pull request holds the pass's whole report, and not the transcript
 of the session that ran it.
 
-**A review that posts no issue must still say what it set aside.** Name each candidate, its verdict
-and the evidence the verifier gave. A silent pass and a filtered pass must never look the same —
-that is the whole point of this rule.
-
-**The session does not change a verdict to move a candidate.** Where it reads the source differently
-from the verifier, it says so beside the verdict, in the comment the verdict put the candidate in,
-and a human decides.
+**The shared page's *The threshold sorts the comment, not the report* holds here, with the verdict
+as the grade**: a review that posts no issue still names each candidate it set aside, with its
+verdict and the evidence the verifier gave, and the session changes no verdict to move a
+candidate. Where it reads the source differently from the verifier, it says so beside the verdict,
+in the comment the verdict put the candidate in, and a human decides.
 
 **Until 2026-10-11 a score sorted the comments.** The plugin's scorers gave each candidate 0, 25,
 50, 75 or 100, and the plugin's own comment took 80 or over, which of those five is 100 alone. A
@@ -130,17 +190,14 @@ says. That gap is a review job, and it is where this repository's mistakes actua
 
 ### The rule
 
-**Check every number in prose against a number in the diff, and do the arithmetic.** Not "does this
-look plausible" — multiply it out. A percentage of a tick, a ratio between two measurements, a
-share of a population: each is a claim with an arithmetic answer, and the answer is in the same
-diff.
-
-**Treat a quantifier as an instruction to enumerate.** "No run clears the floor", "every reactor
-pairs", "the one sentence that did not need correcting" — a claim about *all* or *none* of a set is
-checked by walking the set, never by agreeing with its tone. **A fix that adds a figure re-walks
-every quantifier that covers the place it lands** (2026-10-16, #610): in the modpack a fix added a
-figure under a standing "every figure is quoted from", made it false, and the repair of that was
-false again.
+**The shared page's *Prose* checks hold here** (#864): every number in prose checked against the
+diff by doing the arithmetic; a quantifier as an instruction to list every case, a fix that adds a
+figure walking again every quantifier that covers where it lands; every stub page read against a
+shared page the change edits; each check the pull request cites asked whether it could have failed
+on this change; and a guard deleted as dead shown dead. In this repository's terms a figure is a
+percentage of a tick, a ratio between two measurements or a share of a population, and a
+quantifier is "no run clears the floor", "every reactor pairs" or "the one sentence that did not
+need correcting". The checks below are this repository's, beside those.
 
 **When a change supersedes a figure, grep the repository for the old one, and read every hit in a
 file that records a measurement** — start in `docs/adr/` and `docs/research/`, where most of them
@@ -348,11 +405,12 @@ a fix, above.
 it](code-review-evidence.md#a-ticket-and-a-retrospective-written-from-memory-637) are on the
 evidence page.
 
-**A statement that was not read is marked as an account** (Truls, 2026-10-09, #657). It says whose
-account it is and that it was not read again. The tools repository's tracker page gives the form,
-quoting its own #89: "by its #195's account and not re-read here". That is for a source the
-session could not read when it wrote the ticket. A statement that can be read is still read, and
-the mark does not stand in for the reading.
+**A ticket's evidence follows the four rules of the shared
+[`claim-grades.md`](../../vendor/grado-factorio-tools/docs/claim-grades.md)'s *Tickets and ruling
+comments*** (#864): a figure carries its command, a statement is read from its source or marked
+as an account, a quantifier carries its search, and a command that printed nothing is run again
+on an input that should print something. This repository ruled the second on its own first
+(Truls, 2026-10-09, #657).
 
 **A claim in `docs/adr/` or `docs/research/` is graded** (Truls, 2026-10-16, #720). The three
 grades, *Measured*, *Read from source* and *Inferred*, and the rules a reviewer checks them by are
@@ -534,23 +592,21 @@ hold them. [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579
 counts and the one finding left unfixed, and the eleven that were fixed are in no record. Decided by
 Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 
-**The body names a commit of the branch by its subject in quotes, and not by its hash** (Truls,
-2026-10-19, #730). A merge here can be a rebase merge, which gives every commit of the branch a new
-hash: #731's head reached `main` as `d87a02a`, under a hash the branch never had. A commit already
-on `main` is still named by its hash. `vendor/grado-factorio-tools/scripts/pr-body-check.ps1` fails
-a body that cites a commit not on `main`.
-
-**The body is checked with that script before each time it is sent, and a body it fails is not
-sent** (Truls, 2026-10-19, #730): the first `gh pr create` and every `gh pr edit` after it, each
-review pass's included. The review sections, the `## Pre-PR review` and what the plugin pass adds,
-stand below the template's `## Summary`, `## Evidence` and `## Merge Danger`, which the script
-checks and the tracker page, `docs/agents/issue-tracker.md`, requires. Where the review sections
-stand the script does not read. **The three headings are filled by invoking the
-`mattpocock-skills:pr` skill**, before the first `gh pr create`, and are written by hand to that
-skill's template where it is not installed (2026-10-20, #738): a diagram, diff-sketch or tree under
-Summary, **Before:** and **After:** under Evidence, and **Door:** and **Blast Radius:** under Merge
-Danger. Since #753 the script fails a body missing one of those four markers under its heading;
-before it, #737's body was written by hand, passed it, and had none of them.
+**The body follows the shared
+[`pr-body-convention.md`](../../vendor/grado-factorio-tools/docs/pr-body-convention.md)** (#864),
+which says how a branch commit is named and that the body is checked before each create or edit.
+Here a branch commit is named by its subject in quotes (Truls, 2026-10-19, #730): #731's head
+reached `main` as `d87a02a`, under a hash the branch never had. The check runs before the first
+`gh pr create` and every `gh pr edit` after it, each review pass's included. The review sections,
+the `## Pre-PR review` and what the plugin pass adds, stand below the template's `## Summary`,
+`## Evidence` and `## Merge Danger`, which the script checks and the tracker page,
+`docs/agents/issue-tracker.md`, requires. Where the review sections stand the script does not read.
+**The three headings are filled by invoking the `mattpocock-skills:pr` skill**, before the first
+`gh pr create`, and are written by hand to that skill's template where it is not installed
+(2026-10-20, #738): a diagram, diff-sketch or tree under Summary, **Before:** and **After:**
+under Evidence, and **Door:** and **Blast Radius:** under Merge Danger. Since #753 the script
+fails a body missing one of those four markers under its heading; before it, #737's body was
+written by hand, passed it, and had none of them.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
