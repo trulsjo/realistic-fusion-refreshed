@@ -119,8 +119,9 @@ it. They are outside the repository, so a worktree does not lack them."
    > Return a list of issues. For each: the file, the quoted words or code, what is wrong, the one
    > source that shows it, and why it was flagged. Leave out a pre-existing issue, a nitpick, and
    > what a linter or a gate would catch. A sentence that this change made false and did not touch
-   > is not pre-existing: raise it. Line width is held only in the files `docs/agents/code-review.md`
-   > names as wrapped; in any other file, say nothing of it. List separately what you noticed and
+   > is not pre-existing: raise it. Line width is held in the files `docs/agents/code-review.md`
+   > names as wrapped, and in a script's, hook's or workflow's comment lines by the `pre-commit`
+   > hook; say nothing of a long line anywhere else, nor of one the hook holds. List separately what you noticed and
    > decided not to raise. Say so plainly if you found nothing. Keep the reply under 400 words.
 
    The five tasks, as the plugin words them, one misspelling corrected:

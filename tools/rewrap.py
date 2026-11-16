@@ -37,8 +37,9 @@ The listing leaves those out, and with them a line with no space to break it at,
 leaves alone and which rewrapping its paragraph does not shorten.
 
 WHAT IT REFUSES: a file section 12 does not hold to the width (#717), read from that section's
-$WRAPPED, so the tool's list and the gate's are one list. A file outside it has no width, and
-nothing is written to it; the listing is still given for any file. And a result in which a later line would open with something markdown reads as
+$WRAPPED, so the tool's list and the gate's are one list. A file outside it has no width for its
+prose, and nothing is written to it; a script's comment lines, which the pre-commit hook holds to
+100 (#863), are markdown-rewrap.ps1 -Comment's in the tools submodule; the listing is still given for any file. And a result in which a later line would open with something markdown reads as
 structure, a list marker, `>`, `#`, a pipe or a fence. The file is then not written. Break that
 paragraph by hand.
 

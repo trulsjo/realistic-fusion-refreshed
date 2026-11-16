@@ -634,6 +634,15 @@ fault was scored 0 once and 50 three times. The lengths are as each reviewer gav
 The scorer's reason for the 0, as #667 quotes it: "No rule is broken. No CLAUDE.md states a wrap
 width for itself".
 
+**What the amendment for comment lines rests on (#863, 2026-11-16).** #863 had the `pre-commit`
+hook run the shared `comment-line-check.ps1` at 100 on each staged script, hook and workflow,
+which made the rule's "the PowerShell under `scripts/`" false for comment lines. The pre-PR
+reviewer of the branch that carried it showed the hook refusing: a planted staged edit to
+`scripts/make-mockup-art.ps1` in its own worktree exited 1 on four of that file's comment lines,
+by its report. Counted before the hook was wired, with `comment-line-check.ps1 -All -Path
+'scripts/*.ps1,.githooks/*,.github/workflows/*.yml'` at 745ce31: 649 comment lines over 100 in
+47 of the 57 files read. Truls amended the rule rather than drop the hook's check.
+
 **What the two files held on `main` at `c48fadf`, counted on 2026-10-11** as section 12 counts a
 line, in UTF-16 code units:
 
