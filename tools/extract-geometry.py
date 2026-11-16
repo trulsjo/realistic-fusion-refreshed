@@ -10,8 +10,9 @@ and the position, exactly as the game resolved them after every deepcopy and hel
 stage. This is the fact the render trusts. It replaces the hand-copied connection list that
 scripts/make-mockup-art.ps1 carried and could not check.
 
-Without --dump, runs scripts/dump-data.ps1 to take one (needs the game; about a minute). With it,
-reads the file given, so tests and repeated runs need no game.
+Without --dump, takes one with the shared vendor/grado-factorio-tools/scripts/get-dump.ps1, the
+three mods alone on the base game (needs the game; about ten seconds). With it, reads the file
+given, so tests and repeated runs need no game.
 
 Field semantics are pinned to Factorio 2.0.77 (types/FluidBox.html, types/PipeConnectionDefinition.html)
 and to what docs/research/dump-data-geometry.md observed in a real dump: `position` never
@@ -25,6 +26,7 @@ import math
 import os
 import subprocess
 import sys
+import tempfile
 
 # Observed on 2.0.77 dumps, and checked against the edge each position lies on (see check_edge):
 # the docs list the sixteen names of defines.direction without their numbers.
@@ -118,27 +120,36 @@ def geometry(dump, name):
     }
 
 
-def take_dump(repo_root, out_path):
-    script = os.path.join(repo_root, "scripts", "dump-data.ps1")
-    r = subprocess.run(["pwsh", "-NoProfile", "-File", script, "-Out", out_path],
-                       capture_output=True, text=True, encoding="utf-8")
-    if r.returncode != 0:
-        sys.exit(f"dump-data.ps1 failed:\n{r.stdout}\n{r.stderr}")
-    return r.stdout.strip().splitlines()[-1]
+def take_dump(repo_root):
+    """The parsed dump of this repository's three mods, base game only (ADR 0003), taken by the
+    shared get-dump.ps1 (#863). Its cache is a fresh temp directory each run, removed after: the
+    cache keys a set on each mod's file count and bytes, so an edit that moves a connection without
+    changing a file's size would be served the dump from before it, which is the one thing this
+    tool must never read."""
+    script = os.path.join(repo_root, "vendor", "grado-factorio-tools", "scripts", "get-dump.ps1")
+    with tempfile.TemporaryDirectory(prefix="rf-geometry-dump-") as cache:
+        r = subprocess.run(["pwsh", "-NoProfile", "-File", script, repo_root, "-CacheDirectory", cache],
+                           capture_output=True, text=True, encoding="utf-8")
+        if r.returncode != 0:
+            sys.exit(f"get-dump.ps1 failed:\n{r.stdout}\n{r.stderr}")
+        with open(r.stdout.strip().splitlines()[-1], encoding="utf-8") as f:
+            return json.load(f)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("names", nargs="+", help="prototype names, e.g. rf-heat-exchanger")
-    ap.add_argument("--dump", help="an existing data-raw-dump.json; taken with scripts/dump-data.ps1 if omitted")
+    ap.add_argument("--dump", help="an existing data-raw-dump.json; taken with get-dump.ps1 if omitted")
     ap.add_argument("--out-dir", default="models", help="root for <machine>/geometry.json (default: models)")
     ap.add_argument("--stdout", action="store_true", help="print the geometry instead of writing files")
     a = ap.parse_args(argv)
 
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    dump_path = a.dump or take_dump(repo_root, os.path.join(repo_root, ".dump", "data-raw-dump.json"))
-    with open(dump_path, encoding="utf-8") as f:
-        dump = json.load(f)
+    if a.dump:
+        with open(a.dump, encoding="utf-8") as f:
+            dump = json.load(f)
+    else:
+        dump = take_dump(repo_root)
 
     for name in a.names:
         g = geometry(dump, name)

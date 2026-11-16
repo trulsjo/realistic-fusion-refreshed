@@ -1,0 +1,59 @@
+# Whether the shared `get-dump.ps1` can take this repository's base-game dump
+
+Measured 2026-11-16 ([#863](https://github.com/trulsjo/realistic-fusion-refreshed/issues/863)), on
+Factorio 2.1.24, tools pin `664cbbb`, at this repository's `main` 745ce31 plus the branch's
+commits for #861 and #862, which touch no mod. **It can, and the dump it takes is byte for byte
+the one `scripts/dump-data.ps1` took**, so `tools/extract-geometry.py` now takes its dump from it
+and `dump-data.ps1` is deleted. ADR 0007, *Verification*, says so where it names the old script.
+
+## The question
+
+#863 asked whether `vendor/grado-factorio-tools/scripts/get-dump.ps1`, lifted from the modpack,
+can load the three mods here while keeping the base-game-only load ADR 0003 makes the v1 target.
+`dump-data.ps1` wrote a mod list with every bundled mod named and disabled, so its dump described
+`base` and the three mods alone. `get-dump.ps1` takes a directory of mods and, with no `-With`,
+enables no bundled mod.
+
+## The runs
+
+Both on the same tree, one after the other, each into a directory of its own under the session's
+scratch directory:
+
+```
+pwsh -NoProfile -File scripts/dump-data.ps1 -Out <scratch>/dumps/rf-dump.json
+pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/get-dump.ps1 . -CacheDirectory <scratch>/dumps/cache
+```
+
+Both exited 0. The first took 12.5 s and the second 4.1 s, wall clock, as `time` printed them.
+`get-dump.ps1` printed `get-dump: made, no dump of this set was in the cache` and the dump's path.
+The `.key` it wrote beside the dump:
+
+```
+factorio 2.1.24
+bundled 
+realistic-fusion-refreshed 0.1.0 directory, 61 file(s), 651861 bytes
+realistic-fusion-refreshed-assets 0.1.0 directory, 180 file(s), 17648778 bytes
+realistic-fusion-refreshed-core 0.1.0 directory, 20 file(s), 85955 bytes
+```
+
+So it found exactly the three mods at the root of the repository, and enabled no bundled mod: the
+base-game load. Both dumps were 14528339 bytes, `cmp` found no difference, and both had the
+SHA-256 starting `9f8b4f4e6faec0e87532`.
+
+## What `extract-geometry.py` does with it
+
+Without `--dump` it runs `get-dump.ps1` on the repository root and reads the path it prints last.
+Run on 2026-11-16 for the five machines with a committed `geometry.json`, it took 5.4 s and left
+every one of the five files unchanged.
+
+It gives `get-dump.ps1` a fresh temp directory as its cache on every run and removes it after,
+rather than the default `.dump-cache`. The cache serves a set again when each mod's version, file
+count and total bytes match, as the script's header says under WHAT IT CANNOT SEE. An edit to
+`entities.lua` that moves a connection from `-1.5` to `-2.5` changes no byte count, so a kept cache
+would hand the tool the dump from before it. That is **inferred** from the header, not measured.
+No temp directory named `rf-geometry-dump-*` was left after the run above.
+
+## What this does not say
+
+That the two scripts' dumps agree on any other tree, build or mod set: one tree was dumped once
+with each. Nothing about `-With`: no run here enabled a bundled mod.

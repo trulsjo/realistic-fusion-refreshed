@@ -17,6 +17,8 @@
     vendor/grado-factorio-tools/scripts/load-harness-lib.ps1, which this file dot-sources, so
     every script here gets them without naming the submodule. They moved there from this file
     (grado-factorio-tools#16); the case-folding note above is now Resolve-BundledSelection's there.
+    Find-MissingAssets and Stop-LaunchedGame come from there too since #863: they moved there from
+    this file (grado-factorio-tools#349, #351), and a copy defined here would shadow the shared one.
 #>
 
 $harnessLib = Join-Path $PSScriptRoot '../vendor/grado-factorio-tools/scripts/load-harness-lib.ps1'
@@ -24,32 +26,6 @@ if (-not (Test-Path -LiteralPath $harnessLib)) {
     throw "The load harness is not at $harnessLib. Run: git submodule update --init"
 }
 . $harnessLib
-
-function Stop-LaunchedGame {
-    <#  Kill a game client a probe launched with Start-Process, and wait until it has really gone.
-        For the finally block of every probe that opens a game window, BEFORE Remove-ModJunctions
-        and Remove-TempDirectory: the order is kill, junctions, then the directory.  #>
-    param(
-        [System.Diagnostics.Process] $Process,
-        [Parameter(Mandatory)] [string] $Label
-    )
-
-    # A KILLED GAME IS NOT GONE WHEN Kill() RETURNS (#467), and until it has gone it holds
-    # write-data/.lock, the log and run-stdout.txt, so Remove-TempDirectory's second of retries
-    # loses and the run directory stays in %TEMP%. It happens on the timeout path with a second
-    # probe's game window open, which is also what makes the wait time out. Measured on 2.0.77
-    # on 2026-09-28: one such run on the old ten-second wait left exactly the ticket's launch,
-    # run-stdout.txt and write-data behind. In the seven that were timed the game took between
-    # 0.3 and 13.0 s to exit after the kill, and the 13-second one, on this wait, cleaned up.
-    #
-    # ponytail: a fixed two-minute bound, after which the directory is left and warned about
-    # as before. Raise it if a timed-out probe is ever seen to leave one again.
-    if (-not $Process -or $Process.HasExited) { return }
-    $Process.Kill()
-    if (-not $Process.WaitForExit(120000)) {
-        Write-Warning "${Label}: Factorio (pid $($Process.Id)) had not exited two minutes after it was killed."
-    }
-}
 
 function Get-RepoMods {
     <#  The mods this repository publishes, in dependency order.
@@ -134,8 +110,9 @@ function Get-TrackedTreeFingerprint {
 
         A hash of the contents rather than Get-ModTreeFingerprint's size and write time: the files
         are the 555 git tracks besides the submodule, about 10.9 MB on 2026-10-27, and an editor
-        that rewrites a line in place keeps its length. The index is read as `git ls-files -s` gives it, mode, blob and
-        stage, and not as .git/index's bytes, which `git status` rewrites with nothing staged.
+        that rewrites a line in place keeps its length. The index is read as `git ls-files -s` gives
+        it, mode, blob and stage, and not as .git/index's bytes, which `git status` rewrites with
+        nothing staged.
 
         Untracked and git-ignored files are not in it, so a run's own logs and reports are not
         changes. Nor is a submodule's checkout: its gitlink's row moves only when it is staged.  #>
@@ -186,82 +163,6 @@ function Get-TrackedTreeChanges {
     } | Sort-Object -Unique)
 }
 
-function Find-MissingAssets {
-    <#  Every __mod__/... file the loaded prototypes name, that is not on disk.
-
-        This exists because Factorio will not tell you. A headless run loads no sprites, so
-        --create validates the prototype that names an icon without ever opening the file, and
-        exits 0. The player's game opens it, fails, and refuses to start -- "Failed to load mods:
-        File __base__/graphics/icons/heat-exchanger.png not found", which is how this was found,
-        by hand, after every automated check had passed.
-
-        Reads the --dump-data JSON rather than the Lua source. The first version of this scanned
-        source text for literal "__base__/..." strings, which worked only while every path was a
-        literal. It is not: the prototypes build icon paths by concatenation
-        (ENTITY .. name .. ".png"), and a regex over source sees none of those -- so it would
-        have reported a clean pass over the graphics this repo actually ships. The dump holds the
-        paths as the game resolved them, so concatenation, loops and helper functions are all
-        covered, and vanilla's paths come along for free because they are in the same dump.
-
-        Every mod loaded is in the dump, so this walks far more than this repo -- but it only
-        reports what it can resolve, which is base, core, and whatever the caller maps.
-
-        $ModDirectories maps a mod name to where its files live on disk. Anything not in it and
-        not base/core -- another mod's assets, reachable only when that mod is installed -- is
-        skipped rather than reported.  #>
-    param(
-        [Parameter(Mandatory)] [string]    $DumpPath,
-        [Parameter(Mandatory)] [string]    $DataDir,
-        [Parameter(Mandatory)] [hashtable] $ModDirectories
-    )
-
-    if (-not (Test-Path -LiteralPath $DumpPath)) { throw "no data dump at '$DumpPath'." }
-
-    $pattern = [regex] '^__(?<mod>[A-Za-z0-9_ .-]+)__/(?<rel>.+\.(?:png|ogg))$'
-    $seen    = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-    $missing = @()
-
-    # Walked as an object graph rather than scanned as text, for one reason: a sprite that
-    # declares `stripes` keeps a `filename` beside them that the engine never opens. Vanilla has
-    # such a sprite -- big-artillery-explosion names hr-bigass-explosion-36f.png, which does not
-    # exist, while its two stripes name the files that do -- so a text scan reports the game's own
-    # data as broken. Nothing else in the dump needed structure; this one thing did.
-    $stack = [System.Collections.Generic.Stack[object]]::new()
-    $stack.Push((Get-Content -LiteralPath $DumpPath -Raw | ConvertFrom-Json))
-
-    while ($stack.Count -gt 0) {
-        $node = $stack.Pop()
-
-        if ($node -is [System.Management.Automation.PSCustomObject]) {
-            $properties = $node.PSObject.Properties
-            $striped = $null -ne $properties['stripes']
-            foreach ($property in $properties) {
-                if ($striped -and $property.Name -eq 'filename') { continue }
-                if ($null -ne $property.Value) { $stack.Push($property.Value) }
-            }
-        }
-        elseif ($node -is [System.Object[]]) {
-            foreach ($item in $node) { if ($null -ne $item) { $stack.Push($item) } }
-        }
-        elseif ($node -is [string]) {
-            $match = $pattern.Match($node)
-            if (-not $match.Success -or -not $seen.Add($node)) { continue }
-
-            $mod = $match.Groups['mod'].Value
-            $root = if ($mod -in @('base', 'core')) { Join-Path $DataDir $mod }
-                    elseif ($ModDirectories.ContainsKey($mod)) { $ModDirectories[$mod] }
-                    else { $null }   # another mod's assets: not ours to resolve
-
-            if ($null -eq $root) { continue }
-            if (-not (Test-Path -LiteralPath (Join-Path $root $match.Groups['rel'].Value))) {
-                $missing += [pscustomobject]@{ Reference = $node; Mod = $mod }
-            }
-        }
-    }
-
-    return @($missing | Sort-Object Reference)
-}
-
 # The name every rig in this directory uses for its plasma feed. Public so a rig's control.lua and
 # Write-PlasmaFeed cannot drift apart.
 $script:PlasmaFeedName = 'rf-rig-plasma-infinity-pipe'
@@ -296,20 +197,21 @@ function Add-RigData {
 }
 
 function Write-EnergyFeed {
-    <#  Write a rig mod's data.lua declaring an infinity pipe that feeds or drains either energy fluid.
+    <#  Write a rig mod's data.lua declaring an infinity pipe that feeds or drains either energy
+        fluid.
 
         IT CARRIES BOTH ENERGY CATEGORIES, AND THAT IS WHY IT EXISTS (#84, #86, #87). ADR 0018 gives
         rf-reactor-energy and rf-aneutronic-reactor-energy a connection_category each and ships no
-        pipe that carries either, so a vanilla infinity-pipe is a vanilla pipe: it stopped being able
-        to reach an energy box the instant containment landed, and every rig here fed or drained
-        energy with one. The symptom would have been a reactor reporting itself starved, or an
-        exchanger at no_input_fluid, on a perfectly good rig -- the same failure Write-PlasmaFeed
+        pipe that carries either, so a vanilla infinity-pipe is a vanilla pipe: it stopped being
+        able to reach an energy box the instant containment landed, and every rig here fed or
+        drained energy with one. The symptom would have been a reactor reporting itself starved, or
+        an exchanger at no_input_fluid, on a perfectly good rig -- the same failure Write-PlasmaFeed
         already absorbed for plasma.
 
         #84 routed the rigs through this function first so that #86 was an edit HERE and not an edit
-        to the two places that named a pipe for energy: check-hc.ps1's feed(), which its three ENERGY
-        callers share, and bench-mod-links.ps1's drain. That is what "make the change easy, then make
-        the easy change" bought, and it is what happened.
+        to the two places that named a pipe for energy: check-hc.ps1's feed(), which its three
+        ENERGY callers share, and bench-mod-links.ps1's drain. That is what "make the change easy,
+        then make the easy change" bought, and it is what happened.
 
         ONE PROTOTYPE FOR BOTH TIERS. A connection_category may be a list, which is what Wube do to
         their own infinity pipe for exactly this reason -- space-age/base-data-updates.lua gives it
@@ -317,8 +219,8 @@ function Write-EnergyFeed {
         Two feed prototypes would be two names for rigs to choose between with nothing gained.
 
         `default` is deliberately NOT in the list. This pipe is an instrument for the contained
-        fluids and nothing else, and a feed that also joined ordinary plumbing would quietly bridge a
-        rig's water or steam run into its energy run.
+        fluids and nothing else, and a feed that also joined ordinary plumbing would quietly bridge
+        a rig's water or steam run into its energy run.
 
         THE CATEGORIES ARE READ OFF THE SHIPPED PROTOTYPES rather than named again here, the way
         Write-PlasmaFeed reads rf-pipe's, so a rename follows the mod instead of leaving the rigs
@@ -332,9 +234,9 @@ function Write-EnergyFeed {
         bolts.
 
         probe-energy-containment.ps1 is deliberately NOT one of the callers. It places an ordinary
-        pipe against a categorised one and measures which the machine accepts: there, the pipe's name
-        is the experiment rather than incidental supply, and routing it through here would delete the
-        thing it measures.
+        pipe against a categorised one and measures which the machine accepts: there, the pipe's
+        name is the experiment rather than incidental supply, and routing it through here would
+        delete the thing it measures.
 
         Returns the prototype name to place.  #>
     param([Parameter(Mandatory)] [string] $RigDirectory)
@@ -438,9 +340,9 @@ function Get-QuietMapLua {
         it destroys, so an adopting rig can report the figure. Found rather than destroyed because
         that is what the number counts: a destroy() that failed would raise rather than be missed.
 
-        CALL IT AFTER THE RIG HAS GENERATED ITS CHUNKS, or the count is short and so is the clearing:
-        find_entities_filtered only sees entities in chunks that already exist, so nests in an area
-        generated afterwards survive. check-brownout.ps1 calls it before its own
+        CALL IT AFTER THE RIG HAS GENERATED ITS CHUNKS, or the count is short and so is the
+        clearing: find_entities_filtered only sees entities in chunks that already exist, so nests
+        in an area generated afterwards survive. check-brownout.ps1 calls it before its own
         request_to_generate_chunks and is unharmed -- with expansion off and the surface peaceful,
         what it leaves behind never attacks -- but a rig that wants the surface actually cleared has
         to order the two calls the other way round.
@@ -522,11 +424,11 @@ function Get-RigBuildLua {
         of the same five helpers, and the copies had drifted: three `unbound`s with three different
         behaviours, three `place_facing`s with three different signatures, and a `target` argument
         that was indexed as target[1]/target[2] in two of them and read as target.x/target.y in the
-        third. #215 then established that the rigs were not merely duplicated but WRONG -- a rig laid
-        out for a superseded footprint reads as a machine producing nothing rather than as a plumbing
-        mistake -- and added two guards that landed in one rig's copies and reached none of the
-        others. Two of the three rigs they did not reach are GATES, run to decide whether a change is
-        safe. One implementation, so a guard added once is a guard all five of them have.
+        third. #215 then established that the rigs were not merely duplicated but WRONG -- a rig
+        laid out for a superseded footprint reads as a machine producing nothing rather than as a
+        plumbing mistake -- and added two guards that landed in one rig's copies and reached none of
+        the others. Two of the three rigs they did not reach are GATES, run to decide whether a
+        change is safe. One implementation, so a guard added once is a guard all five of them have.
 
         WHAT `must` BECAME. Four rigs wrapped every create_entity in `must(entity, what)`, which
         raises when the engine returns nil. It is absorbed by rf_place_or_die rather than kept:
@@ -1100,12 +1002,12 @@ end
 function Format-Category {
     <#  One connection's category as the report prints it.
 
-        The three forms are kept distinguishable on purpose. A bare string and a one-element list are
-        the same thing to the engine and NOT the same evidence: `no-pipe-touching` writes a bare
+        The three forms are kept distinguishable on purpose. A bare string and a one-element list
+        are the same thing to the engine and NOT the same evidence: `no-pipe-touching` writes a bare
         string over an underground connection and a list onto a surface one, and telling which
-        happened is most of what identifies the pass that did it. Absent is a third case again -- the
-        engine reads it as "default", which is the category every vanilla pipe carries, so an absent
-        field is containment gone rather than containment unset.  #>
+        happened is most of what identifies the pass that did it. Absent is a third case again --
+        the engine reads it as "default", which is the category every vanilla pipe carries, so an
+        absent field is containment gone rather than containment unset.  #>
     param([object] $Value)
 
     if ($null -eq $Value) { return 'default (no field)' }
@@ -1135,8 +1037,8 @@ function Add-Connections {
     <#  Every pipe connection under $Node, as "path" -> its category and connection type.
 
         Recursive over the whole prototype rather than over a list of known field names: see the
-        header. The path is the connection's identity across the two dumps, so it has to be built the
-        same way on both sides, and it is, by this one function running on both.  #>
+        header. The path is the connection's identity across the two dumps, so it has to be built
+        the same way on both sides, and it is, by this one function running on both.  #>
     param([object] $Node, [string] $Path, [Parameter(Mandatory)] [hashtable] $Into)
 
     if ($Node -is [System.Management.Automation.PSCustomObject]) {
@@ -1150,14 +1052,15 @@ function Add-Connections {
             foreach ($connection in @($property.Value)) {
                 $index++
                 $fields = $connection.PSObject.Properties
-                # A PLAIN ASSIGNMENT, NOT `$category = if (...) { $connection.connection_category }`.
-                # An `if` used as an expression writes its block's output to the pipeline, and a
-                # ONE-ELEMENT array sent to the pipeline arrives as its element -- so the array
-                # ["rf-plasma"] was read as the string "rf-plasma" and this probe could not tell the
-                # two apart at all. It mattered: `no-pipe-touching` rewrites the field in place as a
-                # one-element list on twelve contained connections of ours, and the instrument was
-                # blind to the rewrite by accident rather than by decision. The set comparison below
-                # is what decides such a rewrite is a no-op; this line is what lets it see one.
+                # A PLAIN ASSIGNMENT, NOT
+                # `$category = if (...) { $connection.connection_category }`. An `if` used as an
+                # expression writes its block's output to the pipeline, and a ONE-ELEMENT array sent
+                # to the pipeline arrives as its element -- so the array ["rf-plasma"] was read as
+                # the string "rf-plasma" and this probe could not tell the two apart at all. It
+                # mattered: `no-pipe-touching` rewrites the field in place as a one-element list on
+                # twelve contained connections of ours, and the instrument was blind to the rewrite
+                # by accident rather than by decision. The set comparison below is what decides such
+                # a rewrite is a no-op; this line is what lets it see one.
                 $category = $null
                 if ($fields['connection_category']) { $category = $connection.connection_category }
                 $Into["$Path.pipe_connections[$index]"] = [pscustomobject]@{
@@ -1209,8 +1112,9 @@ function Get-ConnectionsFromDump {
             $connections = @{}
             Add-Connections -Node $prototype.Value -Path '' -Into $connections
             # Kept even when EMPTY, so that "the prototype is gone" and "its fluid box was emptied"
-            # stay different findings. Dropping the empty ones made the second read as the first, and
-            # a reader chasing a deleted rf-reactor would have been looking for the wrong accident.
+            # stay different findings. Dropping the empty ones made the second read as the first,
+            # and a reader chasing a deleted rf-reactor would have been looking for the wrong
+            # accident.
             $found["$($type.Name)/$($prototype.Name)"] = $connections
         }
     }

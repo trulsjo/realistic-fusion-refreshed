@@ -80,6 +80,12 @@ against the unpacked archive rather than against the repo. A file that resolves 
 and never reaches a zip passes the default and breaks a player's game. Use `-FromZips` before
 anything that ships.
 
+**Hand play starts the game from the shared launcher** (#863):
+`pwsh -File vendor/grado-factorio-tools/scripts/dev-launch.ps1 realistic-fusion-refreshed-assets
+realistic-fusion-refreshed-core realistic-fusion-refreshed`, with `-With space-age` for that load
+and `-Clean` to remove its mod directory. It junctions the three mods into a mod directory of its
+own, so an edit and a restart is the loop; its header says what it refuses and why.
+
 **Before building the zips or anything that ships: read
 [`docs/agents/shipping.md`](docs/agents/shipping.md)**, which has the commands for the packer and
 for the locale check. Neither is this repository's, and no gate runner starts the locale check.
@@ -117,9 +123,12 @@ that starts reading one ends it.
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` with `commit-scopes.txt` over the
 commits that event brought, a step failing any `.githooks/` file not committed as mode 100755
-(#862), each session hook's `-SelfTest` against `.claude/settings.json` (#861), and
-the `--self-test` of the four of those scripts under `tools/` that need nothing installed into
-Python, `refuse-hanging-bash.py`, `review-usage.py`, `rewrap.py` and `review-coverage.py`, and
+(#862), each session hook's `-SelfTest` against `.claude/settings.json` (#861), three
+whole-tree checks from the tools submodule that hold what `ship-check.ps1` sections 7, 12 and 17
+hold (#863) -- no line-number citation of our own code, no cited commit `origin/main` does not
+reach outside the record pages, and the wrapped files' width -- and the `--self-test` of the
+four of those scripts under `tools/` that need nothing installed into Python,
+`refuse-hanging-bash.py`, `review-usage.py`, `rewrap.py` and `review-coverage.py`, and
 `models/test_rf_blender.py`. **It
 can also be started by hand on any branch** with `gh workflow run gates.yml --ref <branch>` (#813),
 which runs what a push to `main` runs less the commit check. **It
@@ -293,7 +302,14 @@ thousands split across a line end. Before that it refuses any commit while a
 left behind (#872). The same two steps install it, and a clone that set the hooks path and has no
 submodule is told the Markdown was not checked.
 `ship-check.ps1` runs the same check over every tracked `.md`, so the workflow holds a clone without
-the hook to it.
+the hook to it. **It also reads the staged scripts** (#863), with the tools submodule's checks: a
+staged wrapped file's lines against 100 characters, every comment line of a staged script, hook or
+workflow against 100, and each staged `*.ps1` under `scripts/` and `.githooks/` for a list
+parameter never split on commas, a variable spelt two ways, a help block PowerShell does not read
+and, where it sets strict mode, a read that can throw. Those checks read the whole file, so a
+commit that stages a script written before them is refused for what was there already: on
+2026-11-16, 47 of the 57 scripts, hooks and workflows held 649 comment lines over 100, and 13 list
+parameters and 5 variables in `scripts/` failed. `markdown-rewrap.ps1 -Comment` mends the first.
 
 **The `commit-msg` hook exists because the wrap rule had rotted.** Measured on 2026-09-06 by
 `commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5

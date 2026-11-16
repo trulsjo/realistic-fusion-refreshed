@@ -11,9 +11,10 @@
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings and, since #753, its four markers, no commit cited that is not on main, and no
-# closing keyword outside a lone `Closes #N` line. `edited` is among the triggers so an edited body is checked again, and every
-# other job skips that event, so a body edit runs the body check alone. The body reaches the script
-# through the environment, never pasted into the command. The script refuses a shallow clone.
+# closing keyword outside a lone `Closes #N` line. `edited` is among the triggers so an edited body
+# is checked again, and every other job skips that event, so a body edit runs the body check
+# alone. The body reaches the script through the environment, never pasted into the command. The
+# script refuses a shallow clone.
 #
 # workflow_dispatch starts it by hand on any branch, with no pull request (#813), so a planted
 # proof runs on a throwaway branch and never on one that merges. It runs what a push to main runs,
@@ -124,6 +125,26 @@ jobs:
           bad=$(printf '%s\n' "$modes" | awk '$1 != "100755"')
           if [ -n "$bad" ]; then echo "FAILED - not mode 100755, so git off Windows skips it:"; printf '%s\n' "$bad"; exit 1; fi
           echo "OK - $(printf '%s\n' "$modes" | wc -l | tr -d ' ') file(s) under .githooks, each mode 100755."
+      # Three whole-tree checks from vendor/ that hold what ship-check.ps1 sections 7, 12 and 17
+      # held, with this repository's own as their parameters (#863), so that #865 can delete
+      # those sections. No hook runs the first two: a commit is never on origin/main before it is
+      # pushed, and the citation check reads the whole tree. The pages the commits check exempts
+      # are $RECORDS in ship-check.ps1; the citation check's -Foreign is section 7's whole-line
+      # pattern, and its floors section 7's.
+      - name: line-cite-check.ps1
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./vendor/grado-factorio-tools/scripts/line-cite-check.ps1 -Foreign '__|Script @|ORIG/|PORT/|_reference/|RealisticFusion|(?<![\w-])base/' -MinCitations 10 -MinContinuations 8
+      - name: cited-commit-check.ps1
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./vendor/grado-factorio-tools/scripts/cited-commit-check.ps1 -Exempt 'docs/adr/,docs/agents/state-detail.md,docs/agents/code-review-history.md,docs/agents/code-review-evidence.md,docs/agents/review-figures.md'
+      # The wrapped files docs/agents/code-review.md names, less the pre-PR review's SKILL.md,
+      # whose front matter section 12 leaves alone and the shared check does not.
+      - name: markdown-check.ps1 on the wrapped files
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./vendor/grado-factorio-tools/scripts/markdown-check.ps1 -Path 'docs/agents/code-review.md,docs/agents/review-figures.md,docs/agents/code-review-history.md,docs/agents/code-review-evidence.md,docs/agents/plugin-pass.md,CLAUDE.md,scripts/CLAUDE.md' -MaxLineLength 100
       - name: pr-body-check.ps1 -SelfTest
         if: ${{ !cancelled() }}
         shell: pwsh

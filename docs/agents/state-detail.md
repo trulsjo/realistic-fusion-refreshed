@@ -576,3 +576,18 @@ One line for each change to a gate, newest last, with its date and its ticket.
   A new `gates.yml` step fails a file under `.githooks/` whose mode in
   `git ls-files -s .githooks` is not `100755`; `.githooks/gates-running.ps1`, the one that was
   `100644`, is now `100755`.
+- 2026-11-16, #863: `.githooks/pre-commit` also runs, from the tools submodule, the Markdown
+  check with `-MaxLineLength 100` on the staged wrapped files, `comment-line-check.ps1` on the
+  staged scripts, hooks and workflows, and `param-check.ps1`, `variable-case-check.ps1`,
+  `help-check.ps1` and `strict-list-check.ps1` on the staged `*.ps1` directly under `scripts/` and
+  `.githooks/`. Counted first, with `comment-line-check.ps1 -All -Path
+  'scripts/*.ps1,.githooks/*,.github/workflows/*.yml'`: 649 comment lines over 100 in 47 of 57
+  files; with `param-check.ps1 scripts`, 13 list parameters never split; with
+  `variable-case-check.ps1 scripts`, 5 variables spelt two ways; with `strict-list-check.ps1` on
+  the three strict-mode scripts, 2 reads in `probe-hidden-prototypes.ps1`. None was mended
+  outside a file the branch stages. `gates.yml` runs `line-cite-check.ps1` with section 7's
+  `-Foreign` and floors, `cited-commit-check.ps1` with `$RECORDS`'s pages as `-Exempt`, and the
+  Markdown check on seven of the eight wrapped files; the eighth, the pre-PR review's `SKILL.md`,
+  holds front matter the shared check does not leave alone, so section 12 still holds it. The
+  sections stay until #865. `Find-MissingAssets` and `Stop-LaunchedGame` are the shared ones:
+  the copies in `scripts/factorio-lib.ps1` shadowed them and are gone.
