@@ -6,7 +6,8 @@
 # they do there (#659, #787). So does models/test_rf_blender.py, the render's and the kit's
 # arithmetic, which needs no Blender and runs as a script of its own (#810, #803). Two more
 # tools' self-tests, mesh-overlap and compare-sheets, run there and not here: this runner has no
-# Blender, and its Python no Pillow (#850, #853).
+# Blender, and its Python no Pillow (#850, #853). The self-tests of the eight session hooks wired
+# from vendor/ run here and not there (#861): none is a gate, and each needs its wiring read.
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings and, since #753, its four markers, no commit cited that is not on main, and no
@@ -115,3 +116,22 @@ jobs:
         if: ${{ !cancelled() }}
         shell: pwsh
         run: ./vendor/grado-factorio-tools/scripts/pr-body-check.ps1 -SelfTest
+      # The session hooks .claude/settings.json wires from vendor/ (#861) refuse or warn in an
+      # agent session and check nothing here, so their self-tests are the one place a change that
+      # breaks one goes red. Each runs the command that file wires for it, so a wired command
+      # that no longer reaches its script fails; the hanging-Bash one also fails where git does
+      # not ignore its refusal log, .claude/refused-bash.log.
+      - name: Session hooks' -SelfTest -Settings .claude/settings.json
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          $failed = @()
+          foreach ($hook in 'ask-before-download', 'refuse-python-heredoc',
+                  'refuse-backtick-substitution', 'refuse-hanging-bash', 'refuse-git-hook-skip',
+                  'refuse-git-discard', 'refuse-cd-into-mod-cache', 'warn-skipped-install') {
+            Write-Host "::group::$hook"
+            pwsh -NoProfile -File "vendor/grado-factorio-tools/scripts/$hook.ps1" -SelfTest -Settings .claude/settings.json
+            if ($LASTEXITCODE -ne 0) { $failed += $hook; Write-Host "::error::$hook failed" }
+            Write-Host '::endgroup::'
+          }
+          if ($failed) { exit 1 }
