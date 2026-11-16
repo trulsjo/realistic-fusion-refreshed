@@ -1,0 +1,24 @@
+# The scopes a commit subject here may name, one to a line: the four modules, then the areas.
+# .githooks/commit-msg and gates.yml's commit check hand this file to the shared commit check as
+# -ScopeFile, which rejects a scope it does not list. What a scope is: CLAUDE.md, Commit messages.
+#
+# The list started from the scopes this repository's history used, read on main at 745ce31,
+# 2026-11-16, with
+#
+#     git log --format=%s | grep -oP '^\S+ \w+\(\K[^)]+' | sort | uniq -c | sort -rn
+#
+# which printed repo 838, power 257, graphics 180, research 14, runtime 7, core 4, test 1,
+# locale 1, data 1. Truls kept CLAUDE.md's vocabulary and research, and left test out (#862,
+# 2026-11-16); weaponry, antimatter and settings had no subject yet and stay because CLAUDE.md
+# names them.
+core
+power
+weaponry
+antimatter
+data
+runtime
+settings
+locale
+graphics
+repo
+research

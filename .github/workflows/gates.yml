@@ -111,7 +111,19 @@ jobs:
             ${{ github.event_name == 'pull_request'
                 && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha)
                 || format('{0}..{1}', github.event.before, github.event.after) }}
-        run: ./vendor/grado-factorio-tools/scripts/commit-check.ps1 -Range $env:RANGE
+        run: ./vendor/grado-factorio-tools/scripts/commit-check.ps1 -ScopeFile commit-scopes.txt -Range $env:RANGE
+      # Each file git tracks under .githooks must be mode 100755 (#862): off Windows git skips a
+      # hook that is not executable, and a clone on Windows does not show it. Fails where git
+      # tracks no file there.
+      - name: Hooks committed executable
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          modes=$(git ls-files -s .githooks)
+          if [ -z "$modes" ]; then echo "FAILED - git tracks no file under .githooks, so no mode was read."; exit 1; fi
+          bad=$(printf '%s\n' "$modes" | awk '$1 != "100755"')
+          if [ -n "$bad" ]; then echo "FAILED - not mode 100755, so git off Windows skips it:"; printf '%s\n' "$bad"; exit 1; fi
+          echo "OK - $(printf '%s\n' "$modes" | wc -l | tr -d ' ') file(s) under .githooks, each mode 100755."
       - name: pr-body-check.ps1 -SelfTest
         if: ${{ !cancelled() }}
         shell: pwsh

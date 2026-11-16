@@ -115,7 +115,9 @@ that starts reading one ends it.
 
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
-`tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
+`tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` with `commit-scopes.txt` over the
+commits that event brought, a step failing any `.githooks/` file not committed as mode 100755
+(#862), each session hook's `-SelfTest` against `.claude/settings.json` (#861), and
 the `--self-test` of the four of those scripts under `tools/` that need nothing installed into
 Python, `refuse-hanging-bash.py`, `review-usage.py`, `rewrap.py` and `review-coverage.py`, and
 `models/test_rf_blender.py`. **It
@@ -242,8 +244,9 @@ shows `main`, which may be ahead of the commit this repo has pinned.
 Three things are this repository's own, because all three are its domain rather than shared
 mechanics:
 
-- **Scope vocabulary.** Use the module (`core`, `power`, `weaponry`, `antimatter`) or the area
-  (`data`, `runtime`, `settings`, `locale`, `graphics`, `repo`).
+- **Scope vocabulary.** A scope is the module or the area a change is in. The list is
+  [`commit-scopes.txt`](commit-scopes.txt) and nowhere else; the hook and the workflow both hand it
+  to the check, which rejects a scope it does not list.
 - **What counts as a breaking change.** Here it is anything that breaks an existing save or a mod's
   public interface. **Save compatibility is the one that will bite: it breaks silently and players
   find out, not the build.** The `!` and the `BREAKING CHANGE:` footer are the shared mechanism;
