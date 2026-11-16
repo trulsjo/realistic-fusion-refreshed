@@ -478,13 +478,17 @@ One line for each, newest last. The passages above are not edited.
   due before them; the words that place the reading were #663's, in the paragraph before. Truls
   decided in #879's triage that the timing goes in the #716 paragraph alone, and that this page's
   head is unchanged. No gate reads it.
-- **2026-11-16, #864: `code-review.md` became a stub page of the shared procedure and rules.** It
-  links `code-review-procedure.md` and `code-review-rules.md` in the tools submodule, gives this
-  repository's value for each of the procedure's parameters, its threshold the verdict *real*
-  with *not verified* beside it, and names the shared threshold and *Prose* checks where its own
-  rules lean on them. The pre-PR review is also handed the commit messages of its range and the
-  shared `code-review-rules.md`, and the session walks the shared absolute-words list before the
-  reviewer is started. Its report stays a reply, where the shared procedure has a file: the
+- **2026-11-16, #864: `code-review.md` became a stub page of the shared procedure and rules**, as
+  Truls ruled in grado-factorio-tools#332, which #864 carries out. It links
+  `code-review-procedure.md` and `code-review-rules.md` in the tools submodule, gives this
+  repository's value for each of the procedure's parameters, its threshold the verdict *real* with
+  *not verified* beside it, and names the shared threshold and *Prose* checks where its own rules
+  lean on them. #657's rule on a statement not read became the four rules of the shared
+  `claim-grades.md`'s *Tickets and ruling comments*, which add a figure's command, a quantifier's
+  search and a second run of a command that printed nothing; and the pull request's body follows the
+  shared `pr-body-convention.md`. The pre-PR review is also handed the commit messages of its range
+  and the shared `code-review-rules.md`, and the session walks the shared absolute-words list before
+  the reviewer is started. Its report stays a reply, where the shared procedure has a file: the
   harness refused the reviewer's write of one on the review of #861 to #864. No gate reads it.
 - **2026-11-16, #863: comment lines are the exception to #667's no-width rule.** Truls ruled on
   #863, after its pre-PR review found the rule false once the `pre-commit` hook held each staged
