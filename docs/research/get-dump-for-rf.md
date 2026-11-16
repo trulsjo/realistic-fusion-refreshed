@@ -3,7 +3,7 @@
 Measured 2026-11-16 ([#863](https://github.com/trulsjo/realistic-fusion-refreshed/issues/863)), on
 Factorio 2.1.24, tools pin `664cbbb`, at this repository's `main` 745ce31 plus the branch's
 commits for #861 and #862, which touch no mod. **It can, and the dump it takes is byte for byte
-the one `scripts/dump-data.ps1` took**, so `tools/extract-geometry.py` now takes its dump from it
+the one this repository's own `dump-data.ps1` took**, so `tools/extract-geometry.py` now takes its dump from it
 and `dump-data.ps1` is deleted. ADR 0007, *Verification*, says so where it names the old script.
 
 ## The question
@@ -17,10 +17,11 @@ enables no bundled mod.
 ## The runs
 
 Both on the same tree, one after the other, each into a directory of its own under the session's
-scratch directory:
+scratch directory. `dump-data.ps1` was then under `scripts/`, which this change deletes, so its
+line names it by `<scripts>`; it is in the tree at 745ce31.
 
 ```
-pwsh -NoProfile -File scripts/dump-data.ps1 -Out <scratch>/dumps/rf-dump.json
+pwsh -NoProfile -File <scripts>/dump-data.ps1 -Out <scratch>/dumps/rf-dump.json
 pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/get-dump.ps1 . -CacheDirectory <scratch>/dumps/cache
 ```
 
