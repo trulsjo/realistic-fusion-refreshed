@@ -40,7 +40,8 @@ about whether a change is safe. What each proves, in a line:
 - **Each `scripts/check-*.ps1`** creates a real map and asserts against it.
 - **`scripts/ship-check.ps1`** runs no game. It checks the claims the mods make about themselves:
   the two statements ADR 0003 and ADR 0006 oblige them to make, the credits, the licence files and
-  the assets dependency floor (ADR 0023). It also checks prose no other gate can see: that a script
+  the assets dependency floor (ADR 0023). It also checks prose, part of which the workflow's three
+shared checks also hold (#863): that a script
   with a `.SYNOPSIS` answers `Get-Help`, the two citation rules under Conventions, the rows of a
   research note's `## Current figures` table, what the shared Markdown check reads in every
   tracked `.md` as staged (#658), the width of the files `docs/agents/code-review.md` names as
@@ -93,8 +94,9 @@ for the locale check. Neither is this repository's, and no gate runner starts th
 **Every gate here needs the submodule initialised**, the one that starts no game (`ship-check.ps1`)
 included: `git submodule update --init`, the same step the commit hook asks for. The harness under
 `load-check.ps1`, the packer, the fetcher of the third-party sets, the locale check, the Markdown
-check and the commit check are `vendor/grado-factorio-tools`'s; the other checks are this
-repository's. The sets are pinned in
+check, the commit check, the eight session hooks, the comment-line check, the four AST lints, the
+line-citation and cited-commit checks and `get-dump.ps1` are `vendor/grado-factorio-tools`'s
+(#861, #863); the other checks are this repository's. The sets are pinned in
 `scripts/mod-sets.psd1`, and the fetcher caches under `.mod-cache/<set>` of the directory it runs
 in, so run it from the repository root.
 
@@ -116,17 +118,20 @@ fetched first (#755, #758); `--no-renames` is there so that a file renamed to `.
 path it had. One path that does not end in `.md`, a
 `.gitignore` or a comment-only edit to a script included, and the branch is not markdown-only:
 the paragraph above applies to it as it would to any other.
-The exception rests on one fact: no other gate reads a `.md` file, checked 2026-10-07. A gate
-that starts reading one ends it.
+The exception rests on one fact: no other gate run on this machine reads a `.md` file, checked
+2026-10-07. A gate run here that starts reading one ends it. The workflow's three shared checks
+read them (#863), and they run on every pull request; Truls kept the exception on 2026-11-16, on
+#863.
 
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` with `commit-scopes.txt` over the
 commits that event brought, a step failing any `.githooks/` file not committed as mode 100755
 (#862), each session hook's `-SelfTest` against `.claude/settings.json` (#861), three
-whole-tree checks from the tools submodule that hold what `ship-check.ps1` sections 7, 12 and 17
-hold (#863) -- no line-number citation of our own code, no cited commit `origin/main` does not
-reach outside the record pages, and the wrapped files' width -- and the `--self-test` of the
+whole-tree checks from the tools submodule that hold what `ship-check.ps1` sections 7 and 17
+hold, and section 12 for seven of its eight files (#863) -- no line-number citation of our own
+code, no cited commit `origin/main` does not reach outside the record pages, and seven wrapped
+files' width -- and the `--self-test` of the
 four of those scripts under `tools/` that need nothing installed into Python,
 `refuse-hanging-bash.py`, `review-usage.py`, `rewrap.py` and `review-coverage.py`, and
 `models/test_rf_blender.py`. **It
@@ -221,11 +226,11 @@ material. Two rules are kept here because they rule material out outright:
   the shared `line-cite-check.ps1` with this repository's exemptions, **two** of the three shapes
   this takes — a path with a line number on it, and a backticked `:155` continuation inheriting a
   path named earlier on the same line — across every tracked `.md`, `.lua`, `.ps1`, `.py` and
-  `.js`. It stays blind to "lines 196-197" written out in prose, to a
+  `.js`. Both stay blind to "lines 196-197" written out in prose, to a
   continuation whose path is on an earlier line, and to one written without backticks; and a
   **mod**-relative path like `prototypes/entities.lua:119` still names two files, so only a citation
-  anchored at the repo root is actually gated. See `docs/adr/0032-prose-cites-code-by-symbol.md` and
-  the script's section 7.
+  anchored at the repo root is actually gated. See `docs/adr/0032-prose-cites-code-by-symbol.md`,
+  section 7 of `ship-check.ps1` and `line-cite-check.ps1`'s header.
 - **Cite a `-SelfTest` half by its name, never by its position** (#411, #416). A gate declares its
   halves by name where they run and `Invoke-SelfTestHalves` numbers them as it goes, so inserting
   one moves the number printed for every half after it while the names stay put — and a sentence

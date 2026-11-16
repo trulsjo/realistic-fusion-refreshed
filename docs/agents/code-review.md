@@ -84,10 +84,15 @@ line that ends in a number of one to three digits above a line that opens with a
 exactly three, and the way out is to break the line a word earlier or later. #646 has the findings
 that asked for a stated width.
 
-**A file that is not one of those eight has no width** (Truls, 2026-10-11, #667). A long line in
-it is not a finding, and a reviewer does not report one. That covers the Python under `tools/`,
-the PowerShell under `scripts/`, the Lua and every markdown page that sentence does not name.
-`tools/rewrap.py` refuses to rewrap such a file, reading the list from section 12 (#717).
+**A file that is not one of those eight has no width for its prose** (Truls, 2026-10-11, #667).
+A long line in it is not a finding, and a reviewer does not report one. That covers the Python
+under `tools/`, the code of the PowerShell under `scripts/`, the Lua and every markdown page that
+sentence does not name. **The comment lines of a script, a hook or a workflow are the exception**
+(Truls, 2026-11-16, on #863): the `pre-commit` hook holds each of them, in a file staged, to 100
+characters, through the shared `comment-line-check.ps1`. A reviewer does not report one either:
+the hook does. `tools/rewrap.py` refuses to rewrap a file outside the eight, reading the list
+from section 12 (#717); `markdown-rewrap.ps1 -Comment` in the tools submodule rewraps a script's
+comments.
 Reviewers had raised a long line in a file with no stated width four times, three of them in
 `CLAUDE.md`, and scored the same fault 0 and 50; [the evidence page has the
 four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
