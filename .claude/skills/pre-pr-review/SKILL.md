@@ -61,9 +61,6 @@ pass.
    gate's `-SelfTest` that a criterion names is one of them. A criterion that names no command adds
    nothing here.
 
-   Done when every figure or pass the branch claims, and every command a ticket's acceptance
-   criteria name, has its output in a file.
-
    **Then write a draft of the pull request's body** to `<scratch>/body.md` (#864), as the shared
    procedure's fourth step hands a review the body or its draft: invoke the
    `mattpocock-skills:pr` skill with the Skill tool for `## Summary`, `## Evidence` and
@@ -71,6 +68,9 @@ pass.
    of its template, which `docs/agents/code-review.md` lists; and put one `Closes #N` line per
    ticket above them, as `docs/agents/issue-tracker.md` requires (#730). The reviewer reads it
    like the commit messages. The `## Pre-PR review` section is added below it in steps 5 and 6.
+
+   Done when every figure or pass the branch claims, and every command a ticket's acceptance
+   criteria name, has its output in a file, and the draft of the body is in `<scratch>/body.md`.
 
 3. **Walk the absolute-words list first** (#864), as the shared procedure's *Before the reviewer
    is started* says, and reword each line whose word does not hold for what it covers. The list

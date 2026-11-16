@@ -46,10 +46,13 @@ had the SHA-256 starting `9f8b4f4e6faec0e87532`.
 ## What `extract-geometry.py` does with it
 
 Without `--dump` it runs `get-dump.ps1` on the repository root and reads the one `.json` the run
-leaves in its cache directory (since #887's review panel; the runs below read the path the script
-prints last, which names the same file).
+leaves in its cache directory (since #887's review panel). The runs below read the path the
+script prints last instead, which named that same file (*Measured*: the run above printed
+`...\dumps\cache\realistic-fusion-refreshed-2020261170-1f7d7f2196d6.json` last).
 *Measured*: run twice on 2026-11-16 for the five machines with a committed `geometry.json`, it
-took 5.4 s the first time, whose output was not kept, and 19.3 s the second, whose was. Each left
+took 5.4 s the first time, whose output was not kept, and 19.3 s the second, whose was. A run
+for one machine took 39.95 s, by the pre-PR reviewer's account of #887 and not re-run here, with
+the review panel's three worktrees open on the machine. Each left
 every one of the five files unchanged, and no temp directory named `rf-geometry-dump-*` after it.
 
 It gives `get-dump.ps1` a fresh temp directory as its cache on every run and removes it after,

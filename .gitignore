@@ -41,7 +41,7 @@ __pycache__/
 .dump-cache/
 
 # Where tools/extract-geometry.py wrote its dump before #863, and where a clone that ran it still
-# holds one; kept ignored until #865 removes this line.
+# holds one; kept ignored so that dump is never committed. Nothing writes here now.
 .dump/
 
 # What each probe last printed, one file for a probe and its arguments (#589). Written by
