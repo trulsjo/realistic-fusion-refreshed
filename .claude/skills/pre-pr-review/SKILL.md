@@ -1,6 +1,6 @@
 ---
 name: pre-pr-review
-description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main and the commit messages, docs/agents/code-review.md and the shared code-review-rules.md, and the gate result or the probes' raw output, with the output of each command the tickets' acceptance criteria name; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
+description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main, the commit messages and a draft of the pull request's body, docs/agents/code-review.md and the shared code-review-rules.md, and the gate result or the probes' raw output, with the output of each command the tickets' acceptance criteria name; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
 ---
 
 # /pre-pr-review
@@ -64,6 +64,14 @@ pass.
    Done when every figure or pass the branch claims, and every command a ticket's acceptance
    criteria name, has its output in a file.
 
+   **Then write a draft of the pull request's body** to `<scratch>/body.md` (#864), as the shared
+   procedure's fourth step hands a review the body or its draft: invoke the
+   `mattpocock-skills:pr` skill with the Skill tool for `## Summary`, `## Evidence` and
+   `## Merge Danger` (#738, #748), or where it is not installed write them by hand to the shape
+   of its template, which `docs/agents/code-review.md` lists; and put one `Closes #N` line per
+   ticket above them, as `docs/agents/issue-tracker.md` requires (#730). The reviewer reads it
+   like the commit messages. The `## Pre-PR review` section is added below it in steps 5 and 6.
+
 3. **Walk the absolute-words list first** (#864), as the shared procedure's *Before the reviewer
    is started* says, and reword each line whose word does not hold for what it covers. The list
    is for this session and is not handed to the reviewer:
@@ -83,7 +91,8 @@ pass.
    > and `vendor/grado-factorio-tools/docs/code-review-rules.md` in full first; the second rule
    > of the first, *Review the prose, not only the code*, binds you, and so does the second's
    > *Prose*. Then review `<scratch>/branch.diff` (`<the diff against origin/main | the diff of
-   > <range>>`) and the commit messages in `<scratch>/messages.txt` against `<evidence files>`,
+   > <range>>`), the commit messages in `<scratch>/messages.txt` and the draft of the pull
+   > request's body in `<scratch>/body.md` against `<evidence files>`,
    > which hold `<the probes' raw output | the gate results>`, and the output of each command a
    > ticket's acceptance criteria name.
    >
@@ -133,8 +142,8 @@ pass.
    > quoted table that has lost its `>` it does not catch, and a table in the pull request's body
    > it does not read.
    >
-   > Reply with one line per finding first: its number, the file and the fault. Then give the
-   > detail of each. A long reply arrives cut off.
+   > Reply with one line per finding first: its number, the file and the fault. Give the
+   > detail for a finding when you are asked for it. A long reply arrives cut off.
 
    **The report comes as a reply, not as a file**, where the shared procedure's sixth step has
    a file outside the repository: the harness refuses a subagent's write of one. On #864's review
@@ -239,12 +248,10 @@ pass.
    Each commit it lists is one no reviewer was handed (#787). A held fix (#643) may be listed; stop
    on any other and send its commit to the reviewer first, as step 4 sends a fix.
 
-   **Then invoke the `mattpocock-skills:pr` skill** with the Skill tool for `## Summary`,
-   `## Evidence` and `## Merge Danger` (#738, #748); where it is not installed, write them by hand
-   to the shape of its template, which `docs/agents/code-review.md` lists. Put one `Closes #N`
-   line per ticket above them, and the `## Pre-PR review` section below them, as
-   `docs/agents/issue-tracker.md` requires (#730). That section opens by naming each diff the
-   reviewer was handed by the subjects of its commits.
+   **Then bring step 2's draft up to date** with what the fixes changed, and put the
+   `## Pre-PR review` section below its three headings, as `docs/agents/issue-tracker.md` requires
+   (#730). That section opens by naming each diff the reviewer was handed by the subjects of its
+   commits.
 
    **Then answer for each thing the reviewer said it did not check** (#636). *A review before the
    pull request, and the plugin pass after it* in `docs/agents/code-review.md` says how an item is
@@ -271,8 +278,8 @@ pass.
    **Fixed** is `yes, confirmed` only when the reviewer has said so; otherwise `yes, not confirmed`,
    `no: waits on Truls` (#782) or `no: <reason>`. The findings carry no score (#610). A review
    that found nothing says that in the body in place of the table, below step 5's outcomes for what
-   the reviewer said it did not check. A cell that names a commit of the branch names it by its
-   subject in quotes, not its hash (#730).
+   the reviewer said it did not check. A cell that names a commit of the branch names it as the
+   shared `pr-body-convention.md`'s *Naming a branch commit* says, never by its hash (#730).
 
    **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
    `gh pr edit` after it, this step's and step 7's included:
@@ -346,7 +353,7 @@ pass.
    now, and each it lists is named in the body as not confirmed.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
-   again and the head it was read on, the last one if a fix moved it, by its subject (#730):
+   again and the head it was read on, the last one if a fix moved it, named as step 6 says (#730):
    `Read again on "<the head's subject>": <each count and each quoted output, and that the commit
    messages were read>`. The line names each fix that got no message, as not confirmed. The body
    is checked before it is sent, as step 6 says.

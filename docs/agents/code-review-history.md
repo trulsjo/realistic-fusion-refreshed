@@ -486,8 +486,10 @@ One line for each, newest last. The passages above are not edited.
   lean on them. #657's rule on a statement not read became the four rules of the shared
   `claim-grades.md`'s *Tickets and ruling comments*, which add a figure's command, a quantifier's
   search and a second run of a command that printed nothing; and the pull request's body follows the
-  shared `pr-body-convention.md`. The pre-PR review is also handed the commit messages of its range
-  and the shared `code-review-rules.md`, and the session walks the shared absolute-words list before
+  shared `pr-body-convention.md`, whose three ways of naming a branch commit replace the subject in
+  quotes alone (#730), at Truls's word on #887's review panel. The pre-PR review is also handed the
+  commit messages of its range, a draft of the pull request's body, also at his word there, and
+  the shared `code-review-rules.md`, and the session walks the shared absolute-words list before
   the reviewer is started. Its report stays a reply, where the shared procedure has a file: the
   harness refused the reviewer's write of one on the review of #861 to #864. No gate reads it.
 - **2026-11-16, #863: comment lines are the exception to #667's no-width rule.** Truls ruled on

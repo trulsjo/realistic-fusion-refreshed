@@ -45,7 +45,9 @@ had the SHA-256 starting `9f8b4f4e6faec0e87532`.
 
 ## What `extract-geometry.py` does with it
 
-Without `--dump` it runs `get-dump.ps1` on the repository root and reads the path it prints last.
+Without `--dump` it runs `get-dump.ps1` on the repository root and reads the one `.json` the run
+leaves in its cache directory (since #887's review panel; the runs below read the path the script
+prints last, which names the same file).
 *Measured*: run twice on 2026-11-16 for the five machines with a committed `geometry.json`, it
 took 5.4 s the first time, whose output was not kept, and 19.3 s the second, whose was. Each left
 every one of the five files unchanged, and no temp directory named `rf-geometry-dump-*` after it.

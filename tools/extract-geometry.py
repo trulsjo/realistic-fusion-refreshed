@@ -129,10 +129,15 @@ def take_dump(repo_root):
     script = os.path.join(repo_root, "vendor", "grado-factorio-tools", "scripts", "get-dump.ps1")
     with tempfile.TemporaryDirectory(prefix="rf-geometry-dump-") as cache:
         r = subprocess.run(["pwsh", "-NoProfile", "-File", script, repo_root, "-CacheDirectory", cache],
-                           capture_output=True, text=True, encoding="utf-8")
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode != 0:
             sys.exit(f"get-dump.ps1 failed:\n{r.stdout}\n{r.stderr}")
-        with open(r.stdout.strip().splitlines()[-1], encoding="utf-8") as f:
+        # The cache is this run's alone, so it holds the one dump: read it from the directory,
+        # not from the path printed, which pwsh need not write as UTF-8.
+        dumps = [n for n in os.listdir(cache) if n.endswith(".json")]
+        if len(dumps) != 1:
+            sys.exit(f"get-dump.ps1 left {len(dumps)} dump(s) in {cache}, not one")
+        with open(os.path.join(cache, dumps[0]), encoding="utf-8") as f:
             return json.load(f)
 
 
