@@ -570,3 +570,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   skipped git hook, the git discard, the mod cache (`-CacheName .mod-cache,.mod-cache-portal`)
   and, at `SessionStart`, the skipped install steps. On this machine all eight passed, in that
   order on 58, 40, 64, 69, 56, 54, 44 and 11 cases.
+- 2026-11-16, #862: the commit check reads `commit-scopes.txt` as `-ScopeFile`, in
+  `.githooks/commit-msg`, now held against `commit-check.ps1`'s first `.EXAMPLE`, and in
+  `gates.yml`; a scope it does not list is rejected, and `test`, used once before, is not listed.
+  A new `gates.yml` step fails a file under `.githooks/` whose mode in
+  `git ls-files -s .githooks` is not `100755`; `.githooks/gates-running.ps1`, the one that was
+  `100644`, is now `100755`.
