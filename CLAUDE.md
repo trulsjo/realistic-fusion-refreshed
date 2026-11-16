@@ -85,7 +85,9 @@ anything that ships.
 `pwsh -File vendor/grado-factorio-tools/scripts/dev-launch.ps1 realistic-fusion-refreshed-assets
 realistic-fusion-refreshed-core realistic-fusion-refreshed`, with `-With space-age` for that load
 and `-Clean` to remove its mod directory. It junctions the three mods into a mod directory of its
-own, so an edit and a restart is the loop; its header says what it refuses and why.
+own, so an edit and a restart is the loop; its header says what it refuses and why. This
+repository's own `scripts/dev-launch.ps1` stays until #865 deletes it; hand play uses the shared
+one.
 
 **Before building the zips or anything that ships: read
 [`docs/agents/shipping.md`](docs/agents/shipping.md)**, which has the commands for the packer and
