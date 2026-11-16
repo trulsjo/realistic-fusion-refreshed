@@ -562,3 +562,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `since-clause-over-floor-caught` and `since-clause-at-floor-passes` prove it in both directions
   on planted documents. The 16 clauses `CLAUDE.md` held at `cbadaca` are in *The clauses moved on
   2026-11-15* above.
+- 2026-11-16, #861: the tracked `.claude/settings.json` wires eight session hooks from
+  `vendor/grado-factorio-tools/scripts/`, each in its first `.EXAMPLE` form, and `gates.yml`'s
+  `pwsh` job runs each one's `-SelfTest -Settings .claude/settings.json`: the download hook, the
+  Python heredoc, the backtick substitution, the hanging Bash call (the PowerShell port of
+  `tools/refuse-hanging-bash.py`, whose own `--self-test` still runs until #865 deletes it), the
+  skipped git hook, the git discard, the mod cache (`-CacheName .mod-cache,.mod-cache-portal`)
+  and, at `SessionStart`, the skipped install steps. On this machine all eight passed, in that
+  order on 58, 40, 64, 69, 56, 54, 44 and 11 cases.
