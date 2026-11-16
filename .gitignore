@@ -36,8 +36,9 @@ tree-viewer-out/
 # Bytecode Blender's bundled Python writes beside docs/research/*/ scripts it runs
 __pycache__/
 
-# The raw --dump-data tools/extract-geometry.py takes when not handed one; 14 MB, rebuildable
-.dump/
+# The shared get-dump.ps1's default cache, run by hand from the root (#863); 14 MB a dump,
+# rebuildable. tools/extract-geometry.py gives it a temp directory instead.
+.dump-cache/
 
 # What each probe last printed, one file for a probe and its arguments (#589). Written by
 # Start-RunReport in scripts/factorio-lib.ps1; a rerun replaces its own.
