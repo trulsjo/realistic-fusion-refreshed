@@ -311,21 +311,21 @@ before it is written; the workflow reports one after it is pushed.
 
 **A second hook, `.githooks/pre-commit`, reads the staged Markdown** (#658). It runs the tools
 submodule's `scripts/markdown-check.ps1` on the staged `.md` files as staged, and refuses the commit
-on emphasis or a code span left open, a table row whose column count is not its header's, a link
-to a file git does not track, a link whose `#fragment` names no heading, or a figure grouped in
-thousands split across a line end. Before that it refuses any commit while a
-`scripts/run-gates.ps1` run is live, and lets one through, saying so, past a marker a stopped run
-left behind (#872). The same two steps install it, and a clone that set the hooks path and has no
-submodule is told the Markdown was not checked.
-`ship-check.ps1` runs the same check over every tracked `.md`, so the workflow holds a clone without
-the hook to it. **It also reads the staged scripts** (#863), with the tools submodule's checks: a
-staged wrapped file's lines against 100 characters, every comment line of a staged script, hook or
-workflow against 100, and each staged `*.ps1` under `scripts/` and `.githooks/` for a list
-parameter never split on commas, a variable spelt two ways, a help block PowerShell does not read
-and, where it sets strict mode, a read that can throw. Those checks read the whole file, so a
-commit that stages a script written before them is refused for what was there already: on
-2026-11-16, 47 of the 57 scripts, hooks and workflows held 649 comment lines over 100, and 13 list
-parameters and 5 variables in `scripts/` failed. `markdown-rewrap.ps1 -Comment` mends the first.
+on emphasis or a code span left open, a table row whose column count is not its header's, a link to
+a file git does not track, a link whose `#fragment` names no heading, or a figure grouped in
+thousands split across a line end. Before that it refuses any commit while a `scripts/run-gates.ps1`
+run is live, and lets one through, saying so, past a marker a stopped run left behind (#872). The
+same two steps install it, and a clone that set the hooks path and has no submodule is told the
+Markdown was not checked. `ship-check.ps1` runs the same check over every tracked `.md`, so the
+workflow holds a clone without the hook to it. **It also reads the staged scripts and wrapped
+files** (#863), with the tools submodule's checks: a staged wrapped file's lines against 100
+characters, every comment line of a staged script, hook or workflow against 100, and each staged
+`*.ps1` under `scripts/` and `.githooks/` for a list parameter never split on commas, a variable
+spelt two ways, a help block PowerShell does not read and, where it sets strict mode, a read that
+can throw. Those checks read the whole file, so a commit that stages a script written before them is
+refused for what was there already: on 2026-11-16, 47 of the 57 scripts, hooks and workflows held
+649 comment lines over 100, and 13 list parameters and 5 variables in `scripts/` failed.
+`markdown-rewrap.ps1 -Comment` mends the first.
 
 **The `commit-msg` hook exists because the wrap rule had rotted.** Measured on 2026-09-06 by
 `commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5

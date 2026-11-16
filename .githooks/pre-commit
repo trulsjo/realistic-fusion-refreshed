@@ -7,7 +7,9 @@
 #   each prose line against 100 characters and each figure grouped in thousands split across a
 #   line end (#863), as staged: each is written out of the index into a folder under the git
 #   directory, and the check reads it there with GIT_DIR and GIT_WORK_TREE pointing git at this
-#   repository's index, so a link is resolved as the first check resolves it;
+#   repository's index, so a link inside this repository is resolved as the first check resolves
+#   it. A link into the submodule it reports as not checked, since the folder has no submodule;
+#   the first Markdown check resolves those links;
 # - the staged scripts, hooks and workflows, for a comment line over 100 characters, by the shared
 #   comment-line-check.ps1 (#863), in the form its second example gives;
 # - the staged *.ps1 directly under scripts/ and .githooks/ (#863), written out of the index into
@@ -30,9 +32,7 @@
 # What the scripts' step cannot see: a script is taken as setting strict mode where a line of it
 # begins with Set-StrictMode, after any indent. A path is listed with core.quotePath off; one git
 # quotes even so, as one holding a double quote, a backslash or a line break, is not read by the
-# scripts' step, and nothing says so. A path holding a comma is split by the checks. The width
-# step reports each link into the submodule as not checked, since the folder has no submodule;
-# the first Markdown check resolves those links.
+# scripts' step, and nothing says so. A path holding a comma is split by the checks.
 if ! command -v pwsh >/dev/null 2>&1; then
     echo "pre-commit: pwsh not found, so neither a live run-gates.ps1 run nor the staged files were checked." >&2
     exit 0
