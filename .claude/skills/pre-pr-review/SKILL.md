@@ -237,8 +237,8 @@ pass.
 
    Done when the reviewer has answered for every finding of its review.
 
-5. **Before anything is written to the pull request's body, show that a reviewer was handed every
-   commit** (#781). `docs/agents/code-review.md` has the rule under *A review before the pull
+5. **Before the body's `## Pre-PR review` section is written, show that a reviewer was handed
+   every commit** (#781). `docs/agents/code-review.md` has the rule under *A review before the pull
    request, and the plugin pass after it*:
 
    ```
