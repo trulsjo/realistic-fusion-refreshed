@@ -41,7 +41,7 @@ about whether a change is safe. What each proves, in a line:
 - **`scripts/ship-check.ps1`** runs no game. It checks the claims the mods make about themselves:
   the two statements ADR 0003 and ADR 0006 oblige them to make, the credits, the licence files and
   the assets dependency floor (ADR 0023). It also checks prose, part of which the workflow's three
-shared checks also hold (#863): that a script
+  shared checks also hold (#863): that a script
   with a `.SYNOPSIS` answers `Get-Help`, the two citation rules under Conventions, the rows of a
   research note's `## Current figures` table, what the shared Markdown check reads in every
   tracked `.md` as staged (#658), the width of the files `docs/agents/code-review.md` names as
