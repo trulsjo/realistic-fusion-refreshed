@@ -9,7 +9,7 @@ The one command a session runs for a machine (#251). It strings together the two
 already exist and decides nothing about the picture:
 
   1. geometry   tools/extract-geometry.py rewrites models/<machine>/geometry.json from the game's
-                own --dump-data (under half a minute for the dump; --dump reuses one).
+                own --dump-data (under a minute for the dump; --dump reuses one).
   2. model      by default the stored models/<machine>/<machine>.blend is rendered as it is, so a
                 hand edit survives. With --regenerate, or when no model exists, the model is rebuilt
                 by running models/<machine>/build.py headless, discarding the stored one; git is the

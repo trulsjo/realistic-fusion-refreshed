@@ -11,7 +11,7 @@ stage. This is the fact the render trusts. It replaces the hand-copied connectio
 scripts/make-mockup-art.ps1 carried and could not check.
 
 Without --dump, takes one with the shared vendor/grado-factorio-tools/scripts/get-dump.ps1, the
-three mods alone on the base game (needs the game; under half a minute). With it, reads the file
+three mods alone on the base game (needs the game; under a minute). With it, reads the file
 given, so tests and repeated runs need no game.
 
 Field semantics are pinned to Factorio 2.0.77 (types/FluidBox.html, types/PipeConnectionDefinition.html)
