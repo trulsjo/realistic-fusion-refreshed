@@ -120,9 +120,11 @@ its *secondary* instrument and states the failure modes in its header:
   normal Factorio style, not an edge case: K2 generates `kr-burn-<fluid>` and `kr-crush-<item>`
   names at data time from whatever `data.raw` holds (47 of them from this repo's 17 fluids and 30
   items, measured 2026-08-27) — none of those names appears anywhere in K2's source.
-  `factorio-lib.ps1`'s `Find-MissingAssets` records the same lesson for icon paths: its first
-  version scanned source for literals and *"would have reported a clean pass over the graphics this
-  repo actually ships"* because paths are built by concatenation (`ENTITY .. name .. ".png"`).
+  `Find-MissingAssets`, then in `factorio-lib.ps1` and since #863 the shared one in
+  `vendor/grado-factorio-tools/scripts/load-harness-lib.ps1`, recorded the same lesson for icon
+  paths: its first version scanned source for literals, which the copy in `factorio-lib.ps1` said
+  *"would have reported a clean pass over the graphics this repo actually ships"*, because paths
+  are built by concatenation (`ENTITY .. name .. ".png"`).
 - **It over-collects**, matching `name = "..."` in fields that are not prototype names — safe for a
   collision check (false alarm, not false pass) but wrong for attribution, where it invents
   prototypes a mod never defined.

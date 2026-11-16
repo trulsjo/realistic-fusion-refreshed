@@ -1,8 +1,10 @@
 # Issue tracker — what its rules were measured on
 
 The history behind the rules of [`issue-tracker.md`](issue-tracker.md) that are this repository's
-own, moved here whole from that page's *Create an issue* line when it became a stub page (#864,
-Truls's ruling in its triage, 2026-11-16). "This line" in it is that line as it stood. **Read
+own, moved here from that page's *Create an issue* line when it became a stub page (#864,
+Truls's ruling in its triage, 2026-11-16), with the tense of its hang-guard sentences and a
+sentence on #861 changed for #861, and the incident of its decision-comment bullet beside it.
+"This line" in it is that line as it stood. **Read
 this page** when one of those rules is revisited or doubted. Filing, reading or closing an issue
 does not need it. **The rule is the one `issue-tracker.md` or the shared
 [`tracker-conventions.md`](../../vendor/grado-factorio-tools/docs/tracker-conventions.md) words.**

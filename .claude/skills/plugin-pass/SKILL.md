@@ -238,9 +238,7 @@ it. They are outside the repository, so a worktree does not lack them."
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes
    and from which diff, and that the class of a finding the pre-PR review missed is named in the
    pull request from the pre-PR reviewer's report (#820). A fix held under #643 and #653 is in
-   that diff. The reviewer is handed the pull request's body with the diff (#864), as the shared
-   procedure's fourth step hands a review the body, and no list of what was done. The same rule
-   names the fixes put
+   that diff. The same rule names the fixes put
    to Truls before they are written (#782), and the diff's commits are recorded as step 4 of
    `/pre-pr-review` says (#781). Before a fix is written, *Review the prose, not only the code*
    says what the session reads of its source (#632), and before a fix that changes what a rule

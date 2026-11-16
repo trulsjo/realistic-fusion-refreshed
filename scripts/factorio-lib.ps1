@@ -18,7 +18,8 @@
     every script here gets them without naming the submodule. They moved there from this file
     (grado-factorio-tools#16); the case-folding note above is now Resolve-BundledSelection's there.
     Find-MissingAssets and Stop-LaunchedGame come from there too since #863: they moved there from
-    this file (grado-factorio-tools#349, #351), and a copy defined here would shadow the shared one.
+    this file (grado-factorio-tools#349 and grado-factorio-tools#351), and a copy defined here
+    would shadow the shared one.
 #>
 
 $harnessLib = Join-Path $PSScriptRoot '../vendor/grado-factorio-tools/scripts/load-harness-lib.ps1'

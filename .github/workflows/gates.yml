@@ -125,12 +125,13 @@ jobs:
           bad=$(printf '%s\n' "$modes" | awk '$1 != "100755"')
           if [ -n "$bad" ]; then echo "FAILED - not mode 100755, so git off Windows skips it:"; printf '%s\n' "$bad"; exit 1; fi
           echo "OK - $(printf '%s\n' "$modes" | wc -l | tr -d ' ') file(s) under .githooks, each mode 100755."
-      # Three whole-tree checks from vendor/ that hold what ship-check.ps1 sections 7, 12 and 17
-      # held, with this repository's own as their parameters (#863), so that #865 can delete
-      # those sections. No hook runs the first two: a commit is never on origin/main before it is
-      # pushed, and the citation check reads the whole tree. The pages the commits check exempts
-      # are $RECORDS in ship-check.ps1; the citation check's -Foreign is section 7's whole-line
-      # pattern, and its floors section 7's.
+      # Three whole-tree checks from vendor/ that hold what ship-check.ps1 sections 7 and 17 hold,
+      # and section 12 for seven of its eight files, with this repository's own as their
+      # parameters (#863), so that #865 can delete sections 7 and 17. Section 12 alone still holds
+      # the eighth file, below. No hook runs the first two: a commit is never on origin/main
+      # before it is pushed, and the citation check reads the whole tree. The pages the commits
+      # check exempts are $RECORDS in ship-check.ps1; the citation check's -Foreign is section 7's
+      # whole-line pattern, and its floors section 7's.
       - name: line-cite-check.ps1
         if: ${{ !cancelled() }}
         shell: pwsh

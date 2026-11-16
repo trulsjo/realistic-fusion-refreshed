@@ -1,6 +1,6 @@
 ---
 name: pre-pr-review
-description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main, docs/agents/code-review.md, and the gate result or the probes' raw output, with the output of each command the tickets' acceptance criteria name; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
+description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main and the commit messages, docs/agents/code-review.md and the shared code-review-rules.md, and the gate result or the probes' raw output, with the output of each command the tickets' acceptance criteria name; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
 ---
 
 # /pre-pr-review
@@ -91,6 +91,9 @@ pass.
    > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria. If the
    > branch resolves more than one ticket and the evidence is `ship-check.ps1` alone, confirm
    > that every path `git diff --name-only --no-renames origin/main...HEAD` prints ends in `.md`.
+   > Not under review: `<each decision of Truls's the change records, with the comment that
+   > holds it, or "none">`. A claim in `docs/adr/` or `docs/research/` is graded as
+   > `vendor/grado-factorio-tools/docs/claim-grades.md` says.
    >
    > Read whole each of these, which the diff changes: `<each skill file, page under
    > docs/agents/ and CLAUDE.md in the diff, or "none">`. Where the diff changes a step of a
@@ -130,15 +133,18 @@ pass.
    > quoted table that has lost its `>` it does not catch, and a table in the pull request's body
    > it does not read.
    >
-   > Write the whole report to `<scratch>/reviewer/report.md`, then reply with its path and one
-   > line per finding: its number, the file and the fault. A long reply arrives cut off.
+   > Reply with one line per finding first: its number, the file and the fault. Then give the
+   > detail of each. A long reply arrives cut off.
 
-   **Read a finding's detail in the report file** (#864), the shared procedure's sixth step.
-   **Where the file is not there, ask for the detail with SendMessage when a line does not name
+   **The report comes as a reply, not as a file**, where the shared procedure's sixth step has
+   a file outside the repository: the harness refuses a subagent's write of one. On #864's review
+   (2026-11-16) a brief that asked for `<scratch>/reviewer/report.md` got the reviewer's word
+   that the write was refused with "Subagents should return findings as text", and the report
+   came in the reply. **Ask for a finding's detail with SendMessage when its line does not name
    the place and the fault** (#668), and for the rest of any reply that stops mid-sentence. A
    line that names both is fixed from the line. On this skill's first run a report sent whole
    stopped inside the sixth of nine findings, and the reviewer's attempt to write the rest to a
-   file, at a path its brief did not give, was refused. On #664
+   file was refused. On #664
    each of the 17 findings' lines named both; no detail was asked for, 16 were fixed from the
    lines and confirmed, and one, finding 11, needed no change.
 
@@ -275,7 +281,8 @@ pass.
    pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && gh pr edit <n> --body-file "<scratch>/body.md"
    ```
 
-   A body it fails is not sent; `docs/agents/issue-tracker.md` has what it checks.
+   A body it fails is not sent; the shared `pr-body-convention.md`, *The four rules every run
+   checks*, which `docs/agents/issue-tracker.md` links, has what it checks.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the session's own
