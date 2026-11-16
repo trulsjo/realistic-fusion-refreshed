@@ -5,12 +5,14 @@
 #
 # - the staged Markdown, by the shared markdown-check.ps1 (#658), and of the wrapped files staged,
 #   each prose line against 100 characters and each figure grouped in thousands split across a
-#   line end (#863), read from the working tree, as -Path reads;
+#   line end (#863), as staged: each is written out of the index into a folder under the git
+#   directory, and the check reads it there with GIT_DIR and GIT_WORK_TREE pointing git at this
+#   repository's index, so a link is resolved as the first check resolves it;
 # - the staged scripts, hooks and workflows, for a comment line over 100 characters, by the shared
 #   comment-line-check.ps1 (#863), in the form its second example gives;
-# - the staged *.ps1 directly under scripts/ and .githooks/ (#863), written out of the index into a
-#   folder under the git directory: by param-check.ps1, a list parameter never split on commas;
-#   by variable-case-check.ps1, a variable spelt two ways in one scope; by help-check.ps1, a help
+# - the staged *.ps1 directly under scripts/ and .githooks/ (#863), written out of the index into
+#   the same folder: by param-check.ps1, a list parameter never split on commas; by
+#   variable-case-check.ps1, a variable spelt two ways in one scope; by help-check.ps1, a help
 #   block PowerShell does not read; and, on those that set strict mode, by strict-list-check.ps1,
 #   a read strict mode can throw on. With none staged, it says it read none.
 #
@@ -28,7 +30,9 @@
 # What the scripts' step cannot see: a script is taken as setting strict mode where a line of it
 # begins with Set-StrictMode, after any indent. A path is listed with core.quotePath off; one git
 # quotes even so, as one holding a double quote, a backslash or a line break, is not read by the
-# scripts' step, and nothing says so. A path holding a comma is split by the checks.
+# scripts' step, and nothing says so. A path holding a comma is split by the checks. The width
+# step reports each link into the submodule as not checked, since the folder has no submodule;
+# the first Markdown check resolves those links.
 if ! command -v pwsh >/dev/null 2>&1; then
     echo "pre-commit: pwsh not found, so neither a live run-gates.ps1 run nor the staged files were checked." >&2
     exit 0
@@ -48,55 +52,79 @@ fi
 status=0
 pwsh -NoProfile -File "$tools/markdown-check.ps1" || status=1
 
-# The wrapped files, as docs/agents/code-review.md names them, less the review skill: its front
-# matter's description is one long line, which ship-check.ps1 section 12 leaves alone and the
-# shared check does not.
-wrapped='docs/agents/code-review.md docs/agents/review-figures.md docs/agents/code-review-history.md docs/agents/code-review-evidence.md docs/agents/plugin-pass.md CLAUDE.md scripts/CLAUDE.md'
-staged_md="$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR)"
-wide=""
-for f in $wrapped; do
-    if printf '%s\n' "$staged_md" | grep -qxF "$f"; then wide="${wide:+$wide,}$f"; fi
-done
-if [ -n "$wide" ]; then
-    pwsh -NoProfile -File "$tools/markdown-check.ps1" -Path "$wide" -MaxLineLength 100 || status=1
-fi
-
 pwsh -NoProfile -File "$tools/comment-line-check.ps1" -Path 'scripts/*.ps1,.githooks/*,.github/workflows/*.yml' || status=1
 
-staged="$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR -- scripts/ .githooks/ | grep -E '^(scripts|\.githooks)/[^/]*\.ps1$')"
+# The wrapped files, as docs/agents/code-review.md names them, less the review skill: its front
+# matter's description is one long line, which ship-check.ps1 section 12 leaves alone and the
+# shared check does not (grado-factorio-tools#496).
+wrapped='docs/agents/code-review.md docs/agents/review-figures.md docs/agents/code-review-history.md docs/agents/code-review-evidence.md docs/agents/plugin-pass.md CLAUDE.md scripts/CLAUDE.md'
+staged_all="$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR)"
+wide=""
+for f in $wrapped; do
+    if printf '%s\n' "$staged_all" | grep -qxF "$f"; then wide="${wide:+$wide
+}$f"; fi
+done
+staged="$(printf '%s\n' "$staged_all" | grep -E '^(scripts|\.githooks)/[^/]*\.ps1$')"
+
+if [ -z "$wide" ] && [ -z "$staged" ]; then
+    echo "OK - pre-commit: no wrapped file and no *.ps1 directly under scripts/ or .githooks/ is staged, so the width check, the parameter, variable-case, help and strict-list checks read none."
+    exit $status
+fi
+
+# Under the git directory, a path git and pwsh both read alike on every system. Removed on every
+# way out, an interrupt included.
+gitdir="$(git rev-parse --absolute-git-dir)"
+scratch="$gitdir/pre-commit-staged-$$"
+trap 'rm -rf "${scratch:?}"' EXIT
+trap 'exit 1' HUP INT TERM
+both="$(printf '%s\n%s\n' "$wide" "$staged" | grep -v '^$')"
+if ! printf '%s\n' "$both" | git checkout-index --stdin --prefix="$scratch/"; then
+    echo "pre-commit: git checkout-index could not write the staged files out, so the width check and the scripts' checks did NOT run." >&2
+    exit 1
+fi
+missing="$(printf '%s\n' "$both" | while IFS= read -r f; do
+    [ -f "$scratch/$f" ] || printf '%s\n' "$f"
+done)"
+if [ -n "$missing" ]; then
+    echo "pre-commit: these staged files could not be read as staged, so the width check and the scripts' checks did NOT run:" >&2
+    printf '%s\n' "$missing" | sed 's/^/    /' >&2
+    exit 1
+fi
+
+if [ -z "$wide" ]; then
+    echo "OK - pre-commit: no wrapped file is staged, so the width check read none."
+else
+    (
+        cd "$scratch" || exit 1
+        GIT_DIR="$gitdir" GIT_WORK_TREE="$scratch" \
+            pwsh -NoProfile -File "$tools/markdown-check.ps1" -Path "$(printf '%s\n' "$wide" | paste -sd, -)" -MaxLineLength 100
+    ) || status=1
+fi
+
 if [ -z "$staged" ]; then
     echo "OK - pre-commit: no *.ps1 directly under scripts/ or .githooks/ is staged, so the parameter, variable-case, help and strict-list checks read none."
 else
-    # Under the git directory, a path git and pwsh both read alike on every system. Removed on
-    # every way out, an interrupt included.
-    scratch="$(git rev-parse --absolute-git-dir)/pre-commit-staged-$$"
-    trap 'rm -rf "${scratch:?}"' EXIT
-    trap 'exit 1' HUP INT TERM
-    if ! printf '%s\n' "$staged" | git checkout-index --stdin --prefix="$scratch/"; then
-        echo "pre-commit: git checkout-index could not write the staged scripts out, so they were NOT checked." >&2
-        status=1
-    else
-        list="$(printf '%s\n' "$staged" | paste -sd, -)"
-        strict="$(printf '%s\n' "$staged" | while IFS= read -r f; do
-            if grep -q '^[[:space:]]*Set-StrictMode' "$scratch/$f"; then printf '%s\n' "$f"; fi
-        done | paste -sd, -)"
-        # Run from the folder, so each script is named by its path from the root.
-        (
-            cd "$scratch" || exit 1
-            s=0
-            for d in scripts .githooks; do
-                [ -d "$d" ] || continue
-                pwsh -NoProfile -File "$tools/param-check.ps1" "$d" || s=1
-                pwsh -NoProfile -File "$tools/variable-case-check.ps1" "$d" || s=1
-            done
-            pwsh -NoProfile -File "$tools/help-check.ps1" "$list" || s=1
-            if [ -z "$strict" ]; then
-                echo "OK - strict-list check: none of the staged scripts sets strict mode, so none was read."
-            else
-                pwsh -NoProfile -File "$tools/strict-list-check.ps1" "$strict" || s=1
-            fi
-            exit $s
-        ) || status=1
-    fi
+    list="$(printf '%s\n' "$staged" | paste -sd, -)"
+    strict="$(printf '%s\n' "$staged" | while IFS= read -r f; do
+        if grep -q '^[[:space:]]*Set-StrictMode' "$scratch/$f"; then printf '%s\n' "$f"; fi
+    done | paste -sd, -)"
+    # Run from the folder, so each script is named by its path from the root.
+    (
+        cd "$scratch" || exit 1
+        s=0
+        for d in scripts .githooks; do
+            [ -d "$d" ] || continue
+            ls "$d"/*.ps1 >/dev/null 2>&1 || continue
+            pwsh -NoProfile -File "$tools/param-check.ps1" "$d" || s=1
+            pwsh -NoProfile -File "$tools/variable-case-check.ps1" "$d" || s=1
+        done
+        pwsh -NoProfile -File "$tools/help-check.ps1" "$list" || s=1
+        if [ -z "$strict" ]; then
+            echo "OK - strict-list check: none of the staged scripts sets strict mode, so none was read."
+        else
+            pwsh -NoProfile -File "$tools/strict-list-check.ps1" "$strict" || s=1
+        fi
+        exit $s
+    ) || status=1
 fi
 exit $status

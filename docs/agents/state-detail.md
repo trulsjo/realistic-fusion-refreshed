@@ -591,3 +591,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   holds front matter the shared check does not leave alone, so section 12 still holds it. The
   sections stay until #865. `Find-MissingAssets` and `Stop-LaunchedGame` are the shared ones:
   the copies in `scripts/factorio-lib.ps1` shadowed them and are gone.
+- 2026-11-16, #887's review panel: the `pre-commit` width step reads each staged wrapped file as
+  staged, written out of the index into the hook's scratch folder with the staged scripts, where
+  it read the working tree. Run by hand with `sh .githooks/pre-commit`: a long line staged in
+  `CLAUDE.md` with a clean working tree failed, and a short change staged with a long line only on
+  disk passed, where the hook before the change refused that commit for the line on disk.
