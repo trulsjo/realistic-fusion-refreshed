@@ -2,8 +2,9 @@
 
 The history behind the rules of [`issue-tracker.md`](issue-tracker.md) that are this repository's
 own, moved here from that page's *Create an issue* line when it became a stub page (#864,
-Truls's ruling in its triage, 2026-11-16), with the tense of its hang-guard sentences and a
-sentence on #861 changed for #861, and the incident of its decision-comment bullet beside it.
+Truls's ruling in its triage, 2026-11-16). For #861 the tense of its hang-guard sentences was
+changed, a sentence on #861 was added and the clause "there this line is the whole instruction"
+was dropped; the incident of its decision-comment bullet stands beside it.
 "This line" in it is that line as it stood. **Read
 this page** when one of those rules is revisited or doubted. Filing, reading or closing an issue
 does not need it. **The rule is the one `issue-tracker.md` or the shared

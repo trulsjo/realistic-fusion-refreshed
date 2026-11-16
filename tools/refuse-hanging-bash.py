@@ -2,8 +2,8 @@ r"""A PreToolUse hook for the Bash tool: refuse a command that would hang on its
 that holds a long heredoc (#666), or, on Windows, that holds two backslashes in a row (#682).
 
 Claude Code hands a hook the tool call as JSON on stdin. Exit 2 refuses the call and shows stderr
-to the model; exit 0 lets it through. It is no longer registered: since #861 the tracked
-.claude/settings.json wires its PowerShell port, vendor/grado-factorio-tools's
+to the model; exit 0 lets it through. The tracked .claude/settings.json no longer registers it:
+since #861 that file wires its PowerShell port, vendor/grado-factorio-tools's
 scripts/refuse-hanging-bash.ps1, in its place, and #865 deletes this file. A local settings file
 that still registers it, as below, runs both:
 
