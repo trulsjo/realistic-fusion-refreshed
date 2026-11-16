@@ -94,9 +94,17 @@ fi
 if [ -z "$wide" ]; then
     echo "OK - pre-commit: no wrapped file is staged, so the width check read none."
 else
+    # git commit hands a hook GIT_INDEX_FILE, often relative to the root; from the scratch folder
+    # a relative one names no index, git lists no tracked file, and every link fails. So it is
+    # made absolute first, and the repository's own index taken where none is set.
+    index="${GIT_INDEX_FILE:-$gitdir/index}"
+    case "$index" in
+        /* | [A-Za-z]:*) ;;
+        *) index="$root/$index" ;;
+    esac
     (
         cd "$scratch" || exit 1
-        GIT_DIR="$gitdir" GIT_WORK_TREE="$scratch" \
+        GIT_DIR="$gitdir" GIT_WORK_TREE="$scratch" GIT_INDEX_FILE="$index" \
             pwsh -NoProfile -File "$tools/markdown-check.ps1" -Path "$(printf '%s\n' "$wide" | paste -sd, -)" -MaxLineLength 100
     ) || status=1
 fi
