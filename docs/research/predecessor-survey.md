@@ -545,9 +545,10 @@ Listed so the gaps are as visible as the findings.
    lists bullets, shotgun shells, cannon shells, rockets and artillery shells too, and also plasma
    throwers and bombs, of which the zip's Lua defines none of its own
    (`grep -rliE 'thrower|bomb' --include=*.lua` hits only references to vanilla's `atomic-bomb`
-   and a sound file). No file in the zip names Weaponry:
-   `grep -rilE 'weaponry|romner'` over it prints only `info.json`, whose description says
-   "Bootleg of Romner_set's Realistic Fusion Power". So the lineage is plausible, not shown. It
+   and a sound file). No file in the zip names the Weaponry mod:
+   `grep -rilE 'weaponry|romner'` over it prints only `info.json`, whose description has the
+   word only in "fuels, weaponry and power armor equipment" and says "Bootleg of Romner_set's
+   Realistic Fusion Power". So the lineage is plausible, not shown. It
    changes no decision: ADR 0002's deferral of Weaponry stands, and ADR 0001 rules out taking any
    of `ufpFixed`'s assets.
 8. **`RealisticFusionCore/data-final-fixes.lua` (119 lines) and the equivalents in Power and Antimatter
