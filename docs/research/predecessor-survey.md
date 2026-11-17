@@ -537,11 +537,18 @@ Listed so the gaps are as visible as the findings.
    <https://mods.factorio.com/mod/RealisticFusionWeaponry>) was not surveyed.** It is outside the ticket's
    three mods. The `RealisticFusionWeaponry` directory examined here is the redesign's empty stub, which is
    a different thing. It was possibly carried into
-   [UFP: Ultimate Fusion Power Fixed](https://mods.factorio.com/mod/ufpFixed) (`ufpFixed`), noted
-   2026-11-17 from its 1.0.55 zip: an `ufp_antimatter` ammo category, tritium and helium-3 rockets,
-   helium-3 cannon shells and helium-3, antimatter and void artillery shells, close to the kinds
-   Weaponry's portal page lists.
-   No credit there names Weaponry, so the lineage is plausible, not shown.
+   [UFP: Ultimate Fusion Power Fixed](https://mods.factorio.com/mod/ufpFixed) (`ufpFixed`). Read
+   from its 1.0.55 zip on 2026-11-17, it has an `ufp_antimatter` ammo category and 22 ammo items:
+   bullet magazines, shotgun shells, cannon shells and rockets named `ufp_T-*`, He3-He3 cannon
+   shells and rockets, an antimatter shell, and He3-He3, antimatter and void artillery shells, each
+   with mk2 or mk3 variants but the antimatter shell. Weaponry's portal page lists bullets, shotgun
+   shells, cannon shells, rockets and artillery shells too, and also plasma throwers and bombs, of
+   which the zip defines none of its own (`grep -rliE 'thrower|bomb'` hits only references to
+   vanilla's `atomic-bomb` and a sound file). No file in the zip names Weaponry:
+   `grep -rilE 'weaponry|romner'` over it prints only `info.json`, whose description says
+   "Bootleg of Romner_set's Realistic Fusion Power". So the lineage is plausible, not shown. It
+   changes no decision: ADR 0002's deferral of Weaponry stands, and ADR 0001 rules out taking any
+   of `ufpFixed`'s assets.
 8. **`RealisticFusionCore/data-final-fixes.lua` (119 lines) and the equivalents in Power and Antimatter
    were read only in passing.** They are the most likely home of remaining third-party integration and were
    not audited line by line.

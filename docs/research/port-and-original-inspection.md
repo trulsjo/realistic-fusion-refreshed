@@ -720,6 +720,8 @@ Also closed:
    prototype, planet, `surface_conditions` or `spoil` property — zero occurrences of each — so neither
    integrates with it in any direction.
 7. **Realistic Fusion Weaponry was not surveyed** and is still outside the ticket's scope.
+   `predecessor-survey.md`'s open question 7 notes, from 2026-11-17, that it was possibly carried
+   into `ufpFixed`.
 8. **The `rfp-hc-turbine` cap question** (§2.6, candidate 1) assumes base 2.0.77's `steam-turbine` really
    has no `max_power_output`; that was read from the installed base mod's `entities.lua:9245-9256` and not
    cross-checked against <https://lua-api.factorio.com/2.0.77/prototypes/GeneratorPrototype.html> for a
