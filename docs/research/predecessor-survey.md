@@ -553,9 +553,10 @@ Listed so the gaps are as visible as the findings.
    No file in the zip names the Weaponry mod:
    `grep -rilE 'weaponry|romner'` over it prints only `info.json`, whose description has the
    word only in "fuels, weaponry and power armor equipment" and says "Bootleg of Romner_set's
-   Realistic Fusion Power". Nor does any file in the four packs it depends on, which hold its art:
-   the same search over `ultimateCore_1.0.26.zip`, `ultimateCore-2_1.0.14.zip`,
-   `ultimateCore-3_0.0.4.zip` and `ultimateCoreLib_0.0.13.zip`, each unzipped, prints nothing.
+   Realistic Fusion Power". Nor does any file in the four other packages UFP ships as (ADR 0001),
+   which hold its art and scripts and three of which its `info.json` lists as dependencies:
+   `ultimateCore-3` is not among them. The same search over `ultimateCore_1.0.26.zip`,
+   `ultimateCore-2_1.0.14.zip`, `ultimateCore-3_0.0.4.zip` and `ultimateCoreLib_0.0.13.zip`, each unzipped, prints nothing.
    `ultimateCore_1.0.26.zip` does ship `graphics/animation/ufp_flamethrower-fire-stream-spine.png`
    and `ufp_flamethrower-explosion.png`, which no file in `ufpFixed` 1.0.55 names
    (`grep -rl flamethrower` over it prints nothing). So the lineage is plausible, not shown. It
