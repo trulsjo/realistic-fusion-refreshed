@@ -544,9 +544,12 @@ Listed so the gaps are as visible as the findings.
    but the antimatter shell with an mk2 variant and the artillery shells with an mk3 too.
    Weaponry's portal page, read the same day,
    lists bullets, shotgun shells, cannon shells, rockets and artillery shells too, and also plasma
-   throwers and bombs, of which the zip's Lua defines none of its own
+   throwers and bombs. The zip's Lua names no prototype of its own a thrower or a bomb
    (`grep -rliE 'thrower|bomb' --include=*.lua` hits only references to vanilla's `atomic-bomb`
-   and a sound file). No file in the zip names the Weaponry mod:
+   and a sound file), but `locale/en/lang_en.cfg` describes six of its items as nukes: the
+   He3-He3 rocket, cannon shell and artillery shell ("UFP small Low-yield fusion nuke rocket."),
+   the antimatter shell, and the antimatter and void artillery shells.
+   No file in the zip names the Weaponry mod:
    `grep -rilE 'weaponry|romner'` over it prints only `info.json`, whose description has the
    word only in "fuels, weaponry and power armor equipment" and says "Bootleg of Romner_set's
    Realistic Fusion Power". So the lineage is plausible, not shown. It
