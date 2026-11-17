@@ -541,7 +541,8 @@ Listed so the gaps are as visible as the findings.
    from its 1.0.55 zip on 2026-11-17, it has an `ufp_antimatter` ammo category and 22 ammo items:
    bullet magazines, shotgun shells, cannon shells and rockets named `ufp_T-*`, He3-He3 cannon
    shells and rockets, an antimatter shell, and He3-He3, antimatter and void artillery shells, each
-   with mk2 or mk3 variants but the antimatter shell. Weaponry's portal page, read the same day,
+   but the antimatter shell with an mk2 variant and the artillery shells with an mk3 too.
+   Weaponry's portal page, read the same day,
    lists bullets, shotgun shells, cannon shells, rockets and artillery shells too, and also plasma
    throwers and bombs, of which the zip's Lua defines none of its own
    (`grep -rliE 'thrower|bomb' --include=*.lua` hits only references to vanilla's `atomic-bomb`
