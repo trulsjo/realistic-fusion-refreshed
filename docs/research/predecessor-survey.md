@@ -541,10 +541,11 @@ Listed so the gaps are as visible as the findings.
    from its 1.0.55 zip on 2026-11-17, it has an `ufp_antimatter` ammo category and 22 ammo items:
    bullet magazines, shotgun shells, cannon shells and rockets named `ufp_T-*`, He3-He3 cannon
    shells and rockets, an antimatter shell, and He3-He3, antimatter and void artillery shells, each
-   with mk2 or mk3 variants but the antimatter shell. Weaponry's portal page lists bullets, shotgun
-   shells, cannon shells, rockets and artillery shells too, and also plasma throwers and bombs, of
-   which the zip defines none of its own (`grep -rliE 'thrower|bomb'` hits only references to
-   vanilla's `atomic-bomb` and a sound file). No file in the zip names Weaponry:
+   with mk2 or mk3 variants but the antimatter shell. Weaponry's portal page, read the same day,
+   lists bullets, shotgun shells, cannon shells, rockets and artillery shells too, and also plasma
+   throwers and bombs, of which the zip's Lua defines none of its own
+   (`grep -rliE 'thrower|bomb' --include=*.lua` hits only references to vanilla's `atomic-bomb`
+   and a sound file). No file in the zip names Weaponry:
    `grep -rilE 'weaponry|romner'` over it prints only `info.json`, whose description says
    "Bootleg of Romner_set's Realistic Fusion Power". So the lineage is plausible, not shown. It
    changes no decision: ADR 0002's deferral of Weaponry stands, and ADR 0001 rules out taking any
