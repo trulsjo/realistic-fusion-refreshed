@@ -39,8 +39,9 @@ Two facts shaped the scope half of this decision:
    porting an unsurveyed mod or writing new content.
    Noted 2026-11-17, with no change to this decision: that mod was possibly carried into
    [UFP: Ultimate Fusion Power Fixed](https://mods.factorio.com/mod/ufpFixed) (`ufpFixed`).
-   `docs/research/predecessor-survey.md`'s open question 7 has what its 1.0.55 zip holds and why
-   the lineage is plausible and not shown. ADR 0001 rules out taking any of its assets.
+   `docs/research/predecessor-survey.md`'s gap 7, under *What could not be verified*, has what
+   its 1.0.55 zip holds and why the lineage is plausible and not shown. ADR 0001 rules out taking
+   any of its assets.
 2. **Antimatter carries an art-provenance problem on top of a code problem.** Beyond the 7 missing
    icons, its models are exactly the PreLeyZero donated art that `docs/agents/upstream-material.md` says must not be assumed
    free — Romner credits them for "all the antimatter-related and 2.0 models". Shipping it needs that
