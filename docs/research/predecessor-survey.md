@@ -536,7 +536,12 @@ Listed so the gaps are as visible as the findings.
 7. **Realistic Fusion Weaponry (the published 1.x mod,
    <https://mods.factorio.com/mod/RealisticFusionWeaponry>) was not surveyed.** It is outside the ticket's
    three mods. The `RealisticFusionWeaponry` directory examined here is the redesign's empty stub, which is
-   a different thing.
+   a different thing. It was possibly carried into
+   [UFP: Ultimate Fusion Power Fixed](https://mods.factorio.com/mod/ufpFixed) (`ufpFixed`), noted
+   2026-11-17 from its 1.0.55 zip: an `ufp_antimatter` ammo category, tritium and helium-3 rockets,
+   helium-3 cannon shells and helium-3, antimatter and void artillery shells, close to the kinds
+   Weaponry's portal page lists.
+   No credit there names Weaponry, so the lineage is plausible, not shown.
 8. **`RealisticFusionCore/data-final-fixes.lua` (119 lines) and the equivalents in Power and Antimatter
    were read only in passing.** They are the most likely home of remaining third-party integration and were
    not audited line by line.
