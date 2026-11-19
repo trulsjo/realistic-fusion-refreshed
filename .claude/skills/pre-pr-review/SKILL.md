@@ -323,7 +323,10 @@ pass.
    joined to the send with `;`. The first send is `gh pr create`
    with `--body-file` in place of `gh pr edit <n>`, and its third check reads the pushed branch,
    since there is no pull request yet:
-   `pwsh -NoProfile -Command "exit [int](((git ls-remote origin refs/heads/<branch>) -split '\s')[0] -ne (git rev-parse HEAD))"`.
+
+   ```
+   pwsh -NoProfile -Command "exit [int](((git ls-remote origin refs/heads/<branch>) -split '\s')[0] -ne (git rev-parse HEAD))"
+   ```
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the session's own
