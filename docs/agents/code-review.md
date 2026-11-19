@@ -356,9 +356,10 @@ request's body is last edited, the session reads each of these again against the
 - **quoted output in the body**, by running the command on the head and comparing what it prints;
 - **a count in the body, and a count the branch added to tracked prose**, by counting the rows,
   cases, findings or files it counts. The pre-PR review's cell in the pull request's row of
-  `docs/agents/review-figures.md` is one (#715), its count of findings and how many were fixed and
-  confirmed: the row is written before the last confirmation, which can raise more, and on #713
-  the count went stale twice, at 7 and at 11 of 14;
+  `docs/agents/review-figures.md`, its count of findings and how many were fixed and confirmed, is
+  written here and not before (#715; Truls, 2026-11-19, #883): the row is written before the last
+  confirmation, which can raise more, so the cell is left open until this reading. On #713 the
+  count went stale twice, at 7 and at 11 of 14;
 - **the branch's own commit messages**, each statement of what the change does against the code at
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
   review corrects. A message that a later message on the branch names and narrows is not
@@ -386,6 +387,9 @@ written as a word, where the number counts rows, cases, findings, files or commi
 commits it, sends the reviewer no message for it, and says in the body's line for the reading that
 this fix was not confirmed. No later message confirms it: unlike a fix held under #643 and #653,
 nothing follows the reading. A fix that changes any other word is a new claim and keeps its message.
+**Filling the pre-PR review's open cell in `review-figures.md` counts as such a fix** (Truls,
+2026-11-19, #883), though it writes words as well as numbers: it is written from the body's
+findings table, which records what the reviewer confirmed.
 
 The reason is what a message costs. On #664, the first use of the reading, confirming one changed
 cell cost 669 308 tokens over three requests, about what confirming a round of fixes does. The

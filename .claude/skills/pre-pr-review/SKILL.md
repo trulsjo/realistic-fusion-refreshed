@@ -360,9 +360,14 @@ pass.
    ```
    gh pr view <n> --json body --jq .body         # its counts, and each output it quotes
    git diff -U0 origin/main...HEAD               # each count the branch added to tracked prose
-   grep -n "#<n>" docs/agents/review-figures.md  # the row's pre-PR findings cell (#715)
+   grep -n "#<n>" docs/agents/review-figures.md  # the row's open pre-PR findings cell (#715, #883)
    git log origin/main..HEAD --format="%h %s%n%b" # the branch's own commit messages
    ```
+
+   **Fill the pre-PR findings cell that `/plugin-pass` left open** in the pull request's row of
+   `docs/agents/review-figures.md` (#883), once, from the body's findings table at the head. The
+   rule counts that fill as a fix that only corrects a count, so it is committed as the paragraph
+   below says of one.
 
    Run each command the body quotes output from, on the head. Count what each count counts. A
    commit message that the head contradicts is reworded as step 4 says; one that a later message
@@ -374,8 +379,9 @@ pass.
    step 5's `check` again (#781): a fix that only corrects a count is the only kind it may list
    now, and each it lists is named in the body as not confirmed.
 
-   Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
-   again and the head it was read on, the last one if a fix moved it, named as step 6 says (#730):
+   Done when the pull request's row on `review-figures.md` no longer holds the open marker, and
+   the body has, under the `## Pre-PR review` heading, a line that names what was read again and
+   the head it was read on, the last one if a fix moved it, named as step 6 says (#730):
    `Read again on "<the head's subject>": <each count and each quoted output, and that the commit
    messages were read>`. The line names each fix that got no message, as not confirmed. The body
    is checked before it is sent, as step 6 says.

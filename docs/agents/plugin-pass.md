@@ -161,8 +161,9 @@ subagents where there is one; and the grade, with the day it was made and its re
 cell. The pre-PR review's cost is its one reviewer's, read from its transcript as `/pre-pr-review`
 says when the row is written; the reviewer confirms after that, and the pull request's body has the
 later figure. The pre-PR review's count of findings, and how many were fixed and confirmed, are
-read again after the last fix commit, as `code-review.md` says under *Review the prose, not only the
-code* (#715). Since the pre-PR reviewer gives no score (#610), a new row says of each pre-PR
+written once, after the last fix commit, as `code-review.md` says under *Review the prose, not only
+the code* (#715; Truls, 2026-11-19, #883); until then the cell holds `open: filled after the last
+confirmation`. Since the pre-PR reviewer gives no score (#610), a new row says of each pre-PR
 finding left unfixed "left unfixed: <reason>"; an older row keeps its scores as written. Anything
 else there is to say of the pull request goes in the last cell of its row in
 the second table. In the second table: the totals over all requests, and for the pre-PR review its
