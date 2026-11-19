@@ -290,7 +290,9 @@ pass.
    shared `pr-body-convention.md`'s *Naming a branch commit* says, never by its hash (#730).
 
    **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
-   `gh pr edit` after it, this step's and step 7's included:
+   `gh pr edit` after it, this step's and step 7's included. A body that quotes no
+   `scripts/ship-check.ps1` result is sent with this line, and one that quotes one with the lines
+   below it:
 
    ```
    pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && gh pr edit <n> --body-file "<scratch>/body.md"
