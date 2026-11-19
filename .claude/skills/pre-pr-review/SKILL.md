@@ -300,18 +300,21 @@ pass.
    checks*, which `docs/agents/issue-tracker.md` links, has what it checks.
 
    **A body that quotes a `scripts/ship-check.ps1` result is sent only when a run on the head
-   being sent passed** (#884). Run the gate first, as a command of its own, with its log named
-   for the head's full hash, which no later fetch can lengthen; then send with the body check
-   first, the log's pass line second and the send last, each joined to the next with `&&`. Both
-   lines are PowerShell 7's:
+   being sent passed** (#884). Run the gate first, as a command of its own, on a tree
+   `git status --porcelain` prints nothing for, with its log named for the head's full hash,
+   which no later fetch can lengthen; then send with the body check first, the log's pass line
+   second and the send last, each joined to the next with `&&`. The gate reads the working tree
+   and the index, not a commit, so a run with an edit not yet committed would pass under the name
+   of a head without it. Both lines are PowerShell 7's:
 
    ```
-   pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-$(git rev-parse HEAD).txt"
+   pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-$(git rev-parse HEAD).txt"
    pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -LiteralPath '<scratch>/ship-check-$(git rev-parse HEAD).txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$')" && gh pr edit <n> --body-file "<scratch>/body.md"
    ```
 
-   A failing run's log has no such line, and a commit or a reword since the run leaves no log
-   named for the head, so either sends nothing until the gate is run again. A gate run is never
+   A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
+   run's log has no such line, and a commit or a reword since the run leaves no log named for the
+   head, so either sends nothing until the gate is run again. A gate run is never
    joined to the send with `;`. The first send is `gh pr create` with `--body-file` in place of
    `gh pr edit <n>`.
 
