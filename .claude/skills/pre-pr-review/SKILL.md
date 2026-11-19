@@ -318,9 +318,9 @@ pass.
    head, so either sends nothing until the gate is run again; a head not pushed sends nothing
    until it is. The log's line is matched for a pass, not for the count of checks the body
    quotes: step 7 runs the command again on the head and compares that. A gate run is never
-   joined to the send with `;`. The first send is `gh pr create`
-   with `--body-file` in place of `gh pr edit <n>`, and its third check reads the pushed branch,
-   since there is no pull request yet:
+   joined to the send with `;`. The first send is `gh pr create --head <branch>` with
+   `--body-file` in place of `gh pr edit <n>`, so that it opens the pull request from the branch
+   its third check reads; that check reads the pushed branch, since there is no pull request yet:
 
    ```
    pwsh -NoProfile -Command "exit [int](((git ls-remote origin refs/heads/<branch>) -split '\s')[0] -ne (git rev-parse HEAD))"
