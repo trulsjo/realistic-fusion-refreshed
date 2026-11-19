@@ -610,7 +610,8 @@ Truls had its pages defer to the shared page's three ways on 2026-11-16 (#864): 
 `gh pr create` and every `gh pr edit` after it, each review pass's included. **A body that quotes
 a `scripts/ship-check.ps1` result is sent only when a run on the head being sent passed** (Truls,
 2026-11-19, #884), **on a tree `git status --porcelain` prints nothing for** (Truls, 2026-11-19,
-on #890's review panel), since the gate reads the files and not a commit; step 6 of
+on #890's review panel), since the gate reads the files and not a commit, **and only when that
+head is the pull request's** (Truls, 2026-11-19, on #890's review panel); step 6 of
 `/pre-pr-review` says how. The review sections, the `## Pre-PR review` and what the plugin pass
 adds, stand below the template's `## Summary`, `## Evidence` and `## Merge Danger`, which the
 script checks and the tracker page,
