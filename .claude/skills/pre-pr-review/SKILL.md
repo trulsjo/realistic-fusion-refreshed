@@ -316,7 +316,9 @@ pass.
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
    run's log has no such line, and a commit or a reword since the run leaves no log named for the
    head, so either sends nothing until the gate is run again; a head not pushed sends nothing
-   until it is. A gate run is never joined to the send with `;`. The first send is `gh pr create`
+   until it is. The log's line is matched for a pass, not for the count of checks the body
+   quotes: step 7 runs the command again on the head and compares that. A gate run is never
+   joined to the send with `;`. The first send is `gh pr create`
    with `--body-file` in place of `gh pr edit <n>`, and its third check reads the pushed branch,
    since there is no pull request yet:
    `pwsh -NoProfile -Command "exit [int](((git ls-remote origin refs/heads/<branch>) -split '\s')[0] -ne (git rev-parse HEAD))"`.
