@@ -509,10 +509,13 @@ One line for each, newest last. The passages above are not edited.
   paragraph state it, `plugin-pass.md` gives the open marker where it says what a row holds, and
   the two skills carry it out. No gate reads it.
 - **2026-11-19, #884: a body that quotes a `scripts/ship-check.ps1` result is sent only when a run
-  on the head being sent passed.** On #881 the gate was joined to the body check and the send with
-  `;`. Truls decided in #884's triage that the fix is a step of `/pre-pr-review` and not a switch
-  on the shared `pr-body-check.ps1`. The pre-PR review of the branch that implemented it found the
-  rule stated only in the step. The session added the sentence to `code-review.md`'s paragraph on
-  the body, and the line to step 7 of `/plugin-pass`, before asking, and Truls kept both; the
-  comment on #884 records it. Step 6 of `/pre-pr-review` carries it out with a log named for the
-  head. No gate reads it.
+  on the head being sent passed, on a tree `git status --porcelain` prints nothing for, and only
+  when that head is the pull request's.** On #881 the gate was joined to the body check and the
+  send with `;`. Truls decided in #884's triage that the fix is a step of `/pre-pr-review` and not
+  a switch on the shared `pr-body-check.ps1`. The pre-PR review of the branch that implemented it
+  found the rule stated only in the step. The session added the sentence to `code-review.md`'s
+  paragraph on the body, and the line to step 7 of `/plugin-pass`, before asking, and Truls kept
+  both; the comment on #884 records it. #890's review panel then found that the gate reads the files
+  and not a commit, and that the log named the local head while the send changes the pull request;
+  Truls had both closed in the command, the same day. Step 6 of `/pre-pr-review` carries it out with
+  a log named for the head's full hash. No gate reads it.
