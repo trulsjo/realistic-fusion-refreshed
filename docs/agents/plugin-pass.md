@@ -175,9 +175,10 @@ figures of both rows (#661): for the first table the count each group of the plu
 and for the second each group's total, the sum of them, and the share of that sum that is cache
 reads. Run on #656's directory on 2026-10-09 it printed each figure the two rows of #656 have for
 the plugin pass, and one subagent as unsorted, described "PR 656 eligibility check". The pre-PR
-review's cell is read when the row is written, as its cell in the other table is, and the pull
-request's body has the later figure. A figure that was not measured is written as not measured, one
-that covers the whole pass as not split, and one the pull request does not give as not recorded. A
+review's cost cell is read when the row is written, as its cost cell in the other table is, and
+the pull request's body has the later figure. A figure that was not measured is written as not
+measured, one that covers the whole pass as not split, and one the pull request does not give as
+not recorded. A
 figure with no record behind it is not estimated. **From the first pass that `/plugin-pass` runs**
 (#626), a row's two cells for the three steps before the reviewers say the session did them, and its
 two scorers' cells hold the verifier's figures and say so. The columns keep their names.
