@@ -306,9 +306,7 @@ pass.
    `git status --porcelain` prints nothing for, with its log named for the head's full hash,
    which no later fetch can lengthen; then send with the body check first, the log's pass line
    second, the pull request's head third and the send last, each joined to the next with `&&`.
-   The gate reads the working tree and the index, not a commit, so a run with an edit not yet
-   committed would pass under the name of a head without it; and the log is named for the local
-   head, which the pull request has only once it is pushed. Both lines are PowerShell 7's:
+   Both lines are PowerShell 7's:
 
    ```
    pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-$(git rev-parse HEAD).txt"
