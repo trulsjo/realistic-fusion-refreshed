@@ -233,7 +233,9 @@ it. They are outside the repository, so a worktree does not lack them."
    commit.** `python tools/review-usage.py "<subagents directory>" "#<n>" "<reviewer's name>"`
    prints the figures; step 6 of `/pre-pr-review` says where the directory is. The cells for the
    three steps say the session did them, and the scorers' cells hold the verifier's figures and
-   say so. `docs/agents/plugin-pass.md` has what a row holds and how it is graded.
+   say so. The pre-PR review's findings cell is written `open: filled after the last
+   confirmation`, and step 7 of `/pre-pr-review` fills it (#883). `docs/agents/plugin-pass.md`
+   has what a row holds and how it is graded.
 
 7. **Fix, and have the pre-PR reviewer confirm.** `docs/agents/code-review.md` says, in the
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes
