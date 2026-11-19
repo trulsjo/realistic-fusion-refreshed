@@ -47,7 +47,9 @@ parts. What this repository's own rules were measured on is on
   the shared page's *Naming a branch commit* says. **Every `gh pr create --body-file` and `gh pr edit --body-file` is
   preceded by
   `pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 <file>`, joined
-  with `&&`**, as the shared page's *Before a create* says; `.github/workflows/gates.yml` runs it
+  with `&&`**, as the shared page's *Before a create* says. A body that quotes a
+  `scripts/ship-check.ps1` result has two more checks joined between them, as step 6 of
+  `/pre-pr-review` says (#884). `.github/workflows/gates.yml` runs the body check
   again on the body of each pull request, and again when the body is edited.
   `docs/agents/code-review.md` and `docs/agents/plugin-pass.md` say what else the pull request
   records once the plugin pass has run.
