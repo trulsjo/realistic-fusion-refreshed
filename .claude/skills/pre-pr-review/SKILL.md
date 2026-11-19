@@ -311,7 +311,8 @@ pass.
 
    A failing run's log has no such line, and a commit or a reword since the run leaves no log
    named for the head, so either sends nothing until the gate is run again. A gate run is never
-   joined to the send with `;`.
+   joined to the send with `;`. The first send is `gh pr create` with `--body-file` in place of
+   `gh pr edit <n>`.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the session's own

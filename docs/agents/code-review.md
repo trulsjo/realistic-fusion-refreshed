@@ -351,7 +351,8 @@ note, which the rule's own search finds (pre-PR finding 12, at 50).
 above is about a fix's own text. This one is about older text on the same branch, which a later
 commit can make false without touching it: a count, a quoted output, a statement of what the change
 does. After the last fix commit on the branch, the plugin pass's fixes included, and before the pull
-request's body is last edited, the session reads each of these again against the branch's head:
+request's body is last edited, the session reads each of these again against the branch's head,
+and writes the one cell below that is left open until then:
 
 - **quoted output in the body**, by running the command on the head and comparing what it prints;
 - **a count in the body, and a count the branch added to tracked prose**, by counting the rows,
@@ -606,7 +607,9 @@ which says how a branch commit is named and that the body is checked before each
 This repository named a branch commit by its subject in quotes alone from 2026-10-19 (#730) until
 Truls had its pages defer to the shared page's three ways on 2026-11-16 (#864): #731's head reached
 `main` as `d87a02a`, under a hash the branch never had. The check runs before the first
-`gh pr create` and every `gh pr edit` after it, each review pass's included. The review sections,
+`gh pr create` and every `gh pr edit` after it, each review pass's included. **A body that quotes
+a `scripts/ship-check.ps1` result is sent only when a run on the head being sent passed** (Truls,
+2026-11-19, #884), and step 6 of `/pre-pr-review` says how. The review sections,
 the `## Pre-PR review` and what the plugin pass adds, stand below the template's `## Summary`,
 `## Evidence` and `## Merge Danger`, which the script checks and the tracker page,
 `docs/agents/issue-tracker.md`, requires. Where the review sections stand the script does not read.
