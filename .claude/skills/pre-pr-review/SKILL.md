@@ -116,6 +116,10 @@ pass.
    > lists each claim, the files searched for it, and each hit, as a finding or as checked, with
    > the words each checked hit was checked on.
    >
+   > List each fact the diff states in more than one file, by a line it adds or changes in each,
+   > and hold those statements against each other (#855). Your report lists each fact and the
+   > files you held it in, as a finding or as checked.
+   >
    > A claim in the diff about a Factorio API class, method, parameter or attribute is checked
    > in the game's own reference (#793): `runtime-api.json` and `prototype-api.json` in the
    > `doc-html` directory of the install, beside the `bin` that holds the `Factorio.exe`
