@@ -499,23 +499,29 @@ One line for each, newest last. The passages above are not edited.
   does. The plugin-pass brief and `tools/rewrap.py` say so too. No gate reads the rule; the hook
   holds the lines.
 - **2026-11-19, #883: the pre-PR review's cell in a row of `review-figures.md` is written in the
-  reading after the last fix commit and not before, and that fill counts as a fix that only
-  corrects a count.** It reverses the choice the #715 line records, which kept a count written at
-  the plugin pass's step 6 and read again later. Commits on `main` that counted a row's findings
-  again ran up to #889's row. Truls decided in #883's triage that the cell moves
-  and that step 6 of `/plugin-pass` writes the row with the cell open. In the session that
-  implemented it, he ruled that the fill goes unconfirmed as #665 allows, though it writes words
-  as well as numbers; the comment on #883 records it. The second rule's reading and its #665
-  paragraph state it, `plugin-pass.md` gives the open marker where it says what a row holds, and
-  the two skills carry it out. No gate reads it.
+  reading after the last fix commit and not before, and again after a fix commit that follows it,
+  and that fill counts as a fix that only corrects a count.** It reverses the choice the #715 line
+  records, which kept a count written at the plugin pass's step 6 and read again later. Commits on
+  `main` that counted a row's findings again ran up to #889's row. Truls decided in #883's triage
+  that the cell moves and that step 6 of `/plugin-pass` writes the row with the cell open. In the
+  session that implemented it, he ruled that the fill goes unconfirmed as #665 allows, though it
+  writes words as well as numbers; the comment on #883 records it. On #890 the review panel's fixes
+  came after the fill and left it stale, and Truls had the fill made again after any later fix
+  commit; a second comment on #883 records it. The second rule's reading and its #665 paragraph
+  state it, `plugin-pass.md` gives the open marker where it says what a row holds, and the two
+  skills carry it out. No gate reads it.
 - **2026-11-19, #884: a body that quotes a `scripts/ship-check.ps1` result is sent only when a run
-  on the head being sent passed, on a tree `git status --porcelain` prints nothing for, and only
-  when that head is the pull request's.** On #881 the gate was joined to the body check and the
+  on the head being sent passed, on a tree `git status --porcelain` prints nothing for, only when
+  that head is the pull request's, and only when the body quotes that run's pass line word for
+  word.** On #881 the gate was joined to the body check and the
   send with `;`. Truls decided in #884's triage that the fix is a step of `/pre-pr-review` and not
   a switch on the shared `pr-body-check.ps1`. The pre-PR review of the branch that implemented it
   found the rule stated only in the step. The session added the sentence to `code-review.md`'s
   paragraph on the body, and the line to step 7 of `/plugin-pass`, before asking, and Truls kept
   both; the comment on #884 records it. #890's review panel then found that the gate reads the files
   and not a commit, and that the log named the local head while the send changes the pull request;
-  Truls had both closed in the command, the same day. Step 6 of `/pre-pr-review` carries it out with
-  a log named for the head's full hash. No gate reads it.
+  Truls had both closed in the command, the same day. Its second turn found that the first send's
+  `gh pr create` chose its own source branch, and that a stale quoted count could be sent before
+  step 7 compared it; Truls had the create name its head and the send hold the body to the log's
+  line. Two comments on #884 record the four. Step 6 of `/pre-pr-review` carries it out with a log
+  named for the head's full hash. No gate reads it.
