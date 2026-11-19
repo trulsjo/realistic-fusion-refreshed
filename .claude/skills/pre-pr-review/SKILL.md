@@ -378,9 +378,10 @@ pass.
    ```
 
    **Fill the pre-PR findings cell that `/plugin-pass` left open** in the pull request's row of
-   `docs/agents/review-figures.md` (#883), once, from the body's findings table at the head. The
-   rule counts that fill as a fix that only corrects a count, so it is committed as the paragraph
-   below says of one.
+   `docs/agents/review-figures.md` (#883), from the body's findings table at the head. The rule
+   counts that fill as a fix that only corrects a count, so it is committed as the paragraph below
+   says of one. A fix commit after the fill, a review panel's included, means this step is run
+   again, the fill with it.
 
    Run each command the body quotes output from, on the head. Count what each count counts. A
    commit message that the head contradicts is reworded as step 4 says; one that a later message

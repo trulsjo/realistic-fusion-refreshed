@@ -359,8 +359,10 @@ and writes the one cell below that is left open until then:
   cases, findings or files it counts. The pre-PR review's cell in the pull request's row of
   `docs/agents/review-figures.md`, its count of findings and how many were fixed and confirmed, is
   written here and not before (#715; Truls, 2026-11-19, #883): the row is written before the last
-  confirmation, which can raise more, so the cell is left open until this reading. On #713 the
-  count went stale twice, at 7 and at 11 of 14;
+  confirmation, which can raise more, so the cell is left open until this reading. A fix commit
+  after this reading, a review panel's included, means the reading is made again and the cell
+  filled again (Truls, 2026-11-19, on #890's review panel; a comment on #883 records it). On #713
+  the count went stale twice, at 7 and at 11 of 14;
 - **the branch's own commit messages**, each statement of what the change does against the code at
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
   review corrects. A message that a later message on the branch names and narrows is not

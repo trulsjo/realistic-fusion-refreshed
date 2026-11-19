@@ -161,27 +161,27 @@ subagents where there is one; and the grade, with the day it was made and its re
 cell. The pre-PR review's cost is its one reviewer's, read from its transcript as `/pre-pr-review`
 says when the row is written; the reviewer confirms after that, and the pull request's body has the
 later figure. The pre-PR review's count of findings, and how many were fixed and confirmed, are
-written once, after the last fix commit, as `code-review.md` says under *Review the prose, not only
-the code* (#715; Truls, 2026-11-19, #883); until then the cell holds `open: filled after the last
-confirmation`. Since the pre-PR reviewer gives no score (#610), a new row says of each pre-PR
-finding left unfixed "left unfixed: <reason>"; an older row keeps its scores as written. Anything
-else there is to say of the pull request goes in the last cell of its row in
-the second table. In the second table: the totals over all requests, and for the pre-PR review its
-count of requests and the share that is cache reads, read from the transcripts in the session's own
-`subagents` directory, the one step 6 of `/pre-pr-review` names. Each `agent-*.jsonl` there has an
-`agent-*.meta.json` beside it whose `description` is what the session called that subagent when it
-spawned it. `python tools/review-usage.py <that directory>` sorts them by description and prints the
-figures of both rows (#661): for the first table the count each group of the plugin pass reported,
-and for the second each group's total, the sum of them, and the share of that sum that is cache
-reads. Run on #656's directory on 2026-10-09 it printed each figure the two rows of #656 have for
-the plugin pass, and one subagent as unsorted, described "PR 656 eligibility check". The pre-PR
-review's cost cell is read when the row is written, as its cost cell in the other table is, and
-the pull request's body has the later figure. A figure that was not measured is written as not
-measured, one that covers the whole pass as not split, and one the pull request does not give as
-not recorded. A
-figure with no record behind it is not estimated. **From the first pass that `/plugin-pass` runs**
-(#626), a row's two cells for the three steps before the reviewers say the session did them, and its
-two scorers' cells hold the verifier's figures and say so. The columns keep their names.
+written after the last fix commit, and again after any fix commit that follows, as `code-review.md`
+says under *Review the prose, not only the code* (#715; Truls, 2026-11-19, #883); until then the
+cell holds `open: filled after the last confirmation`. Since the pre-PR reviewer gives no score
+(#610), a new row says of each pre-PR finding left unfixed "left unfixed: <reason>"; an older row
+keeps its scores as written. Anything else there is to say of the pull request goes in the last cell
+of its row in the second table. In the second table: the totals over all requests, and for the
+pre-PR review its count of requests and the share that is cache reads, read from the transcripts in
+the session's own `subagents` directory, the one step 6 of `/pre-pr-review` names. Each
+`agent-*.jsonl` there has an `agent-*.meta.json` beside it whose `description` is what the session
+called that subagent when it spawned it. `python tools/review-usage.py <that directory>` sorts them
+by description and prints the figures of both rows (#661): for the first table the count each group
+of the plugin pass reported, and for the second each group's total, the sum of them, and the share
+of that sum that is cache reads. Run on #656's directory on 2026-10-09 it printed each figure the
+two rows of #656 have for the plugin pass, and one subagent as unsorted, described "PR 656
+eligibility check". The pre-PR review's cost cell is read when the row is written, as its cost cell
+in the other table is, and the pull request's body has the later figure. A figure that was not
+measured is written as not measured, one that covers the whole pass as not split, and one the pull
+request does not give as not recorded. A figure with no record behind it is not estimated. **From
+the first pass that `/plugin-pass` runs** (#626), a row's two cells for the three steps before the
+reviewers say the session did them, and its two scorers' cells hold the verifier's figures and say
+so. The columns keep their names.
 
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
