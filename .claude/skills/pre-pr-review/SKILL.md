@@ -172,6 +172,10 @@ pass.
    python tools/review-usage.py "<that directory>" --replies=<name>
    ```
 
+   **An idle notification that sums up a message the reviewer has already sent is a repeat**
+   (#885): act on the message, and spend no reply on the notification. One that names a finding,
+   a fix or an answer that none of the reviewer's messages holds is read as a message.
+
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:
 
