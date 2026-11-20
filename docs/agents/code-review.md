@@ -699,6 +699,16 @@ this message (#643), the diff starts at the parent of that fix's commit, `git di
 finding's number and that its fix is in the diff. The session then changes the fix's mark in the
 pull request's body to what the reviewer answered.
 
+**A review panel's fixes are confirmed by the panel and by the pre-PR reviewer** (Truls,
+2026-11-20, #892). Where the review panel of [`review-panel.md`](review-panel.md) reviewed the pull
+request, the panel member that raised a finding confirms its fix in the turn its skill sends, and
+the session hands the fix's diff to the pre-PR reviewer as well, as it hands the plugin pass's,
+recorded as every diff sent to it is (#781). A choice Truls makes between a finding's routes is a
+decision given in a session, and is posted on its ticket before a commit relies on it (#819, below).
+After the panel's last fix commit the reading of *Review the prose, not only the code* is made
+again, and the pre-PR findings cell filled again (#883). On #890 the pre-PR reviewer raised four
+findings in confirming the panel's fixes, 19 to 22, all real; #892 has what that cost.
+
 **The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
 #670). It is what the session that wrote the change and ran both passes used itself, and none of its
 subagents is in it: its requests, their tokens summed as the second table sums them, the share that

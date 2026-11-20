@@ -24,4 +24,6 @@ is not running.
 Why each agent and model: the same three, on the same models, as the panels of
 grado-factorio-tools (`gft`) and true-nukes-refreshed (`tn`). Truls had this panel added on
 2026-11-15 to review #881. The panel is a review beside the two that `docs/agents/code-review.md`
-requires, the pre-PR review and the plugin pass, and replaces neither.
+requires, the pre-PR review and the plugin pass, and replaces neither. Who confirms the panel's
+fixes is in that file, under *A review before the pull request, and the plugin pass after it*
+(#892).
