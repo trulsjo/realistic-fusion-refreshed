@@ -239,11 +239,11 @@ pass.
 
    The confirmation arrives as step 3's report does.
 
-   **A new finding is fixed, committed and held, every one alike** (#643, #653): send no
-   message for it, and write it `yes, not confirmed` in step 6. `docs/agents/code-review.md`, in
-   the same section, says when its fix is confirmed. **A finding raised in the confirmation of
-   the plugin pass's fixes, or of a review panel's, is not held** (#891, #892): its fix is sent in
-   a message of its own, as a fix is sent above.
+   **A new finding is fixed, committed and held** (#643, #653), **but for one raised in the
+   confirmation of the plugin pass's fixes or of a review panel's** (#891, #892). Send no message
+   for a held fix, and write it `yes, not confirmed` in step 6; `docs/agents/code-review.md`, in
+   the same section, says when it is confirmed. The fix of a finding raised in either confirmation
+   is sent in a message of its own, as a fix is sent above.
 
    Done when the reviewer has answered for every finding of its review.
 
