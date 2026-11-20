@@ -412,8 +412,8 @@ Read on 2026-11-20 from the edit history of #890's body (`userContentEdits`), wh
   by the body's edit of 18:50 UTC on 2026-11-19. That edit followed the fill of #890's pre-PR
   findings cell, the last commit before the panel's first fix, which came at 21:03 UTC.
 - **At the last edit**, of 22:20 UTC, it had cost 11 867 591 over 64 requests: 5 665 266 tokens
-  and 24 requests more, in which it confirmed the panel's fixes of both turns and the readings
-  after them.
+  and 24 requests more, in which it confirmed the panel's fixes of both turns, the fix of finding
+  17, which the panel had caught held, and the readings after them.
 - **In those confirmations it raised findings 19 to 22, all four real**: a decision of
   Truls's credited before it was on its ticket (#819), a findings cell left stale, a step that
   restated its rule's reason, and a body the fixes had made stale. The panel's own turns raised
