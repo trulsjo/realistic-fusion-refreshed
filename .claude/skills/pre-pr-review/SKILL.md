@@ -347,7 +347,8 @@ pass.
    its total over all requests, and what share of the total is cache reads. The first is the one
    the first table holds, and the second the one the second table holds; that page says what each
    measures (#644). Read them again after the reviewer's last confirmation, the one of the plugin
-   pass's fixes, and replace the figures in the body. Each table's row keeps the figure read when
+   pass's fixes or, where a review panel reviewed, of the panel's (#892), and replace the figures
+   in the body. Each table's row keeps the figure read when
    the row was written. If the script prints no line for the reviewer, write "not measured". The
    same run prints the plugin pass's figures once that pass has run, which is how the session that
    runs it reads them (#634). A session that reviews two pull requests gives the script two
