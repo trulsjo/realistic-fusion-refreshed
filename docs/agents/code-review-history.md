@@ -525,3 +525,13 @@ One line for each, newest last. The passages above are not edited.
   step 7 compared it; Truls had the create name its head and the send hold the body to the log's
   line. Two comments on #884 record the four. Step 6 of `/pre-pr-review` carries it out with a log
   named for the head's full hash. No gate reads it.
+- **2026-11-20, #892: a review panel's fixes are confirmed by the panel and by the pre-PR reviewer,
+  and a finding the pre-PR reviewer raises in confirming them is not held.** On #890 no page said
+  who confirms a panel's fixes, and the session sent them to both; the pre-PR reviewer raised four
+  real findings there, 19 to 22. Truls decided in #892's triage that both confirm them; the comment
+  on #892 records it. The pre-PR review of the branch that implemented it found that a finding
+  raised in that confirmation has no later message to wait for, as one raised in confirming the
+  plugin pass's fixes has none, and the paragraph says it is not held. The fourth rule states it
+  with #819's timing for a choice between a finding's routes and #883's reading after a later fix
+  commit, `code-review-evidence.md` has what the confirmation cost on #890, and steps 4 and 6 of
+  `/pre-pr-review` carry it out. No gate reads it.
