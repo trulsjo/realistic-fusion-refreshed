@@ -704,7 +704,8 @@ pull request's body to what the reviewer answered.
 request, the panel member that raised a finding confirms its fix in the turn its skill sends, and
 the session hands the fix's diff to the pre-PR reviewer as well, as it hands the plugin pass's,
 recorded as every diff sent to it is (#781). A choice Truls makes between a finding's routes is a
-decision given in a session, and is posted on its ticket before a commit relies on it (#819, below).
+decision given in a session, and is posted on its ticket before a commit message or the pull
+request's body relies on it (#819, below).
 After the panel's last fix commit the reading of *Review the prose, not only the code* is made
 again, and the pre-PR findings cell filled again (#883). On #890 the pre-PR reviewer raised four
 findings in confirming the panel's fixes, 19 to 22, all real; #892 has what that cost.
