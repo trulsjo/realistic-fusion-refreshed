@@ -184,8 +184,8 @@ pass.
    python tools/review-coverage.py record pre-pr-reviewed..HEAD
    ```
 
-   Every diff sent to the reviewer, here, in step 5, in step 7 and for the plugin pass's fixes,
-   is recorded the same way, from its own range (#781).
+   Every diff sent to the reviewer, here, in step 5, in step 7, for the plugin pass's fixes and
+   for a review panel's (#892), is recorded the same way, from its own range (#781).
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
