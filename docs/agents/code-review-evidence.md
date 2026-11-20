@@ -1,14 +1,14 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but twenty was part of that file and is as it stood there, so "this file" in one is
+but twenty-one was part of that file and is as it stood there, so "this file" in one is
 `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 but one of those were moved on 2026-10-10 (#672), and the one on what the threshold dropped on
-2026-10-11 (#626). The twenty written for this page are the ones for #651, #653, #670, #671, #720,
-#753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820, #878 and #879, the ones on the
-verdicts of 2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the one on what
-the scores decided. What each pull request's two passes found and cost is on a third page,
-[`review-figures.md`](review-figures.md).
+2026-10-11 (#626). The twenty-one written for this page are the ones for #651, #653, #670, #671,
+#720, #753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820, #878, #879 and #892, the
+ones on the verdicts of 2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the
+one on what the scores decided. What each pull request's two passes found and cost is on a third
+page, [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -401,6 +401,23 @@ worktree sweep to the pass's own worktrees the same day:
   `.claude/worktrees/agent-<id>`, and the refusal named the path it refused. The pass's verifier
   ran without isolation, so no verifier's notice was read; that it carries the same field, from
   the same tool, is *Inferred*.
+
+### What confirming a review panel's fixes cost on #890 (#892)
+
+Under the paragraph on a review panel's fixes, which Truls decided on 2026-11-20 in #892's triage.
+Read on 2026-11-20 from the edit history of #890's body (`userContentEdits`), whose cost line
+`tools/review-usage.py` wrote at each edit, and from the author times of #890's commits.
+
+- **Before the panel's fixes**, the pre-PR reviewer had cost 6 202 325 tokens over 40 requests,
+  by the body's edit of 18:50 UTC on 2026-11-19. That edit followed the fill of #890's pre-PR
+  findings cell, the last commit before the panel's first fix, which came at 21:03 UTC.
+- **At the last edit**, of 22:20 UTC, it had cost 11 867 591 over 64 requests: 5 665 266 tokens
+  and 24 requests more, in which it confirmed the panel's fixes of both turns and the readings
+  after them.
+- **In those confirmations it raised findings 19 to 22, all four real**: a decision of
+  Truls's credited before it was on its ticket (#819), a findings cell left stale, a step that
+  restated its rule's reason, and a body the fixes had made stale. The panel's own turns raised
+  none of the four.
 
 ### What the verdict of 2026-10-07 rested on (#593)
 
