@@ -710,7 +710,9 @@ session, and is posted on its ticket before a commit message or the pull request
 it (#819, below). A fix commit after the reading of *Review the prose, not only the code*, the
 panel's or one its confirmation raised, means the reading is made again and the pre-PR findings
 cell filled again (#883). On #890 the pre-PR reviewer raised four findings in confirming the
-panel's fixes, 19 to 22, all real; #892 has what that cost.
+panel's fixes, 19 to 22, all real; [the evidence
+page](code-review-evidence.md#what-confirming-a-review-panels-fixes-cost-on-890-892) has what that
+cost.
 
 **The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
 #670). It is what the session that wrote the change and ran both passes used itself, and none of its
