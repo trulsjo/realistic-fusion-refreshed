@@ -707,9 +707,10 @@ recorded as every diff sent to it is (#781). A finding the pre-PR reviewer raise
 them is not held, as one raised in confirming the plugin pass's fixes is not: its fix gets a
 message of its own. A choice Truls makes between a finding's routes is a decision given in a
 session, and is posted on its ticket before a commit message or the pull request's body relies on
-it (#819, below). After the panel's last fix commit the reading of *Review the prose, not only the
-code* is made again, and the pre-PR findings cell filled again (#883). On #890 the pre-PR reviewer
-raised four findings in confirming the panel's fixes, 19 to 22, all real; #892 has what that cost.
+it (#819, below). A fix commit after the reading of *Review the prose, not only the code*, the
+panel's or one its confirmation raised, means the reading is made again and the pre-PR findings
+cell filled again (#883). On #890 the pre-PR reviewer raised four findings in confirming the
+panel's fixes, 19 to 22, all real; #892 has what that cost.
 
 **The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
 #670). It is what the session that wrote the change and ran both passes used itself, and none of its
