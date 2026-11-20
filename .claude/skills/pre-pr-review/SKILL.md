@@ -394,8 +394,7 @@ pass.
    what that fix changed is read again. **A fix that only corrects a count gets no message**
    (#665): the rule says which fix that is. Commit it and read again what it changed. Then run
    step 5's `check` again (#781): a fix that only corrects a count is the only kind it may list
-   now, and a held fix is not among them (#891). Each it lists is named in the body as not
-   confirmed.
+   now, so it lists no held fix (#891). Each it lists is named in the body as not confirmed.
 
    Done when the pull request's row on `review-figures.md` no longer holds the open marker, and
    the body has, under the `## Pre-PR review` heading, a line that names what was read again and
