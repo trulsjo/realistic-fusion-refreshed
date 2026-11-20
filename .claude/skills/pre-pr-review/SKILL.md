@@ -241,7 +241,9 @@ pass.
 
    **A new finding is fixed, committed and held, every one alike** (#643, #653): send no
    message for it, and write it `yes, not confirmed` in step 6. `docs/agents/code-review.md`, in
-   the same section, says when its fix is confirmed.
+   the same section, says when its fix is confirmed. **A finding raised in the confirmation of
+   the plugin pass's fixes is not held** (#891): its fix is sent in a message of its own, as a fix
+   is sent above.
 
    Done when the reviewer has answered for every finding of its review.
 
@@ -391,7 +393,8 @@ pass.
    what that fix changed is read again. **A fix that only corrects a count gets no message**
    (#665): the rule says which fix that is. Commit it and read again what it changed. Then run
    step 5's `check` again (#781): a fix that only corrects a count is the only kind it may list
-   now, and each it lists is named in the body as not confirmed.
+   now, and a held fix is not among them (#891). Each it lists is named in the body as not
+   confirmed.
 
    Done when the pull request's row on `review-figures.md` no longer holds the open marker, and
    the body has, under the `## Pre-PR review` heading, a line that names what was read again and
