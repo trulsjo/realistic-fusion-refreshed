@@ -258,7 +258,7 @@
     SECTION 22 HAS A -SelfTest AND NO FLOOR (#907). Every run prints, beside its pass or fail line,
     `ship-check: read <key>`: the head's tree, a hash of the Model-Growth machines section 19
     accepts, and origin/main's commit, made from the values those reads use, so a log named for
-    the key is the head's while nothing the run read has changed. A tree git status --porcelain
+    the key is the head's while none of the three has changed. A tree git status --porcelain
     prints anything for has no key, and the line says so. -PrintKey prints the key alone. The
     every-history-read-is-keyed half requires each git read of history outside the self-test to
     stand in a function the key covers, and two planted outside it to be named; the
@@ -327,7 +327,7 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # Model-Growth machines section 19 accepts, through Get-AcceptedGrowth, which section 19 calls,
 # and $MAIN_REF's commit, which every read of origin/main below is handed. A reword that keeps
 # the trailers keeps the key; a file changed, a trailer added or dropped, or a fetch that moves
-# origin/main changes it. Every section reads the working tree and section 11 the index, which
+# origin/main changes it. The sections read the working tree, and section 11 the index, which
 # are the head's tree only when git status --porcelain prints nothing, so a tree it prints
 # anything for has no key: the run says so, and -PrintKey prints nothing and exits 1.
 #
@@ -335,7 +335,7 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # fails on one that reads history (a log, rev-list, show, cat-file, rev-parse, merge-base, diff
 # and the like) in a function not listed in $KEYED_READS with that command, so a read added
 # without the key changing with it fails; the read-key-follows-its-inputs half moves each input
-# of a scratch repository and requires the key to move with it, and with nothing else.
+# of a scratch repository and requires the key to move with it, and to stay on a reword.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
