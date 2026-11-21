@@ -612,7 +612,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   with the section's `git ls-files --others` read replaced by an empty list it failed on the
   untracked-file-caught half.
 - 2026-11-21, #902: `.githooks/pre-commit` gives the shared comment-line check `tools/*.py` too, so
-  a staged tool's `#` lines are held to 100; its docstrings are not read (grado-factorio-tools#523).
+  a staged tool's `#` lines are held to 100, one inside a docstring included, and no other line of
+  a docstring is read (grado-factorio-tools#523).
   Five tools' `#` lines over 100 were rewrapped first. Run by hand with `sh .githooks/pre-commit`:
   a `#` line of 112 characters in words staged in `tools/rewrap.py` was refused, naming the file
   and the rewrap, and one of 32 was let through. Before the change the hook read no file in

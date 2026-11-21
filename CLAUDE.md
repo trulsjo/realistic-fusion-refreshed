@@ -321,13 +321,12 @@ Markdown was not checked. `ship-check.ps1` runs the same check over every tracke
 workflow holds a clone without the hook to it. **It also reads the staged scripts and wrapped
 files** (#863), with the tools submodule's checks: a staged wrapped file's lines against 100
 characters, every comment line of a staged script, hook or workflow, and every `#` line of a staged
-`tools/*.py` (#902), against 100, and each staged
-`*.ps1` under `scripts/` and `.githooks/` for a list parameter never split on commas, a variable
-spelt two ways, a help block PowerShell does not read and, where it sets strict mode, a read that
-can throw. Those checks read the whole file, so a commit that stages a script written before them is
-refused for what was there already: on 2026-11-16, 47 of the 57 scripts, hooks and workflows held
-649 comment lines over 100, and 13 list parameters and 5 variables in `scripts/` failed.
-`markdown-rewrap.ps1 -Comment` mends the first.
+`tools/*.py` (#902), against 100, and each staged `*.ps1` under `scripts/` and `.githooks/` for a
+list parameter never split on commas, a variable spelt two ways, a help block PowerShell does not
+read and, where it sets strict mode, a read that can throw. Those checks read the whole file, so a
+commit that stages a script written before them is refused for what was there already: on
+2026-11-16, 47 of the 57 scripts, hooks and workflows held 649 comment lines over 100, and 13 list
+parameters and 5 variables in `scripts/` failed. `markdown-rewrap.ps1 -Comment` mends the first.
 
 **The `commit-msg` hook exists because the wrap rule had rotted.** Measured on 2026-09-06 by
 `commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5
