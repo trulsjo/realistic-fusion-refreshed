@@ -598,10 +598,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   disk passed, where the hook before the change refused that commit for the line on disk.
 - 2026-11-21, #898: `.githooks/pre-commit` ends each refusal with a line saying the message was
   not saved, since git writes `.git/COMMIT_EDITMSG` after the hook runs and the file still holds
-  the previous commit's. Run by hand on this branch: a commit refused for a line of 124 characters
-  staged in `CLAUDE.md`, one refused for a link to no file in `docs/agents/domain.md`, and one
-  refused while a `.gates-running` marker named a live process each printed the line; the commit
-  that changed the hook went through and printed none.
+  the last message git wrote there, the previous commit's or one a `commit-msg` hook rejected.
+  Run by hand with `sh .githooks/pre-commit` on this branch: a line of 124 characters staged in
+  `CLAUDE.md`, a link to no file staged in `docs/agents/domain.md`, and nothing staged while a
+  `.gates-running` marker named a live process were each refused with the line; a blank line
+  staged in `docs/agents/domain.md` was let through, and printed none.
 - 2026-11-21, #896: `ship-check.ps1` section 21 fails a run started beside a file git neither
   tracks nor ignores, naming each path, read before section 1 beside section 16's first
   fingerprint; a modified or staged file passes, as Truls narrowed it on #896, and `*.stackdump`

@@ -30,7 +30,8 @@
 # and for its reasons.
 #
 # Each refusal, the live run's included, ends with a line saying the message was not saved, since
-# .git/COMMIT_EDITMSG still holds the previous commit's (#898). A commit let through gets no line.
+# .git/COMMIT_EDITMSG still holds the last message git wrote there, not this one (#898). A commit
+# let through gets no line.
 #
 # What the scripts' step cannot see: a script is taken as setting strict mode where a line of it
 # begins with Set-StrictMode, after any indent. A path is listed with core.quotePath off; one git
@@ -42,11 +43,12 @@ if ! command -v pwsh >/dev/null 2>&1; then
 fi
 
 # Git runs this hook before it writes .git/COMMIT_EDITMSG, so after a refusal the file still holds
-# the previous commit's message, and `git commit -F .git/COMMIT_EDITMSG`, which commit-msg's header
-# gives for its own rejections, would commit under it (#898). Every refusal says so, whichever way
-# out it takes; the trap below that removes the scratch folder says it too.
+# the last message git wrote there: the previous commit's, or one a commit-msg hook rejected since.
+# `git commit -F .git/COMMIT_EDITMSG`, which commit-msg's header gives for its own rejections,
+# would commit under it (#898). Every refusal says so, whichever way out it takes; the trap below
+# that removes the scratch folder says it too.
 unsaved() {
-    [ "$1" -eq 0 ] || echo "pre-commit: refused, and the message was not saved: .git/COMMIT_EDITMSG still holds the previous commit's, so give the message again." >&2
+    [ "$1" -eq 0 ] || echo "pre-commit: refused, and the message was not saved: .git/COMMIT_EDITMSG still holds an earlier one, the previous commit's or one commit-msg rejected, so give the message again." >&2
 }
 trap 'unsaved $?' EXIT
 
