@@ -609,8 +609,8 @@ Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 which says how a branch commit is named and that the body is checked before each create or edit.
 This repository named a branch commit by its subject in quotes alone from 2026-10-19 (#730) until
 Truls had its pages defer to the shared page's three ways on 2026-11-16 (#864): #731's head reached
-`main` as `d87a02a`, under a hash the branch never had. The check runs before the first `gh pr
-create` and every `gh pr edit` after it, each review pass's included. **A body that quotes a
+`main` as `d87a02a`, under a hash the branch never had. The check runs before the first
+`gh pr create` and every `gh pr edit` after it, each review pass's included. **A body that quotes a
 `scripts/ship-check.ps1` result is sent only when a run on the head being sent passed** (Truls,
 2026-11-19, #884), **on a tree `git status --porcelain` prints nothing for**, since the gate reads
 the files and, of the branch's own commits, only their `Model-Growth:` lines; a run is the head's
