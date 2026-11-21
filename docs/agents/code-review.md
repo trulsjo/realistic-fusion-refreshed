@@ -609,26 +609,25 @@ Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 which says how a branch commit is named and that the body is checked before each create or edit.
 This repository named a branch commit by its subject in quotes alone from 2026-10-19 (#730) until
 Truls had its pages defer to the shared page's three ways on 2026-11-16 (#864): #731's head reached
-`main` as `d87a02a`, under a hash the branch never had. The check runs before the first
-`gh pr create` and every `gh pr edit` after it, each review pass's included. **A body that quotes
-a `scripts/ship-check.ps1` result is sent only when a run on the head being sent passed** (Truls,
-2026-11-19, #884), **on a tree `git status --porcelain` prints nothing for**, since the gate
-reads the files and, of the branch's own commits, only their `Model-Growth:` lines; a run is the
-head's while the head's tree and those lines are the ones it read, so a reword that keeps them
-leaves it standing (Truls, 2026-11-21, twice on #903); **only when that head is the pull
-request's, and only when the body quotes that run's pass line word for word** (all three Truls,
-2026-11-19, on #890's review panel; two comments on #884 record them). A `scripts/run-gates.ps1`
-run the body quotes is made and named the same way, on a clean tree (Truls, 2026-11-21, on #903);
-step 6 of `/pre-pr-review` says how. The review sections, the `## Pre-PR review` and what the
-plugin pass adds, stand below the template's `## Summary`,
-`## Evidence` and `## Merge Danger`, which the script checks and the tracker page,
-`docs/agents/issue-tracker.md`, requires. Where the review sections stand the script does not read.
-**The three headings are filled by invoking the `mattpocock-skills:pr` skill**, before the first
-`gh pr create`, and are written by hand to that skill's template where it is not installed
-(2026-10-20, #738): a diagram, diff-sketch or tree under Summary, **Before:** and **After:** under
-Evidence, and **Door:** and **Blast Radius:** under Merge Danger. Since #753 the script fails a body
-missing one of those four markers under its heading; before it, #737's body was written by hand,
-passed it, and had none of them.
+`main` as `d87a02a`, under a hash the branch never had. The check runs before the first `gh pr
+create` and every `gh pr edit` after it, each review pass's included. **A body that quotes a
+`scripts/ship-check.ps1` result is sent only when a run on the head being sent passed** (Truls,
+2026-11-19, #884), **on a tree `git status --porcelain` prints nothing for**, since the gate reads
+the files and, of the branch's own commits, only their `Model-Growth:` lines; a run is the head's
+while the head's tree and those lines are the ones it read, so a reword that keeps them leaves it
+standing (Truls, 2026-11-21, twice on #903); **only when that head is the pull request's, and only
+when the body quotes that run's pass line word for word** (all three Truls, 2026-11-19, on #890's
+review panel; two comments on #884 record them). A `scripts/run-gates.ps1` run the body quotes is
+made and named the same way, on a clean tree (Truls, 2026-11-21, on #903); step 6 of
+`/pre-pr-review` says how. The review sections, the `## Pre-PR review` and what the plugin pass
+adds, stand below the template's `## Summary`, `## Evidence` and `## Merge Danger`, which the script
+checks and the tracker page, `docs/agents/issue-tracker.md`, requires. Where the review sections
+stand the script does not read. **The three headings are filled by invoking the
+`mattpocock-skills:pr` skill**, before the first `gh pr create`, and are written by hand to that
+skill's template where it is not installed (2026-10-20, #738): a diagram, diff-sketch or tree under
+Summary, **Before:** and **After:** under Evidence, and **Door:** and **Blast Radius:** under Merge
+Danger. Since #753 the script fails a body missing one of those four markers under its heading;
+before it, #737's body was written by hand, passed it, and had none of them.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
