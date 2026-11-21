@@ -50,7 +50,8 @@ pass.
      is a copy of the probe's report in `.probe-reports/` (#589), whose arguments, date and game
      version are the ones the note gives. Where they are not, run the probe again first;
    - any other branch: the output of the gates that were run — `scripts/run-gates.ps1` when the
-     branch combines more than one ticket, otherwise the gates the change touches. A
+     branch combines more than one ticket, with step 6's line for it where the body will quote
+     it (#903), otherwise the gates the change touches. A
      markdown-only branch, one where every path
      `git diff --name-only --no-renames origin/main...HEAD` prints ends in `.md`, runs
      `scripts/ship-check.ps1` alone however many tickets it combines (#618).
@@ -324,13 +325,20 @@ pass.
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
    run's log has no such line, and a commit that changes a file or a `Model-Growth:` line since
    the run leaves no log under the head's name, so either sends nothing until the gate is run
-   again. A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1` log the body quotes is named the
-   same way, `<scratch>/run-gates-<tree>.log` with the head's tree, and the body says the run is
-   the head's only while the head's tree names a log. A body that quotes another count of checks
-   than the log's sends nothing until it is brought up to date. A gate run is never joined to the
-   send with `;`. The first send is `gh pr create --head <branch>` with
-   `--body-file` in place of `gh pr edit <n>`, so that it opens the pull request from the branch
-   its third check reads; that check reads the pushed branch, since there is no pull request yet:
+   again. A head not pushed, a reworded one included, sends nothing until it is. A
+   `scripts/run-gates.ps1` run the body quotes is made the same way, on a clean tree with its log
+   under the head's name, and the body calls it the head's only while a log of that name holds
+   its pass line:
+
+   ```
+   pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-<name>.log"
+   ```
+
+   A body that quotes another count of checks than the log's sends nothing until it is brought up
+   to date. A gate run is never joined to the send with `;`. The first send is
+   `gh pr create --head <branch>` with `--body-file` in place of `gh pr edit <n>`, so that it
+   opens the pull request from the branch its third check reads; that check reads the pushed
+   branch, since there is no pull request yet:
 
    ```
    pwsh -NoProfile -Command "exit [int](((git ls-remote origin refs/heads/<branch>) -split '\s')[0] -ne (git rev-parse HEAD))"
