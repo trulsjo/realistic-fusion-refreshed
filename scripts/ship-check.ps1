@@ -313,7 +313,8 @@ $checks   = 0
 #
 # Read beside $treeBefore, before section 1. On #894 a pass was quoted from a run made beside an
 # untracked grep.exe.stackdump: step 6 of /pre-pr-review guards its own send with a clean-tree
-# test (#884), and the gate itself read only tracked paths. Untracked files alone, the `??` lines
+# test (#884), and the gate read no untracked file outside models/, where section 18 reads them
+# to fail what a model is not made of. Untracked files alone, the `??` lines
 # of `git status --porcelain`, a file at a time: Truls narrowed it so on 2026-11-21, on #896, so a
 # modified or staged file still passes and a draft can be checked before it is committed. An
 # ignored file is not untracked here, so a run's own logs and reports under ignored directories
