@@ -615,5 +615,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   a staged tool's `#` lines are held to 100; its docstrings are not read (grado-factorio-tools#523).
   Five tools' `#` lines over 100 were rewrapped first. Run by hand with `sh .githooks/pre-commit`:
   a `#` line of 112 characters in words staged in `tools/rewrap.py` was refused, naming the file
-  and the rewrap, and one of 32 was let through; before the change the long one was let through
-  unread. A line of one long word is exempt, as the check's header says.
+  and the rewrap, and one of 32 was let through. Before the change the hook read no file in
+  `tools/`, and a line of 120 characters staged there was let through unread; that line was one
+  word, which the check exempts as its header says, so the run shows only that the file was not
+  read.
