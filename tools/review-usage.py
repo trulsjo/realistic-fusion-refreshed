@@ -55,8 +55,8 @@ context of the first of them, which is that request's tokens less its output. Wi
 that is the whole transcript, which is right for a session that wrote one pull request and did
 nothing else. A session that did more bounds the part that wrote this one by what the user said:
 
-    --since=<text>   start at the first turn of the user that holds the text
-    --until=<text>   stop at the first turn after it that holds this one; without it, at the end
+    --since=<text>   start at the one turn of the user that holds the text
+    --until=<text>   stop at the one turn after it that holds this one; without it, at the end
 
 The arguments of the command that started the work are such a text, "#665 #666 #668", and so are
 the user's words on the merge. A text is looked for in every turn the transcript gives the user,
@@ -69,6 +69,13 @@ command is such a text too (#856). The summary a compaction leaves is not read, 
 flagged as one or is the copy a later turn carries, known by its first sentence: it quotes the
 command that started the work, and a part started there is short. A `--since` that no turn holds,
 or an `--until` that no turn after it holds, prints no figure for the main session and exits 1.
+So does a text that more than one turn holds (#897), and it lists each of them with its time and
+its first words: on the session that wrote #894, `--since=continue` was meant for a turn that said
+only that, and began instead at the session's opening context a day earlier, as the blob of a
+request copied it, measuring 399 requests from there. Where one of those turns says the text
+whole, it is the one, so a one-word turn can still be named. A turn marked isMeta, as the skill's
+text a slash command loads and which ends with the command's arguments, is not the user's, nor is
+the copy of a turn in the blob of the request after it.
 
 THE REPLIES OF ONE SUBAGENT (#857), with `--replies=<name>` and nothing else: every message the
 subagent whose `.meta.json` has that `name` sent with SendMessage, whole and in the order sent, each
@@ -87,10 +94,12 @@ reaches the session in the idle notice, cut off where it is long, and says again
 said; a subagent that answered only there is one that sent no text. Nor when a figure was read.
 The pre-PR reviewer goes on after its row is written, so a later run prints more than the row
 holds; review-figures.md says which reading a row keeps. Nor which turn the user typed. A
-subagent's hand-back, a message from another session, a task notice, a loaded skill's text and a
-system reminder are each a turn of the user's in the transcript, so a text that one of them holds
-can start or end the part there: `--until=merge` stopped #669's part at a hand-back, 34 requests
-in. Give a text that the user's own turn holds and those do not.
+subagent's hand-back, a message from another session and a task notice are each a turn of the
+user's in the transcript where it is not marked isMeta, so a text that one of them holds can
+start or end the part there: `--until=merge` stopped #669's part at a hand-back, 34 requests in.
+Where the user's own turn holds it too, the two are listed and nothing is measured, unless one of
+them says the text whole. Give a text
+that the user's own turn holds and those do not.
 Nor a compaction's summary whose copy opens with other words than the first sentence held in
 `SUMMARY`: it is read as the user's, and can start the part.
 
@@ -157,11 +166,14 @@ def notices(directory):
 
 
 def typed(entry):
-    """What a user's turn says, a tool's output and a compaction's summary left out.
+    """What a user's turn says, a tool's output, a compaction's summary and a meta turn left out.
 
-    A slash command's turn also says the command as typed, `/<name> <args>` (#856)."""
+    A slash command's turn also says the command as typed, `/<name> <args>` (#856). A turn marked
+    isMeta, as the skill's text a command loads, which ends with the command's arguments, is not
+    the user's, nor is the copy of a turn in the blob of the request after it (#897)."""
     m = entry.get("message") or {}
-    if m.get("role") != "user" or entry.get("isCompactSummary"):
+    if m.get("role") != "user" or entry.get("isCompactSummary") or entry.get("isMeta") \
+            or entry.get("type") == "api-request-blob":
         return ""
     content = m.get("content")
     if not isinstance(content, str):
@@ -178,29 +190,48 @@ def typed(entry):
 
 
 def main_session(directory, since=None, until=None):
-    """The session's own requests, from the turn holding `since` to the one holding `until`."""
+    """The session's own requests, from the turn holding `since` to the one holding `until`.
+
+    `since hits` and `until hits` list each turn that holds the text, the second counted after
+    the first's turn, or only the one turn that says the text whole where there is one. A text
+    more than one turn holds and none says whole bounds nothing, and nothing is measured (#897):
+    the first of them is not taken to be the one meant."""
     session = os.path.dirname(os.path.abspath(directory)) + ".jsonl"
     if not os.path.exists(session):
         return None
-    order, use, on, ended = [], {}, since is None, False
-    for line in open(session, encoding="utf-8"):
-        entry = json.loads(line)
-        said = typed(entry)
-        if not on:
-            on = since in said
-        elif until and until in said:
-            ended = True
-            break
+    entries = [json.loads(line) for line in open(session, encoding="utf-8")]
+    said = [typed(entry) for entry in entries]
+
+    def hits(text, start):
+        at = [i for i in range(start, len(entries)) if text in said[i]]
+        whole = [i for i in at if said[i].strip() == text.strip()]
+        return whole if len(whole) == 1 else at     # the one turn that says it whole bounds
+
+    since_at = hits(since, 0) if since is not None else []
+    start = since_at[0] if len(since_at) == 1 else 0
+    bounded = since is None or len(since_at) == 1       # else `until` is not looked for
+    until_at = hits(until, start + 1 if since_at else 0) if until and bounded else []
+    end = until_at[0] if len(until_at) == 1 else len(entries)
+    order, use = [], {}
+    measured = bounded and len(until_at) < 2
+    for entry in entries[start:end] if measured else ():
         m = entry.get("message") or {}
-        if on and m.get("role") == "assistant" and total(m.get("usage") or {}):
+        if m.get("role") == "assistant" and total(m.get("usage") or {}):
             if m["id"] not in use:
                 order.append(m["id"])
             use[m["id"]] = m["usage"]
     first = use[order[0]] if order else {}
+
+    def turn(i):
+        words = " ".join(said[i].split())
+        return (entries[i].get("timestamp") or "no timestamp",
+                words if len(words) <= 60 else words[:60] + "...")    # cp1252 has no ellipsis
     return {"requests": len(order), "all": sum(map(total, use.values())),
             "reads": sum(u.get("cache_read_input_tokens", 0) for u in use.values()),
             "first": total(first) - first.get("output_tokens", 0),
-            "since found": on, "until found": ended or until is None}
+            "since found": since is None or bool(since_at),
+            "until found": until is None or bool(until_at),
+            "since hits": [turn(i) for i in since_at], "until hits": [turn(i) for i in until_at]}
 
 
 def replies(directory, name):
@@ -284,8 +315,17 @@ def report_session(found, since, until):
         f'from the turn that says "{since}" to ' + (
             f'the one that says "{until}"' if until else "the end")
     out = ["", f"THE MAIN SESSION, for the pull request's body: {span}"]
+    ambiguous = found and next(((text, found[key]) for text, key in
+                                ((since, "since hits"), (until, "until hits"))
+                                if len(found[key]) > 1), None)
     if found is None:
         out.append("  no transcript beside the directory, so not measured")
+    elif ambiguous:
+        text, turns = ambiguous
+        out.append(f'  not measured: {len(turns)} turns of the user say "{text}"' +
+                   (f' after the one that says "{since}"' if text == until and since else "") +
+                   ", so give a text only the one meant holds:")
+        out.extend(f'    {when}: "{words}"' for when, words in turns)
     elif not found["since found"]:
         out.append(f'  not measured: no turn of the user says "{since}"')
     elif not found["until found"]:
@@ -456,6 +496,10 @@ def self_test():
                     said("s3", usage(10, 1, 20, 100)), said("s3", usage(10, 5, 20, 100)),
                     said("s4", usage(0, 1, 0, 200)),
                     {"message": {"role": "user", "content": "merged #9"}},
+                    # The blob of the request after it copies the turn, and is not a turn: else
+                    # "merged #9" would be two turns that say it whole (#897).
+                    {"type": "api-request-blob", "message": {"role": "user",
+                                                             "content": "merged #9"}},
                     said("s5", usage(1000, 0, 0, 0)),
                     # A slash command is kept as tags, so "/implement #10 #11" is in no turn as
                     # typed (#856). The summary a compaction leaves quotes it, once with the flag
@@ -465,6 +509,10 @@ def self_test():
                     {"message": {"role": "user", "content":
                         "<command-message>implement</command-message>\n<command-name>/implement"
                         "</command-name>\n<command-args>#10 #11</command-args>"}},
+                    # The skill's text the command loads ends with its arguments, and is marked
+                    # isMeta: it is not the user's, so "#10 #11" is one turn's text (#897).
+                    {"isMeta": True, "message": {"role": "user", "content": [{"type": "text",
+                        "text": "Base directory for this skill: x\n\nARGUMENTS: #10 #11"}]}},
                     said("s6", usage(10000, 0, 0, 0)),
                     {"isCompactSummary": True, "message": {"role": "user", "content":
                         "The conversation so far: the user ran `/implement #10 #11`, then said "
@@ -472,7 +520,10 @@ def self_test():
                     said("s7", usage(20000, 0, 0, 0)),
                     {"message": {"role": "user", "content": [{"type": "text", "text":
                         SUMMARY + " The user ran `/implement #10 #11`, then said write #13."}]}},
-                    said("s8", usage(40000, 0, 0, 0))):
+                    said("s8", usage(40000, 0, 0, 0)),
+                    # "write #9" is now in two turns, and only the first says it whole: that one
+                    # still bounds the part, as a one-word "continue" has to (#897).
+                    {"message": {"role": "user", "content": "write #9 again"}}):
                 f.write(json.dumps(entry) + "\n")
         sums = summarise(collect(directory))
         only = summarise(collect(directory, ["#9"]))
@@ -483,12 +534,21 @@ def self_test():
         slash = main_session(directory, "/implement #10 #11")
         flagged = main_session(directory, "write #12")
         unflagged = main_session(directory, "write #13")
+        # A text two turns hold is a failure that names both, not the first of them (#897):
+        # "#9" is in "write #9" and "merged #9", and after "write #8" in both of them too.
+        two = main_session(directory, "#9")
+        two_after = main_session(directory, "write #8", "#9")
+        named = report_session(two, "#9", None) + report_session(two_after, "write #8", "#9")
+        args_only = main_session(directory, "#10 #11")
+        no_since = main_session(directory, "write #7", "#9")     # --until is not looked for
         # A text no turn holds is a failure, not a figure of nothing (#856).
         quiet = io.StringIO()
         with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
             exits = {"since": main([directory, "--since=write #7"]),
                      "until": main([directory, "--since=write #9", "--until=write #7"]),
-                     "both": main([directory, "--since=write #9", "--until=merged #9"])}
+                     "both": main([directory, "--since=write #9", "--until=merged #9"]),
+                     "two since": main([directory, "--since=#9"]),
+                     "two until": main([directory, "--since=write #8", "--until=#9"])}
         replied = replies_test(os.path.join(scratch, "replies", "subagents"))
     got = {
         "steps reported": sums["steps"]["reported"], "steps all": sums["steps"]["all"],
@@ -512,6 +572,16 @@ def self_test():
         "only the unflagged copy holds it, requests": unflagged["requests"],
         "exit, --since no turn holds": exits["since"],
         "exit, --until no turn holds": exits["until"], "exit, both found": exits["both"],
+        "--since two turns hold, requests": two["requests"],
+        "--since two turns hold, turns named": len(two["since hits"]),
+        "--until two turns after it hold, requests": two_after["requests"],
+        "--until two turns after it hold, turns named": len(two_after["until hits"]),
+        "both turns named in the report, twice each":
+            (named.count('"write #9"'), named.count('"merged #9"')),
+        "exit, --since two turns hold": exits["two since"],
+        "exit, --until two turns after it hold": exits["two until"],
+        "the command's arguments alone, requests": args_only["requests"],
+        "--since no turn holds, --until's turns named": len(no_since["until hits"]),
         **replied,
     }
     want = {
@@ -534,6 +604,14 @@ def self_test():
         "only the flagged summary holds it, requests": 0,
         "only the unflagged copy holds it, requests": 0,
         "exit, --since no turn holds": 1, "exit, --until no turn holds": 1, "exit, both found": 0,
+        "--since two turns hold, requests": 0, "--since two turns hold, turns named": 3,
+        "--until two turns after it hold, requests": 0,
+        "--until two turns after it hold, turns named": 3,
+        "both turns named in the report, twice each": (2, 2),
+        "exit, --since two turns hold": 1, "exit, --until two turns after it hold": 1,
+        # The command's turn only, not the skill's text it loads: s6, s7 and s8.
+        "the command's arguments alone, requests": 3,
+        "--since no turn holds, --until's turns named": 0,
         # The two replies whole, in order, and nothing else: not the copy in the request blob,
         # not the second streamed line, not the shutdown response, not the closing text (#857).
         "replies, exit with cp1252 output": 0, "replies, printed in UTF-8": REPLIES_WANTED,
@@ -597,6 +675,11 @@ def main(argv=None):
     print(report(rows))
     found = main_session(argv[0], bound["--since"], bound["--until"])
     print(report_session(found, bound["--since"], bound["--until"]))
+    if found and (len(found["since hits"]) > 1 or len(found["until hits"]) > 1):
+        many = bound["--since"] if len(found["since hits"]) > 1 else bound["--until"]
+        print(f'More than one turn of the user says "{many}", so the main session is not '
+              "measured.", file=sys.stderr)
+        return 1
     if found and not (found["since found"] and found["until found"]):
         missed = bound["--since"] if not found["since found"] else bound["--until"]
         print(f'No turn of the user says "{missed}", so the main session is not measured.',
