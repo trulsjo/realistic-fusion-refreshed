@@ -94,11 +94,11 @@ reaches the session in the idle notice, cut off where it is long, and says again
 said; a subagent that answered only there is one that sent no text. Nor when a figure was read.
 The pre-PR reviewer goes on after its row is written, so a later run prints more than the row
 holds; review-figures.md says which reading a row keeps. Nor which turn the user typed. A
-subagent's hand-back, a message from another session and a task notice are each a turn of the
-user's in the transcript where it is not marked isMeta, so a text that one of them holds can
-start or end the part there: `--until=merge` stopped #669's part at a hand-back, 34 requests in.
-Where the user's own turn holds it too, the two are listed and nothing is measured, unless one of
-them says the text whole. Give a text
+subagent's hand-back, a message from another session, a task notice and a system reminder are
+each a turn of the user's in the transcript where it is not marked isMeta, so a text that one of
+them holds can start or end the part there: `--until=merge` stopped #669's part at a hand-back,
+34 requests in. Where the user's own turn holds it too, the two are listed and nothing is
+measured, unless one of them says the text whole. Give a text
 that the user's own turn holds and those do not.
 Nor a compaction's summary whose copy opens with other words than the first sentence held in
 `SUMMARY`: it is read as the user's, and can start the part.
