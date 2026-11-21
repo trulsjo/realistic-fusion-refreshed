@@ -41,8 +41,8 @@ assert near == (30, 39, 10, 19, 34.5, 14.5, 100), near
 far = mpc.box_of(mask, 20, 50, 460, 511)
 assert far == (30, 39, 480, 489, 34.5, 484.5, 100), far
 
-# THE FAILURE THE COLUMN BOUND EXISTS FOR, stated as an assertion rather than as a comment: given the
-# whole width, the two merge and the centroid lands halfway between them, on nothing at all.
+# THE FAILURE THE COLUMN BOUND EXISTS FOR, stated as an assertion rather than as a comment: given
+# the whole width, the two merge and the centroid lands halfway between them, on nothing at all.
 both = mpc.box_of(mask, 20, 50, 0, 511)
 assert both[2] == 10 and both[3] == 489, both
 assert both[5] == 249.5, both[5]
