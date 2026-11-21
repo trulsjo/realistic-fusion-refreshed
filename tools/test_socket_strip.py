@@ -100,7 +100,8 @@ def refuses(why, call):
 refuses("nothing is drawn", lambda: strip.strip(sheet(), MANIFEST, WEST).extent(200, 205))
 refuses("reaches the edge of the search window",
         lambda: strip.strip(sheet(top=0, rows=SIDE), MANIFEST, WEST).extent(200, 205))
-# And a window reaching over the body is refused rather than measured, whichever way the socket runs.
+# And a window reaching over the body is refused rather than measured, whichever way the socket
+# runs.
 refuses("reach outside", lambda: drawn.extent(200, 210))
 refuses("reach outside", lambda: strip.strip(sheet(), MANIFEST, EAST).extent(490, 500))
 

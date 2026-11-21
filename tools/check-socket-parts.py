@@ -106,8 +106,9 @@ def failing(verdicts):
 # anywhere near. That 0.9 is half a pixel of row-edge quantisation at each end and nothing else, so
 # 1.0 is the quantisation with no room for anything else to hide in.
 #
-# WHAT IT FAILS, which is the point of it: with the ground plane still cutting, rf-isotope-collector's
-# dark rim read +30.5 above its axis and +26.5 below. Four pixels apart, four times this.
+# WHAT IT FAILS, which is the point of it: with the ground plane still cutting,
+# rf-isotope-collector's dark rim read +30.5 above its axis and +26.5 below. Four pixels apart, four
+# times this.
 SYMMETRY_TOLERANCE_PX = 1.0
 
 # HOW FAR A PART'S MEAN EXTENT MAY STAND PROUD OF THE CYLINDER THAT CAST IT, in pixels.

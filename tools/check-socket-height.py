@@ -583,8 +583,9 @@ def self_test(manifests, pipe_sheet):
                                      f"reference to {got:+.4f} where it should have been "
                                      f"{want:+.4f}.")
 
-        # A band of known extent, with and without black under it. The right answer is the band's own
-        # edge-midpoint both times; a shadow leaking into the measurement would drag the second down.
+        # A band of known extent, with and without black under it. The right answer is the band's
+        # own edge-midpoint both times; a shadow leaking into the measurement would drag the second
+        # down.
         top, tall = 40, 30
         want = (rf.PX_PER_TILE - (top + top + tall) / 2) / rf.PX_PER_TILE
         for shadow in (0, 20):
@@ -720,10 +721,10 @@ def main(argv=None):
         print("FAILED - socket height: none of the manifests given records a connection at all, "
               "so this check found nothing to measure rather than finding nothing wrong.")
         return 1
-    # TWO KINDS OF FAILURE AND TWO REMEDIES, the way load-check's rendered-art gate separates a moved
-    # socket from a lost category. A measured socket in the wrong place is fixed by building it
-    # somewhere else; a socket that could not be measured at all is an instrument fault, and telling
-    # its reader to re-render would send them to change art that may be perfectly good.
+    # TWO KINDS OF FAILURE AND TWO REMEDIES, the way load-check's rendered-art gate separates a
+    # moved socket from a lost category. A measured socket in the wrong place is fixed by building
+    # it somewhere else; a socket that could not be measured at all is an instrument fault, and
+    # telling its reader to re-render would send them to change art that may be perfectly good.
     verdicts = report(rows, reference)
     misdrawn = [v for v in verdicts if v in ("TOO HIGH", "TOO LOW")]
     unreadable = [v for v in verdicts if v == "UNMEASURABLE"]
