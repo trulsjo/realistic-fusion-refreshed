@@ -546,11 +546,11 @@ One line for each, newest last. The passages above are not edited.
 - **2026-11-21, #903: a gate run a body quotes is the head's while the head's tree, the branch's
   `Model-Growth:` lines and `origin/main` are the ones it read, and its log is named for the
   three.** It amends #884's line above, whose log was named for the head's full hash. On #901 six
-  rewords left no log named for the head, and after one of them the session showed by hand that
-  the run still described the head's files (by its account; that branch is merged). Truls decided
-  in #903's triage that the logs go by the tree; in the session implementing it
-  he kept the send's check that the head is the pull request's, on the branch's pre-PR review he
-  had the name cover the `Model-Growth:` lines section 19 reads and gave a quoted
-  `scripts/run-gates.ps1` run a line of its own, and on its plugin pass he added `origin/main`,
-  which sections 17 and 19 read. Three comments on #903 record them. Step 6 of `/pre-pr-review`
-  carries it out. No gate reads it.
+  rewords left no log named for the head, and after one of them the session showed by hand that the
+  run still described the head's files (by its account; that branch is merged). Truls decided in
+  #903's triage that the logs go by the tree; in the session implementing it he kept the send's
+  check that the head is the pull request's, on the branch's pre-PR review he had the name cover the
+  `Model-Growth:` lines section 19 reads and gave a quoted `scripts/run-gates.ps1` run a line of its
+  own, and on its plugin pass he added `origin/main`, which sections 17 and 19 read. The triage
+  brief and three comments on #903 record them. Step 6 of `/pre-pr-review` carries it out. No gate
+  reads it.
