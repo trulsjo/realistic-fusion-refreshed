@@ -2690,7 +2690,7 @@ if ($SelfTest) {
             } }
 
             @{ Name = 'read-key-follows-its-inputs'; Body = {
-                # The other direction: the key moves with each input and with nothing else. A
+                # The other direction: the key moves with each input, and stays on a reword. A
                 # scratch repository with origin/main one commit behind a branch of one commit.
                 $root = Join-Path $planted ('key-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
                 New-Item -ItemType Directory -Path $root -Force | Out-Null
