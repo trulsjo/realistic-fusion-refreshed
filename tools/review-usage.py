@@ -534,8 +534,9 @@ def self_test():
         slash = main_session(directory, "/implement #10 #11")
         flagged = main_session(directory, "write #12")
         unflagged = main_session(directory, "write #13")
-        # A text two turns hold is a failure that names both, not the first of them (#897):
-        # "#9" is in "write #9" and "merged #9", and after "write #8" in both of them too.
+        # A text several turns hold is a failure that names each, not the first of them (#897):
+        # "#9" is in "write #9", "merged #9" and "write #9 again", and all three come after
+        # "write #8"; none of them says "#9" whole.
         two = main_session(directory, "#9")
         two_after = main_session(directory, "write #8", "#9")
         named = report_session(two, "#9", None) + report_session(two_after, "write #8", "#9")
@@ -572,14 +573,14 @@ def self_test():
         "only the unflagged copy holds it, requests": unflagged["requests"],
         "exit, --since no turn holds": exits["since"],
         "exit, --until no turn holds": exits["until"], "exit, both found": exits["both"],
-        "--since two turns hold, requests": two["requests"],
-        "--since two turns hold, turns named": len(two["since hits"]),
-        "--until two turns after it hold, requests": two_after["requests"],
-        "--until two turns after it hold, turns named": len(two_after["until hits"]),
-        "both turns named in the report, twice each":
+        "--since three turns hold, requests": two["requests"],
+        "--since three turns hold, turns named": len(two["since hits"]),
+        "--until three turns after it hold, requests": two_after["requests"],
+        "--until three turns after it hold, turns named": len(two_after["until hits"]),
+        "write #9 and merged #9 each named in both reports":
             (named.count('"write #9"'), named.count('"merged #9"')),
-        "exit, --since two turns hold": exits["two since"],
-        "exit, --until two turns after it hold": exits["two until"],
+        "exit, --since three turns hold": exits["two since"],
+        "exit, --until three turns after it hold": exits["two until"],
         "the command's arguments alone, requests": args_only["requests"],
         "--since no turn holds, --until's turns named": len(no_since["until hits"]),
         **replied,
@@ -604,11 +605,11 @@ def self_test():
         "only the flagged summary holds it, requests": 0,
         "only the unflagged copy holds it, requests": 0,
         "exit, --since no turn holds": 1, "exit, --until no turn holds": 1, "exit, both found": 0,
-        "--since two turns hold, requests": 0, "--since two turns hold, turns named": 3,
-        "--until two turns after it hold, requests": 0,
-        "--until two turns after it hold, turns named": 3,
-        "both turns named in the report, twice each": (2, 2),
-        "exit, --since two turns hold": 1, "exit, --until two turns after it hold": 1,
+        "--since three turns hold, requests": 0, "--since three turns hold, turns named": 3,
+        "--until three turns after it hold, requests": 0,
+        "--until three turns after it hold, turns named": 3,
+        "write #9 and merged #9 each named in both reports": (2, 2),
+        "exit, --since three turns hold": 1, "exit, --until three turns after it hold": 1,
         # The command's turn only, not the skill's text it loads: s6, s7 and s8.
         "the command's arguments alone, requests": 3,
         "--since no turn holds, --until's turns named": 0,
