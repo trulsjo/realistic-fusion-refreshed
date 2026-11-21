@@ -306,14 +306,14 @@ pass.
 
    **A body that quotes a `scripts/ship-check.ps1` result is sent only when a run on the head
    being sent passed** (#884). Run the gate first, as a command of its own, on a tree
-   `git status --porcelain` prints nothing for, with its log named for the head's tree and the
-   branch's `Model-Growth:` lines (#903); then send with the body check first, the log's pass
-   line, which the body must hold word for word, second, the pull request's head third and the
-   send last, each joined to the next with `&&`. `<name>`, in these lines and the `run-gates.ps1`
-   line below, is this, pasted in place:
+   `git status --porcelain` prints nothing for, with its log named for the head's tree, the
+   branch's `Model-Growth:` lines and `origin/main` (#903); then send with the body check first,
+   the log's pass line, which the body must hold word for word, second, the pull request's head
+   third and the send last, each joined to the next with `&&`. `<name>`, in these lines and the
+   `run-gates.ps1` line below, is this, pasted in place:
 
    ```
-   $(git rev-parse 'HEAD^{tree}')-$((git log --format=%B origin/main..HEAD) -match '^Model-Growth:' | Sort-Object | git hash-object --stdin)
+   $(git rev-parse 'HEAD^{tree}')-$((git log --format=%B origin/main..HEAD) -match '^Model-Growth:' | Sort-Object | git hash-object --stdin)-$(git rev-parse origin/main)
    ```
 
    Both lines are PowerShell 7's:
@@ -324,11 +324,12 @@ pass.
    ```
 
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
-   run's log has no such line, and a commit that changes a file or a `Model-Growth:` line since
-   the run leaves no log under `<name>`, so either sends nothing until the gate is run again. A
-   head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1`
-   run the body quotes is made the same way, on a clean tree with its log under `<name>`, and the
-   body calls it the head's only while a log under `<name>` holds its pass line:
+   run's log has no such line, and a commit that changes a file or a `Model-Growth:` line, or a
+   fetch that moves `origin/main`, since the run leaves no log under `<name>`, so either sends
+   nothing until the gate is run again. A head not pushed, a reworded one included, sends nothing
+   until it is. A `scripts/run-gates.ps1` run the body quotes is made the same way, on a clean
+   tree with its log under `<name>`, and the body calls it the head's only while a log under
+   `<name>` holds its pass line:
 
    ```
    pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-<name>.log"
