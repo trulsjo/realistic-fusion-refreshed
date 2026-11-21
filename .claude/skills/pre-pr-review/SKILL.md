@@ -339,12 +339,11 @@ pass.
    ```
 
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
-   run's log has no such line, and a commit that changes a file or a `Model-Growth:` line, or a
-   fetch that moves `origin/main`, moves the key, so no log stands under the new `<name>`; either
-   sends nothing until the gate is run again. A head not pushed, a reworded one included, sends
-   nothing until it is. A `scripts/run-gates.ps1` run the body quotes is made the same way, on a
-   clean tree with its log under `<name>`, and the body calls it the head's only while a log under
-   `<name>` holds its pass line:
+   run's log has no such line, and a commit or a fetch that changes what the key is made of moves
+   it, so no log stands under the new `<name>`; either sends nothing until the gate is run again.
+   A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1`
+   run the body quotes is made the same way, on a clean tree with its log under `<name>`, and the
+   body calls it the head's only while a log under `<name>` holds its pass line:
 
    ```
    pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-<name>.log"
