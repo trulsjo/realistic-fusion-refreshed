@@ -616,11 +616,11 @@ Truls had its pages defer to the shared page's three ways on 2026-11-16 (#864): 
 `main` as `d87a02a`, under a hash the branch never had. The check runs before the first
 `gh pr create` and every `gh pr edit` after it, each review pass's included. **A body that quotes a
 `scripts/ship-check.ps1` result is sent only when a run on the head being sent passed** (Truls,
-2026-11-19, #884), **on a tree `git status --porcelain` prints nothing for**, since the gate reads
-the files, `origin/main` and, of the branch's own commits, only their `Model-Growth:` lines; a run
-is the head's while the head's tree, those lines and `origin/main` are the ones it read, so a
-reword that keeps the lines leaves it standing and a fetch that moves `origin/main` does not
-(Truls, 2026-11-21, three times on #903); **only when that head is the pull request's, and only
+2026-11-19, #884), **on a tree `git status --porcelain` prints nothing for**; a run is the head's
+while the key the gate prints of what it read, its section 22's, is the head's, so a reword that
+keeps what it read leaves the run standing and a fetch that moves `origin/main` does not (Truls,
+2026-11-21, three times on #903; the key is the gate's own since #907, so no page keeps a list of
+what it reads); **only when that head is the pull request's, and only
 when the body quotes that run's pass line word for word** (all three Truls, 2026-11-19, on #890's
 review panel; two comments on #884 record them). A `scripts/run-gates.ps1` run the body quotes is
 made and named the same way, on a clean tree (Truls, 2026-11-21, on #903); step 6 of

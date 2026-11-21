@@ -255,6 +255,17 @@
     file to pass. It cannot see an untracked file made after its reading; the section comment has
     the rest.
 
+    SECTION 22 HAS A -SelfTest AND NO FLOOR (#907). Every run prints, beside its pass or fail line,
+    `ship-check: read <key>`: the head's tree, a hash of the Model-Growth machines section 19
+    accepts, and origin/main's commit, made from the values those reads use, so a log named for
+    the key is the head's while nothing the run read has changed. A tree git status --porcelain
+    prints anything for has no key, and the line says so. -PrintKey prints the key alone. The
+    every-history-read-is-keyed half requires each git read of history outside the self-test to
+    stand in a function the key covers, and two planted outside it to be named; the
+    read-key-follows-its-inputs half requires the key to stay on rewords that keep the trailers
+    and to move with a trailer, origin/main and a file. It cannot see what a listed function's
+    command reads, nor which objects the clone holds; the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -264,7 +275,7 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove fourteen things a green run cannot: the shared -SelfTest
+    Run the checks as usual, then prove fifteen things a green run cannot: the shared -SelfTest
     runner the tools submodule holds -- that it numbers halves from the list it was given and
     refuses a half it cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both
     directions, section 10's two assertions, each in both directions, section 12's two scans of the
@@ -272,10 +283,16 @@
     and section 15's two checks, the first in both directions and the second on a stand-in the
     library keeps no report for, and section 16 in both directions and through a run of this script,
     and section 17 in both directions, and section 18 in both directions, and section 19 in both
-    directions, and section 20 in both directions, and section 21 in both directions, all on
-    documents planted in a temporary directory. Nothing here plants anything in the repository; the
-    runner's cases are built in memory and the planted documents and the scratch repositories of
-    sections 16, 17, 19 and 21 live in the scratch directory the run removes on its way out.
+    directions, and section 20 in both directions, and section 21 in both directions, and section
+    22 in both directions, all on documents planted in a temporary directory. Nothing here plants
+    anything in the repository; the runner's cases are built in memory and the planted documents
+    and the scratch repositories of sections 16, 17, 19, 21 and 22 live in the scratch directory
+    the run removes on its way out.
+
+.PARAMETER PrintKey
+    Print the key a run on this tree would read, section 22's, and exit 0; print nothing to the
+    output and exit 1 where git status --porcelain prints anything or origin/main does not resolve.
+    Step 6 of /pre-pr-review names a gate's log for it.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
@@ -288,6 +305,8 @@
 
 param(
     [switch] $SelfTest,
+    # Print the key of what a run on this tree would read, section 22's, and exit (#907).
+    [switch] $PrintKey,
     # The self-test's alone: a scratch git repository watched by section 16 in place of this one,
     # whose tracked.txt is edited after the first fingerprint and before section 1 reads a file.
     [Parameter(DontShow)] [string] $StandInTree
@@ -298,9 +317,102 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 . "$PSScriptRoot/factorio-lib.ps1"   # starts no game, but the library sources the harness submodule.
 
+# ----------------------------------------------------------------- the key of what a run read
+# 22. A RUN PRINTS THE KEY OF WHAT IT READ, AND A LOG IS NAMED FOR IT (#907).
+#
+# Step 6 of /pre-pr-review sends a body quoting a run only while a log of that run stands for the
+# head (#884). Its name was a list of what this script reads, kept in the skill by hand, and on
+# #906 it was wrong twice: first the tree alone, then without origin/main, which sections 17 and
+# 19 read. So the script makes the key from the values its own reads use: the head's tree, the
+# Model-Growth machines section 19 accepts, through Get-AcceptedGrowth, which section 19 calls,
+# and $MAIN_REF's commit, which every read of origin/main below is handed. A reword that keeps
+# the trailers keeps the key; a file changed, a trailer added or dropped, or a fetch that moves
+# origin/main changes it. Every section reads the working tree and section 11 the index, which
+# are the head's tree only when git status --porcelain prints nothing, so a tree it prints
+# anything for has no key: the run says so, and -PrintKey prints nothing and exits 1.
+#
+# The every-history-read-is-keyed half reads this script's git commands outside -SelfTest and
+# fails on one that reads history (a log, rev-list, show, cat-file, rev-parse, merge-base, diff
+# and the like) in a function not listed in $KEYED_READS with that command, so a read added
+# without the key changing with it fails; the read-key-follows-its-inputs half moves each input
+# of a scratch repository and requires the key to move with it, and with nothing else.
+#
+# WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
+# Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
+# a cited hash, so a fetch that brings a commit main does not reach can change its result under
+# the same key; the game, the shared scripts' own reads beyond the tree, and the clock.
+$MAIN_REF = 'origin/main'
+$KEYED_READS = @{
+    'Get-AcceptedGrowth'     = @('log')
+    'Get-ModelGrowthRows'    = @('rev-parse', 'show')
+    'Find-UnreachableHashes' = @('rev-parse', 'rev-list', 'cat-file')
+    'Get-ReadKey'            = @('rev-parse')
+}
+$HISTORY_READS = @('log', 'rev-list', 'show', 'cat-file', 'rev-parse', 'merge-base', 'diff', 'blame',
+                   'for-each-ref', 'describe', 'reflog', 'branch', 'tag', 'shortlog', 'name-rev',
+                   'whatchanged', 'show-ref', 'ls-tree', 'archive', 'notes')
+
+function Get-AcceptedGrowth {
+    <#  The machines a Model-Growth trailer names in the body of a commit $Main..HEAD holds.  #>
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
+    @(git -C $Root log --format=%B "$Main..HEAD" | Where-Object { $_ -match '^Model-Growth:\s*(\S+)\s*$' } |
+        ForEach-Object { $Matches[1] })
+}
+
+function Get-ReadKey {
+    <#  "<tree>-<hash of the accepted machines>-<$Main's commit>" for the tree at $Root, or $null
+        where git status --porcelain prints anything there or $Main does not resolve.  #>
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
+    if (@(git -C $Root status --porcelain).Count) { return $null }
+    $mainCommit = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0) { return $null }
+    $tree = git -C $Root rev-parse 'HEAD^{tree}'
+    $names = (@(Get-AcceptedGrowth -Root $Root -Main $Main) | Sort-Object -Unique) -join "`n"
+    $hash = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData([Text.Encoding]::UTF8.GetBytes($names)))
+    "$tree-$($hash.ToLowerInvariant())-$mainCommit"
+}
+
+function Find-UnkeyedReads {
+    <#  Each git command in the script $Text, outside its if ($SelfTest) blocks, that reads
+        history in a function $KEYED_READS does not list with that command, as
+        "<function>: git <command>".  #>
+    param([Parameter(Mandatory)] [string] $Text)
+    $ast = [System.Management.Automation.Language.Parser]::ParseInput($Text, [ref] $null, [ref] $null)
+    $selfTests = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] -and
+        $n.Clauses[0].Item1.Extent.Text -ceq '$SelfTest' }, $false))
+    foreach ($cmd in $ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and
+            $n.GetCommandName() -ceq 'git' }, $true)) {
+        if (@($selfTests | Where-Object { $cmd.Extent.StartOffset -ge $_.Extent.StartOffset -and
+            $cmd.Extent.EndOffset -le $_.Extent.EndOffset }).Count) { continue }
+        $words = @($cmd.CommandElements | Select-Object -Skip 1 | ForEach-Object { $_.Extent.Text })
+        $sub = $null
+        for ($i = 0; $i -lt $words.Count; $i++) {
+            if ($words[$i] -cin '-C', '-c') { $i++; continue }
+            if ($words[$i].StartsWith('-')) { continue }
+            $sub = $words[$i]; break
+        }
+        if ($sub -cnotin $HISTORY_READS) { continue }
+        $fn = $cmd.Parent
+        while ($fn -and $fn -isnot [System.Management.Automation.Language.FunctionDefinitionAst]) { $fn = $fn.Parent }
+        $name = if ($fn) { $fn.Name } else { '(the script)' }
+        if ($sub -cnotin @($KEYED_READS[$name])) { "${name}: git $sub" }
+    }
+}
+
+if ($PrintKey) {
+    $key = Get-ReadKey -Root $repoRoot
+    if (-not $key) {
+        [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, or $MAIN_REF does not resolve.")
+        exit 1
+    }
+    $key
+    exit 0
+}
+
 # Before any section reads a file: section 16 compares the tree with this when they have all run.
 $treeRoot   = if ($StandInTree) { $StandInTree } else { $repoRoot }
 $treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
+$readKey    = Get-ReadKey -Root $treeRoot      # section 22's, read beside the fingerprint
 
 $mods      = Get-RepoMods
 $assetsMod = 'realistic-fusion-refreshed-assets'
@@ -1743,7 +1855,7 @@ function Find-ModelGrowth {
     <#  A failure for each machine whose recorded model figure is more than twice main's.
         $Rows hold Machine, Main (main's manifest as a hashtable, or $null), Branch (the tree's)
         and Accepted (a commit on the branch carries its Model-Growth trailer).  #>
-    param([Parameter(Mandatory)] [AllowEmptyCollection()] [object[]] $Rows, [string] $Main = 'origin/main')
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [object[]] $Rows, [string] $Main = $MAIN_REF)
     foreach ($row in $Rows) {
         if ($null -eq $row.Main -or $row.Accepted) { continue }
         foreach ($field in $GROWTH_FIELDS) {
@@ -1761,14 +1873,13 @@ function Find-ModelGrowth {
 function Get-ModelGrowthRows {
     <#  One row per rendered manifest in the tree at $Root, with $Main's copy and whether a commit
         $Main..HEAD carries its Model-Growth trailer. Throws where $Main cannot be read.  #>
-    param([Parameter(Mandatory)] [string] $Root, [string] $Main = 'origin/main')
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
     if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') {
         throw "$Root is a shallow clone, so $Main's manifests cannot be trusted to be its own. Fetch the whole history (git fetch --unshallow)."
     }
     $null = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
     if ($LASTEXITCODE -ne 0) { throw "git cannot resolve $Main in $Root, so no model can be held against it. Fetch it." }
-    $accepted = @(git -C $Root log --format=%B "$Main..HEAD" | Where-Object { $_ -match '^Model-Growth:\s*(\S+)\s*$' } |
-        ForEach-Object { $Matches[1] })
+    $accepted = @(Get-AcceptedGrowth -Root $Root -Main $Main)   # section 22's key hashes the same
     foreach ($manifest in @(Get-ChildItem -Path (Join-Path $Root $RENDERED) -Filter manifest.json -Recurse -File | Sort-Object FullName)) {
         $rel = [IO.Path]::GetRelativePath($Root, $manifest.FullName) -replace '\\', '/'
         $branch = Get-Content -Raw -LiteralPath $manifest.FullName | ConvertFrom-Json -AsHashtable
@@ -1896,7 +2007,7 @@ function Find-UnreachableHashes {
         Returns how many words were read and the ones that fail, each with its file, line and
         word. Throws where the answer cannot be had: a shallow clone, or no $Main.  #>
     param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [Parameter(Mandatory)] [string] $Root,
-          [string] $Main = 'origin/main')
+          [string] $Main = $MAIN_REF)
 
     if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') {
         throw "$Root is a shallow clone, so a commit on $Main cannot be told from one whose history was cut off. Fetch the whole history (git fetch --unshallow)."
@@ -1963,6 +2074,10 @@ function Get-TreeChangeFailures {
 
 $checks++
 foreach ($moved in Get-TreeChangeFailures -Before $treeBefore -Root $treeRoot) { $failures.Add($moved) }
+
+# Section 22's line, pass or fail: the key a log of this run is named for, or why it has none.
+Write-Host $(if ($readKey) { "ship-check: read $readKey" } else {
+    "ship-check: read no key: git status --porcelain printed something, or $MAIN_REF did not resolve." })
 
 if ($failures.Count) {
     Write-Host ''
@@ -2554,6 +2669,61 @@ if ($SelfTest) {
                 $found = @(Get-UntrackedFailures -Root $tree)
                 if ($found.Count) { throw "an edit, a staged file and an ignored file were reported: '$($found -join '; ')'." }
                 'an edited tracked file, a staged new file and an ignored file are not reported.'
+            } }
+
+            @{ Name = 'every-history-read-is-keyed'; Body = {
+                # Section 22 passes when every git read of history here is one the key covers. This
+                # script must give none; with a function planted that reads the branch's messages,
+                # and a read planted in a listed function under a command not listed for it, both
+                # must be named, and a read inside the self-test block must not.
+                $own = Get-Content -Raw -LiteralPath $PSCommandPath
+                $found = @(Find-UnkeyedReads -Text $own)
+                if ($found.Count) { throw "this script's own reads were reported: $($found -join '; ')" }
+                $plant = $own + "`nfunction Get-Planted { git -C . log --format=%B HEAD }" +
+                    "`nfunction Get-AcceptedGrowth { git -C . rev-list HEAD }" +
+                    "`nif (`$SelfTest) { git log HEAD }`n"
+                $found = @(Find-UnkeyedReads -Text $plant | Sort-Object)
+                if (($found -join '; ') -cne 'Get-AcceptedGrowth: git rev-list; Get-Planted: git log') {
+                    throw "of two planted reads outside the key, '$($found -join '; ')' was reported."
+                }
+                'no read of history here stands outside the key; a planted function reading the log, and a listed one reading under a command not listed, are each named.'
+            } }
+
+            @{ Name = 'read-key-follows-its-inputs'; Body = {
+                # The other direction: the key moves with each input and with nothing else. A
+                # scratch repository with origin/main one commit behind a branch of one commit.
+                $root = Join-Path $planted ('key-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+                New-Item -ItemType Directory -Path $root -Force | Out-Null
+                $git = { git -C $root -c user.name=t -c user.email=t@t @args; if ($LASTEXITCODE) { throw "git $args failed in $root" } }
+                & $git init -q -b main
+                'one' | Set-Content -LiteralPath "$root/a.txt" -Encoding utf8
+                & $git add -A; & $git commit -q -m 'on main'
+                & $git update-ref refs/remotes/origin/main HEAD
+                'two' | Set-Content -LiteralPath "$root/a.txt" -Encoding utf8
+                & $git commit -q -am 'the branch'
+                $first = Get-ReadKey -Root $root
+                $again = Get-ReadKey -Root $root
+                & $git commit -q --amend -m "the branch, reworded"
+                $reworded = Get-ReadKey -Root $root
+                & $git commit -q --amend -m "the branch`n`nModel-Growth: grown"
+                $trailer = Get-ReadKey -Root $root
+                & $git commit -q --amend -m 'the branch'
+                $dropped = Get-ReadKey -Root $root
+                & $git update-ref refs/remotes/origin/main HEAD
+                $fetched = Get-ReadKey -Root $root
+                & $git update-ref refs/remotes/origin/main HEAD~1
+                'three' | Set-Content -LiteralPath "$root/a.txt" -Encoding utf8
+                $dirty = Get-ReadKey -Root $root
+                & $git commit -q -am 'a file changed'
+                $changed = Get-ReadKey -Root $root
+                $same = @{ 'a second reading' = $again; 'a reword that keeps the trailers' = $reworded
+                           'a reword that drops the added trailer again' = $dropped }
+                $moved = @{ 'a trailer added' = $trailer; 'origin/main moved' = $fetched; 'a file changed' = $changed }
+                if (-not $first) { throw 'a clean scratch tree had no key.' }
+                foreach ($k in $same.Keys) { if ($same[$k] -cne $first) { throw "the key changed on $k." } }
+                foreach ($k in $moved.Keys) { if ($moved[$k] -ceq $first) { throw "the key stayed the same on $k." } }
+                if ($null -ne $dirty) { throw "a tree with an uncommitted edit had the key '$dirty'." }
+                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit has none.'
             } }
 
             @{ Name = 'unreachable-hash-caught'; Body = {
