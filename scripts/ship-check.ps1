@@ -312,12 +312,13 @@ $checks   = 0
 # 21. NO UNTRACKED FILE STANDS IN THE TREE WHEN THE RUN STARTS (#896).
 #
 # Read beside $treeBefore, before section 1. On #894 a pass was quoted from a run made beside an
-# untracked grep.exe.stackdump, and step 6 of /pre-pr-review asks for a clean tree only in prose
-# (#884). Untracked files alone, the `??` lines of `git status --porcelain`, a file at a time:
-# Truls narrowed it so on 2026-11-21, on #896, so a modified or staged file still passes and a
-# draft can be checked before it is committed. An ignored file is not untracked here, so a run's
-# own logs and reports under ignored directories are not counted. It cannot see an untracked
-# file created after this reading, nor one inside a submodule.
+# untracked grep.exe.stackdump: step 6 of /pre-pr-review guards its own send with a clean-tree
+# test (#884), and the gate itself read only tracked paths. Untracked files alone, the `??` lines
+# of `git status --porcelain`, a file at a time: Truls narrowed it so on 2026-11-21, on #896, so a
+# modified or staged file still passes and a draft can be checked before it is committed. An
+# ignored file is not untracked here, so a run's own logs and reports under ignored directories
+# are not counted. It cannot see an untracked file created after this reading, nor one inside a
+# submodule.
 function Get-UntrackedFailures {
     <#  A failure for each file under $Root that git neither tracks nor ignores.  #>
     param([Parameter(Mandatory)] [string] $Root)
