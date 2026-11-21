@@ -305,21 +305,27 @@ pass.
 
    **A body that quotes a `scripts/ship-check.ps1` result is sent only when a run on the head
    being sent passed** (#884). Run the gate first, as a command of its own, on a tree
-   `git status --porcelain` prints nothing for, with its log named for the head's tree (#903);
-   then send with the body check first, the log's pass line, which the body must hold word for
-   word, second, the pull request's head third and the send last, each joined to the next with
-   `&&`. Both lines are PowerShell 7's:
+   `git status --porcelain` prints nothing for, with its log named for the head's tree and the
+   branch's `Model-Growth:` lines (#903); then send with the body check first, the log's pass
+   line, which the body must hold word for word, second, the pull request's head third and the
+   send last, each joined to the next with `&&`. `<name>` in both lines is this, pasted in place:
 
    ```
-   pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-$(git rev-parse 'HEAD^{tree}').txt"
-   pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -SimpleMatch -LiteralPath '<scratch>/body.md' -Pattern (Select-String -LiteralPath '<scratch>/ship-check-$(git rev-parse 'HEAD^{tree}').txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$').Line)" && pwsh -NoProfile -Command "exit [int]((gh pr view <n> --json headRefOid --jq .headRefOid) -ne (git rev-parse HEAD))" && gh pr edit <n> --body-file "<scratch>/body.md"
+   $(git rev-parse 'HEAD^{tree}')-$((git log --format=%B origin/main..HEAD) -match '^Model-Growth:' | Sort-Object | git hash-object --stdin)
+   ```
+
+   Both lines are PowerShell 7's:
+
+   ```
+   pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-<name>.txt"
+   pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -SimpleMatch -LiteralPath '<scratch>/body.md' -Pattern (Select-String -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$').Line)" && pwsh -NoProfile -Command "exit [int]((gh pr view <n> --json headRefOid --jq .headRefOid) -ne (git rev-parse HEAD))" && gh pr edit <n> --body-file "<scratch>/body.md"
    ```
 
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
-   run's log has no such line, and a commit that changes a file since the run leaves no log named
-   for the head's tree, so either sends nothing until the gate is run again. A reword changes no
-   file, so the log made before it is the head's still. A head not pushed, a reworded one
-   included, sends nothing until it is. A `scripts/run-gates.ps1` log the body quotes is named the
+   run's log has no such line, and a commit that changes a file or a `Model-Growth:` line since
+   the run leaves no log under the head's name, so either sends nothing until the gate is run
+   again. A reword that changes no `Model-Growth:` line leaves the log made before it the head's.
+   A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1` log the body quotes is named the
    same way, `<scratch>/run-gates-<tree>.log` with the head's tree, and the body says the run is
    the head's only while the head's tree names a log. A body that quotes another count of checks
    than the log's sends nothing until it is brought up to date. A gate run is never joined to the
