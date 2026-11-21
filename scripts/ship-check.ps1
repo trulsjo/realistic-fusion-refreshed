@@ -8,36 +8,37 @@
 
 .DESCRIPTION
     ADR 0003 and ADR 0006 each create an obligation that is a sentence rather than code: the clean
-    break from predecessor saves must be "stated plainly wherever players will look", and the quality
-    interaction must be "a named known-gap, not a silent one". Issue #35 discharged both. Nothing else
-    in this repository would notice if they were edited away, because neither is a prototype, a name
-    or a number -- load-check, locale-check and name-check all pass on a mod that says nothing at all.
+    break from predecessor saves must be "stated plainly wherever players will look", and the
+    quality interaction must be "a named known-gap, not a silent one". Issue #35 discharged both.
+    Nothing else in this repository would notice if they were edited away, because neither is a
+    prototype, a name or a number -- load-check, locale-check and name-check all pass on a mod that
+    says nothing at all.
 
     So this check is deliberately about prose and files, and it needs no Factorio. Since ADR 0023
-    it also covers one claim that is a number rather than a sentence -- the assets dependency floor --
-    because that one has the same shape: nothing else here would notice it going stale, and the cost
-    of it going stale is a player's game refusing to load. It asserts:
+    it also covers one claim that is a number rather than a sentence -- the assets dependency floor
+    -- because that one has the same shape: nothing else here would notice it going stale, and the
+    cost of it going stale is a player's game refusing to load. It asserts:
 
       - LICENSE, LICENSE.GPL and legal-note.txt ship inside each mod, not only at the repo root, and
         each mod's legal-note.txt still ends with the root one verbatim, behind a preamble saying
         where it came from. Three copies of a file is three chances to drift; this is what makes
         the copies safe.
-      - Each mod's info.json description and its English [mod-description] agree. They are duplicated
-        because Factorio reads one before the locale loads and the other after, and a player sees
-        whichever the moment supplies -- so the two saying different things is the failure that would
-        never be noticed.
+      - Each mod's info.json description and its English [mod-description] agree. They are
+        duplicated because Factorio reads one before the locale loads and the other after, and a
+        player sees whichever the moment supplies -- so the two saying different things is the
+        failure that would never be noticed.
       - The two CODE mods' descriptions, and README.md, carry the clean break and the quality gap.
         The assets mod is exempt from those two and from nothing else: it ships no prototype, so
-        "saves are not supported" and "not balanced for quality" would be claims about nothing. It is
-        NOT exempt from the licence files, the description match or the credits -- it is the mod that
-        actually carries the Krastorio 2 art, so it is the one that most needs them (ADR 0023).
+        "saves are not supported" and "not balanced for quality" would be claims about nothing. It
+        is NOT exempt from the licence files, the description match or the credits -- it is the mod
+        that actually carries the Krastorio 2 art, so it is the one that most needs them (ADR 0023).
       - Romner_set, Durikkan and PreLeyZero are credited, in all three.  No licence asks for it (see
         docs/agents/upstream-material.md); it is a community norm, which is exactly the kind of
         thing that quietly disappears in an edit.
       - Each code mod's declared floor on realistic-fusion-refreshed-assets equals the version that
-        mod actually declares, and no .png is left behind in a code mod. Both guard the split ADR 0023
-        made, and neither can fail on this machine: art paths resolve against whatever assets version
-        the PLAYER has, while the dev loop junctions the current one.
+        mod actually declares, and no .png is left behind in a code mod. Both guard the split ADR
+        0023 made, and neither can fail on this machine: art paths resolve against whatever assets
+        version the PLAYER has, while the dev loop junctions the current one.
 
         WHAT THE FLOOR ASSERT DOES NOT COVER, stated because the first version of this comment
         claimed more than it delivered. It catches a version bumped without the floor following. It
@@ -87,13 +88,13 @@
 
     WHAT IT CANNOT CHECK
 
-    That the sentences are true, or that a player reads them. It matches on the load-bearing words --
-    the predecessors by name, "not supported", "quality" -- so a rewrite that keeps the meaning passes
-    and a deletion does not. A rewrite that keeps the words and loses the meaning also passes, and
-    there is no version of this check that would not.
+    That the sentences are true, or that a player reads them. It matches on the load-bearing words
+    -- the predecessors by name, "not supported", "quality" -- so a rewrite that keeps the meaning
+    passes and a deletion does not. A rewrite that keeps the words and loses the meaning also
+    passes, and there is no version of this check that would not.
 
-    Nor does it look at the mod portal, where the long description lives outside the zip. That copy is
-    uploaded by hand and this repository cannot see it.
+    Nor does it look at the mod portal, where the long description lives outside the zip. That copy
+    is uploaded by hand and this repository cannot see it.
 
     Section 7 cannot see ADR 0032's third shape -- "lines 196-197, 204, 208, 227, and 576-578"
     written out in running prose. There is no handle in that a regex can trust, and a pattern loose
@@ -109,12 +110,13 @@
     one naming the wrong field, one quoting a fragment that greps to nothing -- so read that bet as
     a bet.
 
-    -SelfTest here does NOT re-prove sections 1 to 5, 7 or 8, unlike the checks that read a Factorio dump.
-    Those need one because they can pass by finding nothing; sections 1 to 4 name every file and
-    string they require, so a mistake in them fails rather than goes quiet. What it proves is the
-    shared self-test runner the tools submodule holds, which every other gate's -SelfTest now calls: a
-    runner that skipped a half, or counted one it never ran, would report a clean pass over a gate
-    that did not execute, in all of them at once. It lives here because this gate starts no game.
+    -SelfTest here does NOT re-prove sections 1 to 5, 7 or 8, unlike the checks that read a Factorio
+    dump. Those need one because they can pass by finding nothing; sections 1 to 4 name every file
+    and string they require, so a mistake in them fails rather than goes quiet. What it proves is
+    the shared self-test runner the tools submodule holds, which every other gate's -SelfTest now
+    calls: a runner that skipped a half, or counted one it never ran, would report a clean pass over
+    a gate that did not execute, in all of them at once. It lives here because this gate starts no
+    game.
 
     SECTIONS 5 TO 9 ARE THE EXCEPTION, and are stated here rather than left to be discovered.
     Each selects by scanning and matching a predicate, so each is exactly the shape that can pass by
@@ -122,20 +124,21 @@
     with a comment block but is not in scope, sections 6 and 7 fail when they find too few
     citations to believe -- each twice over, section 6 once per half and section 7 once per shape
     it matches -- and section 8 carries
-    four: one on each of the three things it scans, and one on the pairing between two of them. That is narrower than a -SelfTest would be, because a floor
-    cannot see a mistake in the scan itself -- break that and there is nothing left to check and so
-    nothing left to fail. Section 6 has both since #697: the dangling-script-caught half plants a
-    page citing a deleted script and a deleted tool beside citations that resolve.
+    four: one on each of the three things it scans, and one on the pairing between two of them. That
+    is narrower than a -SelfTest would be, because a floor cannot see a mistake in the scan itself
+    -- break that and there is nothing left to check and so nothing left to fail. Section 6 has both
+    since #697: the dangling-script-caught half plants a page citing a deleted script and a deleted
+    tool beside citations that resolve.
 
     SECTION 9 HAS NO FLOOR AND A -SelfTest INSTEAD (#416), because there is no count to hold it to:
-    prose that cites a self-test half by ordinal should be absent, and after #411 through #415 it is,
-    so a floor would have to be zero and would prove nothing. Two halves stand in for it, one per
-    direction: a planted document citing halves by ordinal five ways must be caught with its file
-    and line, and one naming its halves -- beside a measurement that follows the same word -- must
-    not be flagged. The second matters as much: a gate that fires on the sentences the rule asks
-    people to write is a gate that gets switched off. What section 9 cannot see is written out above
-    the section, not here: a citation in a trailing comment after code, the ways English points at a
-    half without the word, and any file outside the tracked list.
+    prose that cites a self-test half by ordinal should be absent, and after #411 through #415 it
+    is, so a floor would have to be zero and would prove nothing. Two halves stand in for it, one
+    per direction: a planted document citing halves by ordinal five ways must be caught with its
+    file and line, and one naming its halves -- beside a measurement that follows the same word --
+    must not be flagged. The second matters as much: a gate that fires on the sentences the rule
+    asks people to write is a gate that gets switched off. What section 9 cannot see is written out
+    above the section, not here: a citation in a trailing comment after code, the ways English
+    points at a half without the word, and any file outside the tracked list.
 
     SECTION 10 HAS BOTH (#616). It reads the `## Current figures` table at the top of a research
     note and fails a row whose Section cell holds no link, or whose figure is written nowhere
@@ -146,10 +149,10 @@
     comment has the rest of what it cannot see.
 
     SECTION 11 HAS NEITHER, AND IS NOT THIS SCRIPT'S CHECK (#658). It runs
-    vendor/grado-factorio-tools/scripts/markdown-check.ps1 over every tracked Markdown file and fails on what that finds. The
-    check's own -SelfTest, which the tools repository runs, is what proves it can fail; here a
-    missing script fails by name, and so does a run that does not say it read a file. It reads the
-    index and not the working tree; the section comment has the rest.
+    vendor/grado-factorio-tools/scripts/markdown-check.ps1 over every tracked Markdown file and
+    fails on what that finds. The check's own -SelfTest, which the tools repository runs, is what
+    proves it can fail; here a missing script fails by name, and so does a run that does not say it
+    read a file. It reads the index and not the working tree; the section comment has the rest.
 
     SECTION 12 HAS A -SelfTest AND NO FLOOR (#646). It fails a prose line over the wrap width in
     the files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
@@ -249,14 +252,18 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove thirteen things a green run cannot: the shared -SelfTest runner
-    the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
-    cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
-    directions, section 12's two scans
-    of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, and section 18 in both directions, and section 19 in both directions, and section 20 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
-    memory and the planted documents and the scratch repositories of sections 16, 17 and 19 live in the scratch
-    directory the run removes on its way out.
+    Run the checks as usual, then prove thirteen things a green run cannot: the shared -SelfTest
+    runner the tools submodule holds -- that it numbers halves from the list it was given and
+    refuses a half it cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both
+    directions, section 10's two assertions, each in both directions, section 12's two scans of the
+    lines, each in both directions, section 13 in both directions, section 14 in both directions,
+    and section 15's two checks, the first in both directions and the second on a stand-in the
+    library keeps no report for, and section 16 in both directions and through a run of this script,
+    and section 17 in both directions, and section 18 in both directions, and section 19 in both
+    directions, and section 20 in both directions, all on documents planted in a temporary
+    directory. Nothing here plants anything in the repository; the runner's cases are built in
+    memory and the planted documents and the scratch repositories of sections 16, 17 and 19 live in
+    the scratch directory the run removes on its way out.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
@@ -479,8 +486,8 @@ foreach ($ps1 in $documented) {
     }
 
     $checks++
-    $rendered = (@($help.description) | ForEach-Object { $_.Text }) -join ''
-    if (-not $rendered.Trim()) {
+    $helpText = (@($help.description) | ForEach-Object { $_.Text }) -join ''
+    if (-not $helpText.Trim()) {
         $failures.Add("$($ps1.Name): Get-Help renders no .DESCRIPTION -- either its #Requires line " +
             'sits above the closing #>, where it detaches the block, or the block declares none.')
     }
@@ -500,7 +507,7 @@ foreach ($ps1 in $documented) {
     # that is reachable and wrong is not obviously better than help that is unreachable.
     $remarks = (@($help.examples.example) |
                 ForEach-Object { @($_.remarks) | ForEach-Object { $_.Text } }) -join ' '
-    if ("$rendered $remarks" -match 'Requires -Version') {
+    if ("$helpText $remarks" -match 'Requires -Version') {
         $failures.Add("$($ps1.Name): its #Requires line is rendered as help text. It needs a blank " +
             'line between it and the closing #>, or the help parser absorbs it into the last section.')
     }
@@ -546,8 +553,9 @@ foreach ($ps1 in $documented) {
 # records, because a note they cite is one a reader is sent to now.
 #
 # WHAT IT CANNOT SEE: a script deleted here whose name a mod's scripts/ still holds; a path without
-# an extension; a deleted script of ours cited by line, which section 7 fails; a path cited from a record, or from any file outside scripts/ and docs/, CLAUDE.md
-# and the skills among them; and a live sentence placed in a record.
+# an extension; a deleted script of ours cited by line, which section 7 fails; a path cited from a
+# record, or from any file outside scripts/ and docs/, CLAUDE.md and the skills among them; and a
+# live sentence placed in a record.
 $DOCS_CITED    = '(?<![\w./-])docs/[\w./-]+\.md'
 $SCRIPTS_CITED = '(?<![\w./-])(?:vendor/grado-factorio-tools/)?(?:scripts|tools)/[\w./-]+\.\w+(?![\w*]|:\d)'
 $RECORDS       = '^docs/adr/|^docs/agents/(?:state-detail|code-review-history|code-review-evidence|review-figures)\.md$'
@@ -617,7 +625,8 @@ if ($scriptsRead.Dangling) {
     $failures.Add("these scripts/ or tools/ paths are cited but do not exist: $shown")
 }
 
-# ----------------------------------------------------------------------------- our own files, by line
+# ----------------------------------------------------------------------------- our own files, by
+# line
 #
 # 7. NOTHING IN PROSE MAY CITE ONE OF THIS REPOSITORY'S OWN FILES BY LINE NUMBER (#69, ADR 0032).
 #
@@ -631,7 +640,8 @@ if ($scriptsRead.Dangling) {
 #
 # WHAT IS LEFT ALONE, and why each is outside the rule:
 #   - the predecessor archives and vanilla -- ORIG/, PORT/, _reference/, RealisticFusion*, base/ --
-#     whose files this repo neither owns nor moves, where a line number is the only pointer there is;
+#     whose files this repo neither owns nor moves, where a line number is the only pointer there
+#     is;
 #   - verbatim game output, which prints `__mod-name__/control.lua:12:` and is a quotation;
 #   - a bare file name that several of our own files share -- `entities.lua`, `d-d.lua` -- because
 #     which one is meant cannot be decided here, and a gate that guesses would cry wolf on the
@@ -644,16 +654,17 @@ if ($scriptsRead.Dangling) {
 #      exemption above. ADR 0032 decision item 2 NARROWS that hole from the other side rather than
 #      closing it, and the difference matters: a path anchored at the REPO root resolves to one
 #      tracked file and fires here, while a MOD-relative one still names two and is still exempt.
-#      Five paths are ambiguous that way -- data.lua, prototypes/entities.lua, prototypes/fluids.lua,
-#      prototypes/categories.lua, prototypes/items.lua -- and the specimen on this very line is one
-#      of them, which is why writing it here is safe.
+#      Five paths are ambiguous that way -- data.lua, prototypes/entities.lua,
+#      prototypes/fluids.lua, prototypes/categories.lua, prototypes/items.lua -- and the specimen on
+#      this very line is one of them, which is why writing it here is safe.
 #
 #      So: zero own-tree citations resolve to one tracked file today, and a pass is therefore the
-#      absence of violations rather than the exemption swallowing thirty of them -- demonstrable only
-#      by planting one, never by reading a green run, which is why #303's pull request plants one
-#      instead of asserting it. But prose still writes the bare mod-relative form more than twice as
-#      often as the repo-relative one, so THAT is the shape the next regression will most likely take
-#      and this check will not see it. Only a citation written the way item 2 asks is gated.
+#      absence of violations rather than the exemption swallowing thirty of them -- demonstrable
+#      only by planting one, never by reading a green run, which is why #303's pull request plants
+#      one instead of asserting it. But prose still writes the bare mod-relative form more than
+#      twice as often as the repo-relative one, so THAT is the shape the next regression will most
+#      likely take and this check will not see it. Only a citation written the way item 2 asks is
+#      gated.
 #
 #   2. `:155` written bare in backticks -- a continuation inheriting the path named earlier on the
 #      SAME LINE. New in #303. THE BACKTICKS ARE THE DISCRIMINATOR AND ARE REQUIRED: unbackticked,
@@ -682,8 +693,8 @@ if ($scriptsRead.Dangling) {
 #
 #     AND PER-LINE CAN MISATTRIBUTE IN ITS OWN DIRECTION, which is the honest other half: reword one
 #     of those four so any path of ours appears earlier on the same line, and this check fails on a
-#     continuation that was always the third party's. The wrong guess is cheaper in this direction --
-#     a false failure is argued with, a false pass is not noticed -- but it is not no guess.
+#     continuation that was always the third party's. The wrong guess is cheaper in this direction
+#     -- a false failure is argued with, a false pass is not noticed -- but it is not no guess.
 #   - the specimens, and this is the one worth knowing before editing any of the three. ADR 0032,
 #     CLAUDE.md's conventions bullet and this comment each write the banned form out on purpose,
 #     because a rule against a shape cannot be stated without showing the shape. All of them are
@@ -707,10 +718,11 @@ $tracked = @(& git -C $repoRoot ls-files | Where-Object { $_ })
 # both -- which is exactly the trap this comment would then have to warn about instead.
 #
 # IT NARROWS AS WELL AS WIDENS, and only the widening is obvious. $citing reads EVERY file directly
-# in scripts/; this reads only tracked ones with the five extensions, so scripts/mockup-machines.psd1
-# and scripts/mod-sets.psd1 leave scope, and so does any file not yet `git add`ed. A new
-# doc is therefore ungated until it is staged. Nothing violates the rule in either place today; the
-# trade is deliberate, because a list built from the index is what keeps the generated trees out.
+# in scripts/; this reads only tracked ones with the five extensions, so
+# scripts/mockup-machines.psd1 and scripts/mod-sets.psd1 leave scope, and so does any file not yet
+# `git add`ed. A new doc is therefore ungated until it is staged. Nothing violates the rule in
+# either place today; the trade is deliberate, because a list built from the index is what keeps the
+# generated trees out.
 $citingCode = @($tracked | Where-Object { $_ -match '\.(?:md|lua|ps1|py|js)$' })
 
 # A path token, with the line number optional so shape 2 can inherit one that carries none.
@@ -774,8 +786,8 @@ foreach ($rel in $citingCode) {
 # EVERY COUNT IN THIS SECTION INCLUDES THE SPECIMENS IN ITS OWN COMMENTS, which is why none of them
 # is written exactly. Two drafts quoted precise figures -- 89 and 21, then 91 and 24 -- and each was
 # falsified by the prose that quoted it, because adding a sentence about a specimen adds a specimen.
-# Round numbers are not vagueness here, they are the only stable way to state this. Re-measure before
-# changing a floor; do not trust a figure in a comment the figure counts.
+# Round numbers are not vagueness here, they are the only stable way to state this. Re-measure
+# before changing a floor; do not trust a figure in a comment the figure counts.
 $checks++
 if ($anyCite -lt 10) {
     $failures.Add("only $anyCite path:line citation(s) found across $($citingCode.Count) files, " +
@@ -1111,11 +1123,11 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 
 # 10. A ROW OF A `## Current figures` TABLE MUST STILL BELONG TO ITS NOTE (#602, #616).
 #
-# Eight notes under docs/research/ on 2026-10-26, seven when this was written, open with a table of the figures the note stands behind, and
-# docs/agents/code-review.md says a figure and its row change in the same commit. That rule is prose,
-# and this is the half of it a script can hold: a row whose value is written nowhere in the note
-# below the table, which is what an edit to a section leaves behind when the row is forgotten and a
-# figure is re-measured.
+# Eight notes under docs/research/ on 2026-10-26, seven when this was written, open with a table of
+# the figures the note stands behind, and docs/agents/code-review.md says a figure and its row
+# change in the same commit. That rule is prose, and this is the half of it a script can hold: a row
+# whose value is written nowhere in the note below the table, which is what an edit to a section
+# leaves behind when the row is forgotten and a figure is re-measured.
 #
 # A SECTION LINK THAT NAMES NO HEADING IS SECTION 11'S since #710: the shared Markdown check fails
 # every dangling #fragment, with the anchor GitHub gives the heading. This section's own anchor code
@@ -1153,8 +1165,8 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 #   - the Measured, Game version and Research state cells, which are not read at all.
 $FIGURE_HEADING = '^##\s+Current figures\s*$'
 $FIGURE_HEADER  = '^\|\s*Figure\s*\|\s*Value\s*\|\s*Measured\s*\|\s*Game version\s*\|\s*Research state\s*\|\s*Section\s*\|\s*$'
-# Thousands grouped by a space or a comma first, so a figure written in groups of three is one number
-# and not three.
+# Thousands grouped by a space or a comma first, so a figure written in groups of three is one
+# number and not three.
 $FIGURE_NUMBER  = '\d+(?:[ ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?(?:e[+-]?\d+)?'
 # How many notes carried a table when this section was written (#616). A scan that found none would
 # pass every row it never read.
@@ -1249,14 +1261,14 @@ foreach ($row in $figureRows.Found) {
 
 # 11. THE TRACKED MARKDOWN PASSES THE SHARED MARKDOWN CHECK (#658).
 #
-# vendor/grado-factorio-tools/scripts/markdown-check.ps1, the tools submodule's, run with -All: emphasis or a code span left
-# open at the end of its paragraph, a table row whose column count is not its header's, a link
-# to a file git does not track, since #710 a link whose #fragment names no heading of its file,
-# with the anchor GitHub gives the heading, and since #860 a figure grouped in thousands split
-# across a line end, in every file and not only the wrapped ones section 12 reads. Its header
-# says what it reads as what and what it cannot see. The pre-commit hook runs the same script on
-# the staged files; this is where a clone that never opted into the hooks, and the workflow, are
-# held to it.
+# vendor/grado-factorio-tools/scripts/markdown-check.ps1, the tools submodule's, run with -All:
+# emphasis or a code span left open at the end of its paragraph, a table row whose column count is
+# not its header's, a link to a file git does not track, since #710 a link whose #fragment names no
+# heading of its file, with the anchor GitHub gives the heading, and since #860 a figure grouped in
+# thousands split across a line end, in every file and not only the wrapped ones section 12 reads.
+# Its header says what it reads as what and what it cannot see. The pre-commit hook runs the same
+# script on the staged files; this is where a clone that never opted into the hooks, and the
+# workflow, are held to it.
 #
 # IT REPLACED THIS SECTION'S OWN TABLE CHECK (#649, #652), ruled by Truls on 2026-10-09: the shared
 # check runs in its place, not beside it. One thing that check caught is not caught now, a row of
@@ -1509,8 +1521,9 @@ if ($halfRead.Skipped.Count) {
 #
 # WHAT IT CANNOT SEE: a base written another way (`git merge-base main HEAD`, `main^{}`, a bare
 # `git diff main`), a ref held in a variable, and any file not listed above: the rule pages under
-# docs/agents/, another skill, and a third review skill until it is added here. Prose that names one of the forms to forbid it is read like a command
-# and fails; no file it reads does that on 2026-10-23.
+# docs/agents/, another skill, and a third review skill until it is added here. Prose that names one
+# of the forms to forbid it is read like a command and fails; no file it reads does that on
+# 2026-10-23.
 $LOCAL_MAIN_READ = '(?<![\w/.-])main\.\.\.?HEAD\b|\bmain:main\b'
 
 function Find-LocalMainReads {
@@ -1652,7 +1665,8 @@ if (-not (Test-Path -LiteralPath $rootClaude)) {
 }
 
 # ----------------------------------------------------------------- how big a model has grown
-# 19. NO RENDERED MODEL MORE THAN DOUBLES AGAINST origin/main UNLESS A COMMIT SAYS IT MEANS TO (#852).
+# 19. NO RENDERED MODEL MORE THAN DOUBLES AGAINST origin/main UNLESS A COMMIT SAYS IT MEANS TO
+# (#852).
 #
 # On #847 heat-exchanger.blend went from 1.9 MB to 9.8 MB through three commits, a pre-PR review and
 # a plugin pass, and was first questioned after the pull request was open: a default left in had
@@ -1817,11 +1831,11 @@ foreach ($why in Find-UnprovenModelFiles -Root $repoRoot -Files $modelFiles) { $
 # gates workflow's pwsh job checks out with fetch-depth 0.
 #
 # WHAT IT CANNOT SEE: a word that names no commit in this clone, which passes, and that is how a
-# fresh clone sees the pre-reword copy of a commit, since no ref brought it, so the workflow is blind
-# to the case #815 had and a clone that made the commit is not; a prefix two objects share; a hash
-# of 6 characters or fewer; origin/main as this clone last fetched it, so a commit that reached main
-# since is reported; whether a commit on main is the one the prose means; a hash in a record, in a
-# fenced block, in a trailing comment, or in a file section 9 does not read.
+# fresh clone sees the pre-reword copy of a commit, since no ref brought it, so the workflow is
+# blind to the case #815 had and a clone that made the commit is not; a prefix two objects share; a
+# hash of 6 characters or fewer; origin/main as this clone last fetched it, so a commit that reached
+# main since is reported; whether a commit on main is the one the prose means; a hash in a record,
+# in a fenced block, in a trailing comment, or in a file section 9 does not read.
 $HASH_WORD = '(?<![0-9A-Za-z_])[0-9a-fA-F]{7,40}(?![0-9A-Za-z_])'
 
 function Find-UnreachableHashes {
@@ -2354,8 +2368,8 @@ if ($SelfTest) {
             } }
 
             @{ Name = 'local-main-read-caught'; Body = {
-                # Section 14 passes by finding nothing. This plants each form it fails, one per line,
-                # and requires each to be reported with its line.
+                # Section 14 passes by finding nothing. This plants each form it fails, one per
+                # line, and requires each to be reported with its line.
                 $skill = Join-Path $planted 'SKILL.md'
                 $m = 'main'
                 @(
