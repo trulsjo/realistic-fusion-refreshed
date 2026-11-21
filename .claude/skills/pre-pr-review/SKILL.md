@@ -325,7 +325,8 @@ pass.
    what it read (#903, #907); then send with the body check first, the log's pass line, which the
    body must hold word for word, second, the pull request's head third and the send last, each
    joined to the next with `&&`. `<name>`, in these lines and the `run-gates.ps1` line below, is
-   this, pasted in place; it prints nothing on a tree that is not clean:
+   this, pasted in place; it prints nothing on a tree that is not clean or where `origin/main` does
+   not resolve:
 
    ```
    $(pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey)
