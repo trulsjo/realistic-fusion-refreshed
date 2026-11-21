@@ -541,7 +541,8 @@ One line for each, newest last. The passages above are not edited.
   decided in #902's triage that the hook gives its comment check `tools/*.py`, apart from the
   docstrings grado-factorio-tools#523 asks the shared check to read; the brief on #902 records it.
   The width rule names the exception beside #863's, `/plugin-pass`'s reviewer brief names it among
-  the lines the hook holds, and `.githooks/pre-commit` carries it out. The hook holds it.
+  the lines the hook holds, and `.githooks/pre-commit` carries it out. No gate reads the rule;
+  the hook holds the lines.
 - **2026-11-21, #903: a gate run a body quotes is the head's while the head's tree, the branch's
   `Model-Growth:` lines and `origin/main` are the ones it read, and its log is named for the
   three.** It amends #884's line above, whose log was named for the head's full hash. On #901 six
