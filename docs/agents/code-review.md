@@ -90,13 +90,12 @@ the Python under `tools/` and of the PowerShell under `scripts/`, the Lua and ev
 that sentence does not name. **The comment lines of a script, a hook or a workflow are the
 exception** (Truls, 2026-11-16, on #863), **and the `#` lines of a tool** (Truls, 2026-11-21,
 #902): the `pre-commit` hook holds each of them, in a file staged, to 100 characters, through the
-shared `comment-line-check.ps1`, which reads no tool's docstrings (grado-factorio-tools#523). A
-reviewer does not report one either: the hook does. `tools/rewrap.py` refuses to rewrap a file
-outside the eight, reading the list from section 12 (#717); `markdown-rewrap.ps1 -Comment` in the
-tools submodule rewraps a script's comments.
-Reviewers had raised a long line in a file with no stated width four times, three of them in
-`CLAUDE.md`, and scored the same fault 0 and 50; [the evidence page has the
-four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
+shared `comment-line-check.ps1`, which reads no line of a tool's docstring but one that begins
+with `#` (grado-factorio-tools#523). A reviewer does not report one either: the hook does.
+`tools/rewrap.py` refuses to rewrap a file outside the eight, reading the list from section 12
+(#717); `markdown-rewrap.ps1 -Comment` in the tools submodule rewraps a script's comments. Reviewers
+had raised a long line in a file with no stated width four times, three of them in `CLAUDE.md`, and
+scored the same fault 0 and 50; [the evidence page has the four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
 
 ## This repository's values
 
@@ -616,12 +615,11 @@ a `scripts/ship-check.ps1` result is sent only when a run on the head being sent
 reads the files and, of the branch's own commits, only their `Model-Growth:` lines; a run is the
 head's while the head's tree and those lines are the ones it read, so a reword that keeps them
 leaves it standing (Truls, 2026-11-21, twice on #903); **only when that head is the pull
-request's, and only when the body quotes that run's pass line word for word** (all three
-Truls, 2026-11-19, on #890's review
-panel; two comments on #884 record them). A `scripts/run-gates.ps1` run the body quotes is made
-and named the same way, on a clean tree (Truls, 2026-11-21, on #903); step 6 of `/pre-pr-review`
-says how. The review sections,
-the `## Pre-PR review` and what the plugin pass adds, stand below the template's `## Summary`,
+request's, and only when the body quotes that run's pass line word for word** (all three Truls,
+2026-11-19, on #890's review panel; two comments on #884 record them). A `scripts/run-gates.ps1`
+run the body quotes is made and named the same way, on a clean tree (Truls, 2026-11-21, on #903);
+step 6 of `/pre-pr-review` says how. The review sections, the `## Pre-PR review` and what the
+plugin pass adds, stand below the template's `## Summary`,
 `## Evidence` and `## Merge Danger`, which the script checks and the tracker page,
 `docs/agents/issue-tracker.md`, requires. Where the review sections stand the script does not read.
 **The three headings are filled by invoking the `mattpocock-skills:pr` skill**, before the first

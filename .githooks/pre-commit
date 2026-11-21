@@ -12,7 +12,8 @@
 #   the first Markdown check resolves those links;
 # - the staged scripts, hooks, workflows and tools/*.py, for a comment line over 100 characters, by
 #   the shared comment-line-check.ps1 (#863, #902), in the form its second example gives with
-#   tools/*.py added; in a Python file it reads the # lines and not the docstrings;
+#   tools/*.py added; in a Python file it reads each line that begins with #, one inside a
+#   docstring included, and no other line of a docstring;
 # - the staged *.ps1 directly under scripts/ and .githooks/ (#863), written out of the index into
 #   the same folder: by param-check.ps1, a list parameter never split on commas; by
 #   variable-case-check.ps1, a variable spelt two ways in one scope; by help-check.ps1, a help
