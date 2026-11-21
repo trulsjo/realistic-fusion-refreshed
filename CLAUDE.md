@@ -50,14 +50,15 @@ about whether a change is safe. What each proves, in a line:
   `main` (#762). It also checks that every `scripts/check-*.ps1` sources
   `scripts/factorio-lib.ps1`, and that a stand-in rig's run leaves its report in
   `.rig-reports/` (#794). It also fails a run during which a tracked file or the index changed,
-  naming each path; a commit hash cited in prose outside the record pages that `origin/main` does
-  not reach, naming its file and line; a file in a model directory that is not one a model is made
-  of, a mesh included, and a texture without a CC0 record in `textures.json` that matches its bytes
-  (ADR 0043); a rendered model whose vertex count or `.blend` size more than doubles against
-  `origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:` trailer naming
-  the machine; and this file, when it holds more clauses that date something with "since" and a
-  ticket, wherever they stand, than the floor the script holds, because that history is
-  `docs/agents/state-detail.md`'s.
+  naming each path; one started beside a file git neither tracks nor ignores, naming it, where an
+  edit not yet committed passes (#896); a commit hash cited in prose outside the record pages that
+  `origin/main` does not reach, naming its file and line; a file in a model directory that is not
+  one a model is made of, a mesh included, and a texture without a CC0 record in `textures.json`
+  that matches its bytes (ADR 0043); a rendered model whose vertex count or `.blend` size more than
+  doubles against `origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:`
+  trailer naming the machine; and this file, when it holds more clauses that date something with
+  "since" and a ticket, wherever they stand, than the floor the script holds, because that history
+  is `docs/agents/state-detail.md`'s.
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 

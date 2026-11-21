@@ -52,6 +52,9 @@ __pycache__/
 # A live scripts/run-gates.ps1 run, which .githooks/pre-commit refuses a commit against (#872).
 # Ignored, so it is not in the fingerprint that run takes of the tree (#812).
 /.gates-running
+# A crash dump a Git Bash tool leaves where it ran, as grep.exe.stackdump did on #894; untracked,
+# it would fail ship-check.ps1's untracked-file check (#896).
+*.stackdump
 
 # Blender's save-over backups beside models/<machine>/<machine>.blend; the model is the .blend
 *.blend1
