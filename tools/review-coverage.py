@@ -8,9 +8,10 @@ pass after it*; /pre-pr-review (.claude/skills/pre-pr-review/SKILL.md) says when
 
 RECORD hands its arguments to `git log` and keeps the subject of each commit it prints, under the
 current branch's name, in `pre-pr-reviewed.txt` in the git directory, one `<branch> <subject>` line
-each. It is given the range of the diff the reviewer is handed, `origin/main..HEAD` only where that
-is the whole branch, and `-1 <hash>` for a commit a reword gave a new subject. The file outlives
-the session and is never pushed, and `--git-path` gives each worktree its own.
+each. It is given the range of the diff the reviewer is handed, once the message handing it is
+sent (#910), `origin/main..HEAD` only where that is the whole branch, and `-1 <hash>` for a commit
+a reword gave a new subject. The file outlives the session and is never pushed, and `--git-path`
+gives each worktree its own.
 
 CHECK lists each commit of `origin/main..HEAD` whose subject is not recorded under the current
 branch, as its short hash and its subject, and exits 1 when it lists one, 0 when it lists none.

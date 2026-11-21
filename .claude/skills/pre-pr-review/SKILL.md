@@ -30,11 +30,10 @@ pass.
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
    git log --output="<scratch>/messages.txt" origin/main..HEAD   # the commit messages (#864)
-   python tools/review-coverage.py record origin/main..HEAD   # the range handed; step 5 (#781, #787)
    ```
 
    **A review of part of the branch gives these lines that part's range, before they run**
-   (#781): the `git diff` and the `record` line both, so the script records only what the
+   (#781), and step 3's `record` line the same range, so the script records only what the
    reviewer is handed. Its docstring says where it keeps what it records and how a subject
    matches.
 
@@ -85,8 +84,8 @@ pass.
    fork has already read the author's reasoning. Give it a `name` so step 4 can reach it, and a
    `description` that starts `Pre-PR review`, which step 6's script sorts it by (#661). Its brief is
    the block below with the paths filled in and nothing about what the author thinks is right,
-   and nothing that excuses a commit in the diff: step 1 recorded every commit in it as handed
-   (#781).
+   and nothing that excuses a commit in the diff: every commit in it is recorded as handed once
+   the reviewer is spawned (#781).
 
    > You are the pre-PR reviewer of a branch of this repository. Read `docs/agents/code-review.md`
    > and `vendor/grado-factorio-tools/docs/code-review-rules.md` in full first; the second rule
@@ -150,6 +149,13 @@ pass.
    > Reply with one line per finding first: its number, the file and the fault. Give the
    > detail for a finding when you are asked for it. A long reply arrives cut off.
 
+   **Once it is spawned, record the range its diff holds** (#781, #787, #910), step 5's to check,
+   which ends at step 1's tag whatever has been committed since:
+
+   ```
+   python tools/review-coverage.py record origin/main..pre-pr-reviewed
+   ```
+
    **The report comes as a reply, not as a file**, where the shared procedure's sixth step has
    a file outside the repository: the harness refuses a subagent's write of one. On #864's review
    (2026-11-16) a brief that asked for `<scratch>/reviewer/report.md` got the reviewer's word
@@ -182,11 +188,20 @@ pass.
 
    ```
    git diff --output="<scratch>/fixes.diff" pre-pr-reviewed..HEAD
+   ```
+
+   **Once the message below is sent, record the range it handed** (#781, #910), with nothing
+   committed between the diff and the record:
+
+   ```
    python tools/review-coverage.py record pre-pr-reviewed..HEAD
    ```
 
    Every diff sent to the reviewer, here, in step 5, in step 7, for the plugin pass's fixes and
-   for a review panel's (#892), is recorded the same way, from its own range (#781).
+   for a review panel's (#892), is recorded the same way, from its own range, after the message
+   that sends it. A held fix is recorded with the message that later sends it, and not before. On
+   #906 a range recorded when its diff was written held three fixes that were then held, and
+   `review-coverage.py check` passed on commits no reviewer had been handed.
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
