@@ -72,10 +72,10 @@ or an `--until` that no turn after it holds, prints no figure for the main sessi
 So does a text that more than one turn holds (#897), and it lists each of them with its time and
 its first words: on the session that wrote #894, `--since=continue` was meant for a turn that said
 only that, and began instead at the session's opening context a day earlier, as the blob of a
-request copied it, measuring 399 requests from there. Where one of those turns says the text
-whole, it is the one, so a one-word turn can still be named. A turn marked isMeta, as the skill's
-text a slash command loads and which ends with the command's arguments, is not the user's, nor is
-the copy of a turn in the blob of the request after it.
+request copied it, measuring 399 requests from there when #894's body was written. Where one of
+those turns says the text whole, it is the one, so a one-word turn can still be named. A turn
+marked isMeta, as the skill's text a slash command loads and which ends with the command's
+arguments, is not the user's, nor is the copy of a turn in the blob of the request after it.
 
 THE REPLIES OF ONE SUBAGENT (#857), with `--replies=<name>` and nothing else: every message the
 subagent whose `.meta.json` has that `name` sent with SendMessage, whole and in the order sent, each
