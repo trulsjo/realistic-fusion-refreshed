@@ -324,8 +324,7 @@ pass.
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
    run's log has no such line, and a commit that changes a file or a `Model-Growth:` line since
    the run leaves no log under the head's name, so either sends nothing until the gate is run
-   again. A reword that changes no `Model-Growth:` line leaves the log made before it the head's.
-   A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1` log the body quotes is named the
+   again. A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1` log the body quotes is named the
    same way, `<scratch>/run-gates-<tree>.log` with the head's tree, and the body says the run is
    the head's only while the head's tree names a log. A body that quotes another count of checks
    than the log's sends nothing until it is brought up to date. A gate run is never joined to the
