@@ -243,6 +243,16 @@
     pass, and a ticket in parentheses not to be counted. It cannot see history written another way;
     the section comment has the rest.
 
+    SECTION 21 HAS A -SelfTest AND NO FLOOR (#896). It fails the run, naming each path, when a file
+    git neither tracks nor ignores stands in the tree before section 1 reads anything, because on
+    #894 a pass was quoted from a run made beside such a file. A modified or staged file does not
+    fail it, so a draft can still be checked before it is committed (Truls, on #896). The
+    untracked-file-caught half plants an untracked file at a scratch tree's root, one in a new
+    directory and an ignored file, and requires the two untracked files alone to be named; the
+    uncommitted-edit-passes half requires an edited tracked file, a staged new file and an ignored
+    file to pass. It cannot see an untracked file made after its reading; the section comment has
+    the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -252,7 +262,7 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove thirteen things a green run cannot: the shared -SelfTest
+    Run the checks as usual, then prove fourteen things a green run cannot: the shared -SelfTest
     runner the tools submodule holds -- that it numbers halves from the list it was given and
     refuses a half it cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both
     directions, section 10's two assertions, each in both directions, section 12's two scans of the
@@ -260,10 +270,10 @@
     and section 15's two checks, the first in both directions and the second on a stand-in the
     library keeps no report for, and section 16 in both directions and through a run of this script,
     and section 17 in both directions, and section 18 in both directions, and section 19 in both
-    directions, and section 20 in both directions, all on documents planted in a temporary
-    directory. Nothing here plants anything in the repository; the runner's cases are built in
-    memory and the planted documents and the scratch repositories of sections 16, 17 and 19 live in
-    the scratch directory the run removes on its way out.
+    directions, and section 20 in both directions, and section 21 in both directions, all on
+    documents planted in a temporary directory. Nothing here plants anything in the repository; the
+    runner's cases are built in memory and the planted documents and the scratch repositories of
+    sections 16, 17, 19 and 21 live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
@@ -297,6 +307,29 @@ $codeMods  = @($mods | Where-Object { $_ -ne $assetsMod })
 
 $failures = [System.Collections.Generic.List[string]]::new()
 $checks   = 0
+
+# ----------------------------------------------------------------- no stray file in the tree
+# 21. NO UNTRACKED FILE STANDS IN THE TREE WHEN THE RUN STARTS (#896).
+#
+# Read beside $treeBefore, before section 1. On #894 a pass was quoted from a run made beside an
+# untracked grep.exe.stackdump, and step 6 of /pre-pr-review asks for a clean tree only in prose
+# (#884). Untracked files alone, the `??` lines of `git status --porcelain`, a file at a time:
+# Truls narrowed it so on 2026-11-21, on #896, so a modified or staged file still passes and a
+# draft can be checked before it is committed. An ignored file is not untracked here, so a run's
+# own logs and reports under ignored directories are not counted. It cannot see an untracked
+# file created after this reading, nor one inside a submodule.
+function Get-UntrackedFailures {
+    <#  A failure for each file under $Root that git neither tracks nor ignores.  #>
+    param([Parameter(Mandatory)] [string] $Root)
+    $loose = @(git -C $Root -c core.quotepath=off ls-files --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0) { throw "git ls-files --others failed in $Root" }
+    @($loose | ForEach-Object {
+        "$_ is in the tree, and git neither tracks nor ignores it. Commit it, ignore it or move it out of the tree, and run it again."
+    })
+}
+
+$checks++
+foreach ($loose in Get-UntrackedFailures -Root $treeRoot) { $failures.Add($loose) }
 
 function Test-Claim {
     param([string] $Where, [string] $Text, [hashtable] $Needles)
@@ -2475,6 +2508,36 @@ if ($SelfTest) {
                 "a run whose watched tree is edited after its first fingerprint exits $code, failing on that file alone."
             } }
 
+            @{ Name = 'untracked-file-caught'; Body = {
+                # Section 21 passes on any tree with no stray file. A scratch tree gets an untracked
+                # file at its root, one in a new directory, and an ignored file: the two untracked
+                # files must be named each by its path, and the ignored one not.
+                $tree = New-ScratchGitTree -Parent $planted
+                'stray' | Set-Content -LiteralPath "$tree/grep.exe.stackdump" -Encoding utf8
+                New-Item -ItemType Directory -Path "$tree/new" -Force | Out-Null
+                'stray' | Set-Content -LiteralPath "$tree/new/left.txt" -Encoding utf8
+                'written' | Set-Content -LiteralPath "$tree/ignored.txt" -Encoding utf8
+                $found = @(Get-UntrackedFailures -Root $tree)
+                $named = @($found | ForEach-Object { ($_ -split ' is in the tree')[0] } | Sort-Object)
+                if (($named -join ', ') -ne 'grep.exe.stackdump, new/left.txt') {
+                    throw "of two untracked files and an ignored one, '$($named -join ', ')' was reported."
+                }
+                'an untracked file is named by its path, one in a new directory too, and an ignored file is not.'
+            } }
+
+            @{ Name = 'uncommitted-edit-passes'; Body = {
+                # The other direction (Truls, #896): a tracked file edited, a new file staged and an
+                # ignored file written are no stray file, so a draft can be checked uncommitted.
+                $tree = New-ScratchGitTree -Parent $planted
+                'edited' | Add-Content -LiteralPath "$tree/tracked.txt"
+                'staged' | Set-Content -LiteralPath "$tree/staged.txt" -Encoding utf8
+                git -C $tree add staged.txt
+                'written' | Set-Content -LiteralPath "$tree/ignored.txt" -Encoding utf8
+                $found = @(Get-UntrackedFailures -Root $tree)
+                if ($found.Count) { throw "an edit, a staged file and an ignored file were reported: '$($found -join '; ')'." }
+                'an edited tracked file, a staged new file and an ignored file are not reported.'
+            } }
+
             @{ Name = 'unreachable-hash-caught'; Body = {
                 # Section 17 passes by finding nothing. A scratch repository has a commit on its
                 # origin/main and one on a branch main never reached; a live page cites both, a hex
@@ -2620,6 +2683,7 @@ Write-Host 'dot-sources the library that keeps its report, which a stand-in rig 
 Write-Host 'no live prose cites a commit origin/main does not reach, every texture in a model'
 Write-Host 'directory is recorded as CC0 with its own bytes and nothing else is imported there,'
 Write-Host 'no rendered model more than doubled against origin/main without a commit saying so,'
-Write-Host 'the root CLAUDE.md holds no more clauses dating something by ticket than its floor allows;'
+Write-Host 'the root CLAUDE.md holds no more clauses dating something by ticket than its floor allows,'
+Write-Host 'no file git neither tracks nor ignores stood in the tree when the run started;'
 Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0
