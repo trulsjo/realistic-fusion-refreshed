@@ -78,11 +78,15 @@ mended by hand: `tools/rewrap.py` refuses that file, and the tools submodule's
 `-MaxLineLength` it is given. `python tools/rewrap.py <file> <line>` rewraps the paragraph that line
 sits in, at this width, and keeps such a figure together; section 12's failures give the file and
 the line. With the file alone it lists the prose lines over the width that have a space to break at,
-and writes nothing (#680). It counts a line in UTF-16 code units, as section 12 does, where `awk` in
-Git Bash counts bytes. Neither check can tell a split figure from two numbers, so each also fails a
-line that ends in a number of one to three digits above a line that opens with an unrelated one of
-exactly three, and the way out is to break the line a word earlier or later. #646 has the findings
-that asked for a stated width.
+and writes nothing (#680). It breaks inside a code span, as it split `gh pr create` on #906, so
+section 12's failure for a long line names `markdown-rewrap.ps1 -Path <file> -MaxLineLength 100`,
+which never does, in every file but the skill, whose front matter that tool rewraps
+(grado-factorio-tools#496); the skill's, and a split figure's, which that tool does not mend, name
+`tools/rewrap.py` (#908). `tools/rewrap.py` counts a line in UTF-16 code units, as section 12 does,
+where `awk` in Git Bash counts bytes. Neither check can tell a split figure from two numbers, so
+each also fails a line that ends in a number of one to three digits above a line that opens with an
+unrelated one of exactly three, and the way out is to break the line a word earlier or later. #646
+has the findings that asked for a stated width.
 
 **A file that is not one of those eight has no width for its prose** (Truls, 2026-10-11, #667). A
 long line in it is not a finding, and a reviewer does not report one. That covers the code of the

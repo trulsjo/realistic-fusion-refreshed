@@ -162,9 +162,11 @@
     Since #662 it also fails a figure grouped in thousands that is split across a line end in
     those files, and the split-figure-caught and unsplit-figure-not-flagged halves plant what that
     scan must and must not report. Since #860 section 11's shared check fails such a split in
-    every tracked .md as well, so in these files one fails in both sections. Section 12's
-    failures name tools/rewrap.py, which rewraps a paragraph, and it fails when that tool's width
-    is not this script's.
+    every tracked .md as well, so in these files one fails in both sections. A long line's
+    failure names the shared markdown-rewrap.ps1, which keeps a code span whole (#908), but in the
+    skill, whose front matter that tool rewraps; there, and for a split figure, which that tool
+    does not mend, it names tools/rewrap.py, and it fails when that tool's width is not this
+    script's.
     The sentence check, the tool's width and a missing file have no half: like sections 1 to 4
     they name what they require, so a mistake in them fails and does not go quiet. It cannot tell
     two numbers from a split figure when the second has three digits; the section comment has the
@@ -1439,13 +1441,26 @@ foreach ($rel in $WRAPPED) {
         $failures.Add("$rel is one of the files section 12 holds to a wrap width, and it is not there.")
     }
 }
+# A long line's way out is the shared rewrap, which never breaks inside a code span; tools/rewrap.py
+# does, and split `gh pr create` on #906 (#908). The skill is the exception: the shared rewrap
+# rewraps its front matter's description, which this section leaves alone
+# (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front
+# matter be.
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
-    $failures.Add(("$($long.File), line $($long.Line): a prose line of $($long.Length) characters in a file " +
-        "wrapped at $WRAP_WIDTH (docs/agents/code-review.md says which files are). " +
+    $mend = if ($long.File -like '.claude/skills/*') {
         "``python tools/rewrap.py $($long.File) $($long.Line)`` rewraps its paragraph and keeps a " +
-        'figure grouped in thousands on one line.'))
+        'figure grouped in thousands on one line, though not a code span: check that none is split.'
+    } else {
+        "``pwsh -File vendor/grado-factorio-tools/scripts/markdown-rewrap.ps1 -Path $($long.File) " +
+        "-MaxLineLength $WRAP_WIDTH`` rewraps each long line of the file and keeps a code span, " +
+        'a link and a figure grouped in thousands on one line.'
+    }
+    $failures.Add(("$($long.File), line $($long.Line): a prose line of $($long.Length) characters in a file " +
+        "wrapped at $WRAP_WIDTH (docs/agents/code-review.md says which files are). " + $mend))
 }
 $checks++
+# A split figure's way out stays tools/rewrap.py: the shared rewrap starts only from a line over
+# the width, and a split figure is on lines under it, so it leaves one as it is (#908).
 foreach ($split in (Find-SplitFigures -Files $WRAPPED -Root $repoRoot)) {
     $failures.Add(("$($split.File), line $($split.Line): the line ends in a number and the next opens with " +
         "three digits, which reads as the figure $($split.Figure) split across the line end. " +
