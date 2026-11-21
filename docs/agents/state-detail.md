@@ -620,3 +620,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `tools/`, and a line of 120 characters staged there was let through unread; that line was one
   word, which the check exempts as its header says, so the run shows only that the file was not
   read.
+- 2026-11-21, #908: `ship-check.ps1` section 12's failure for a long line names the shared
+  `markdown-rewrap.ps1 -Path <file> -MaxLineLength 100`, which keeps a code span whole, where
+  `tools/rewrap.py` split `gh pr create` on #906; in the skill, whose front matter the shared
+  tool rewraps (grado-factorio-tools#496), and for a split figure, which it leaves as it is, the
+  failure still names `tools/rewrap.py`. With a line of 118 characters holding a code span planted
+  at the foot of `docs/agents/plugin-pass.md` and of the skill, the run named the shared tool for
+  the first and `tools/rewrap.py` for the second, and the shared tool, run as named, kept the span
+  on one line.
