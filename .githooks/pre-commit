@@ -10,8 +10,9 @@
 #   repository's index, so a link inside this repository is resolved as the first check resolves
 #   it. A link into the submodule it reports as not checked, since the folder has no submodule;
 #   the first Markdown check resolves those links;
-# - the staged scripts, hooks and workflows, for a comment line over 100 characters, by the shared
-#   comment-line-check.ps1 (#863), in the form its second example gives;
+# - the staged scripts, hooks, workflows and tools/*.py, for a comment line over 100 characters, by
+#   the shared comment-line-check.ps1 (#863, #902), in the form its second example gives with
+#   tools/*.py added; in a Python file it reads the # lines and not the docstrings;
 # - the staged *.ps1 directly under scripts/ and .githooks/ (#863), written out of the index into
 #   the same folder: by param-check.ps1, a list parameter never split on commas; by
 #   variable-case-check.ps1, a variable spelt two ways in one scope; by help-check.ps1, a help
@@ -67,7 +68,7 @@ fi
 status=0
 pwsh -NoProfile -File "$tools/markdown-check.ps1" || status=1
 
-pwsh -NoProfile -File "$tools/comment-line-check.ps1" -Path 'scripts/*.ps1,.githooks/*,.github/workflows/*.yml' || status=1
+pwsh -NoProfile -File "$tools/comment-line-check.ps1" -Path 'scripts/*.ps1,.githooks/*,.github/workflows/*.yml,tools/*.py' || status=1
 
 # The wrapped files, as docs/agents/code-review.md names them, less the review skill: its front
 # matter's description is one long line, which ship-check.ps1 section 12 leaves alone and the

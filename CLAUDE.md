@@ -320,7 +320,8 @@ same two steps install it, and a clone that set the hooks path and has no submod
 Markdown was not checked. `ship-check.ps1` runs the same check over every tracked `.md`, so the
 workflow holds a clone without the hook to it. **It also reads the staged scripts and wrapped
 files** (#863), with the tools submodule's checks: a staged wrapped file's lines against 100
-characters, every comment line of a staged script, hook or workflow against 100, and each staged
+characters, every comment line of a staged script, hook or workflow, and every `#` line of a staged
+`tools/*.py` (#902), against 100, and each staged
 `*.ps1` under `scripts/` and `.githooks/` for a list parameter never split on commas, a variable
 spelt two ways, a help block PowerShell does not read and, where it sets strict mode, a read that
 can throw. Those checks read the whole file, so a commit that stages a script written before them is
