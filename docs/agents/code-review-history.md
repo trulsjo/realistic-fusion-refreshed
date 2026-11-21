@@ -535,3 +535,20 @@ One line for each, newest last. The passages above are not edited.
   with #819's timing for a choice between a finding's routes and #883's reading after a later fix
   commit, `code-review-evidence.md` has what the confirmation cost on #890, and steps 4 and 6 of
   `/pre-pr-review` carry it out. No gate reads it.
+- **2026-11-21, #902: the `pre-commit` hook holds a tool's `#` lines to 100, as it holds a
+  script's comment lines.** On #901 a session broke the wrap of a tool's docstring three times,
+  and no check held a line in `tools/`: the width rule said the Python there has none. Truls
+  decided in #902's triage that the hook gives its comment check `tools/*.py`, apart from the
+  docstrings grado-factorio-tools#523 asks the shared check to read; the brief on #902 records it.
+  The width rule names the exception beside #863's, `/plugin-pass`'s reviewer brief names it among
+  the lines the hook holds, and `.githooks/pre-commit` carries it out. The hook holds it.
+- **2026-11-21, #903: a gate run a body quotes is the head's while the head's tree, the branch's
+  `Model-Growth:` lines and `origin/main` are the ones it read, and its log is named for the
+  three.** It amends #884's line above, whose log was named for the head's full hash. On #901 six
+  rewords left no log named for the head, and the session showed by hand that the runs still
+  held. Truls decided in #903's triage that the logs go by the tree; in the session implementing it
+  he kept the send's check that the head is the pull request's, on the branch's pre-PR review he
+  had the name cover the `Model-Growth:` lines section 19 reads and gave a quoted
+  `scripts/run-gates.ps1` run a line of its own, and on its plugin pass he added `origin/main`,
+  which sections 17 and 19 read. Three comments on #903 record them. Step 6 of `/pre-pr-review`
+  carries it out. No gate reads it.
