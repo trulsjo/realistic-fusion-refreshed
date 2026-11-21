@@ -596,3 +596,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   it read the working tree. Run by hand with `sh .githooks/pre-commit`: a long line staged in
   `CLAUDE.md` with a clean working tree failed, and a short change staged with a long line only on
   disk passed, where the hook before the change refused that commit for the line on disk.
+- 2026-11-21, #898: `.githooks/pre-commit` ends each refusal with a line saying the message was
+  not saved, since git writes `.git/COMMIT_EDITMSG` after the hook runs and the file still holds
+  the previous commit's. Run by hand on this branch: a commit refused for a line of 124 characters
+  staged in `CLAUDE.md`, one refused for a link to no file in `docs/agents/domain.md`, and one
+  refused while a `.gates-running` marker named a live process each printed the line; the commit
+  that changed the hook went through and printed none.
