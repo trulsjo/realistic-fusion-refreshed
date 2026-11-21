@@ -617,7 +617,9 @@ head's while the head's tree and those lines are the ones it read, so a reword t
 leaves it standing (Truls, 2026-11-21, twice on #903); **only when that head is the pull
 request's, and only when the body quotes that run's pass line word for word** (all three
 Truls, 2026-11-19, on #890's review
-panel; two comments on #884 record them); step 6 of `/pre-pr-review` says how. The review sections,
+panel; two comments on #884 record them). A `scripts/run-gates.ps1` run the body quotes is made
+and named the same way, on a clean tree (Truls, 2026-11-21, on #903); step 6 of `/pre-pr-review`
+says how. The review sections,
 the `## Pre-PR review` and what the plugin pass adds, stand below the template's `## Summary`,
 `## Evidence` and `## Merge Danger`, which the script checks and the tracker page,
 `docs/agents/issue-tracker.md`, requires. Where the review sections stand the script does not read.
