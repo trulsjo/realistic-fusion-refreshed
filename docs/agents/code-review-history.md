@@ -557,7 +557,7 @@ One line for each, newest last. The passages above are not edited.
 - **2026-11-22, #907: a gate run's log is named for the key `scripts/ship-check.ps1` prints of what
   it read, and no page keeps a list of the gate's inputs.** It amends #903's line above, whose three
   parts step 6 wrote out by hand: on #906 that list was wrong twice before it was right. Truls had
-  it filed from #906's retrospective and triaged it, and the triage brief on #907 records it. The
+  it filed from #906's retrospective; the triage brief on #907 records what it asks. The
   gate's section 22 prints the key and says what the key cannot see, and its
   every-history-read-is-keyed half fails a read of history added outside the functions the key
   covers. Step 6 of `/pre-pr-review` names the log for it.
