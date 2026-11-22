@@ -269,8 +269,10 @@
     whose verb is not one that reads no history to stand in a function the key covers, and six
     planted outside it to be named, among them a quoted verb, one held in a variable and one in an
     else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
-    trailers and to move with a trailer, origin/main and a file. It cannot see what a listed
-    function's command reads, nor which objects the clone holds; the section comment has the rest.
+    trailers and to move with a trailer, origin/main and a file, each in its own part, and gives a
+    shallow clone, an unborn branch and an edit in an ignore=all submodule none. It cannot see what
+    a listed function's command reads, nor which objects the clone holds; the section comment has
+    the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -349,7 +351,9 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # fails too (Truls, posted on #907; the review panel's finding 4 on #911). The verb is read past
 # -C, -c, --git-dir, --work-tree, --namespace and --config-env and their arguments, unquoted, and
 # git is matched in any case and as git.exe; the read-key-follows-its-inputs half moves each input
-# of a scratch repository and requires the key to move with it, and to stay on a reword.
+# of a scratch repository and requires the key to move with it, in that input's part alone, and
+# to stay on a reword, and requires no key of a shallow clone, an unborn branch and an edit in a
+# submodule whose ignore setting is all.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
@@ -2839,7 +2843,34 @@ if ($SelfTest) {
                     }
                 }
                 if ($null -ne $dirty) { throw "a tree with an uncommitted edit had the key '$dirty'." }
-                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit has none.'
+                # No key where the key cannot be trusted: a shallow clone of the repository, with
+                # origin/main set; an unborn branch, which has no tree; and an edit in a submodule
+                # whose ignore setting is all, which plain git status does not print.
+                & $git reset -q --hard
+                $url = 'file:///' + $root.Replace('\', '/')
+                $shallow = "$root-shallow"
+                git -c protocol.file.allow=always clone -q --depth 1 $url $shallow 2>&1 | Out-Null
+                git -C $shallow update-ref refs/remotes/origin/main HEAD 2>&1 | Out-Null
+                $unborn = "$root-unborn"
+                New-Item -ItemType Directory -Path $unborn -Force | Out-Null
+                git -C $unborn init -q -b main 2>&1 | Out-Null
+                git -C $unborn update-ref refs/remotes/origin/main (git -C $root rev-parse HEAD) 2>&1 | Out-Null
+                $parent = "$root-parent"
+                New-Item -ItemType Directory -Path $parent -Force | Out-Null
+                $pg = { git -C $parent -c user.name=t -c user.email=t@t -c protocol.file.allow=always @args 2>&1 | Out-Null }
+                & $pg init -q -b main
+                'p' | Set-Content -LiteralPath "$parent/p.txt" -Encoding utf8
+                & $pg add -A; & $pg commit -q -m p
+                & $pg submodule add -q $url sub; & $pg commit -q -m sub
+                & $pg update-ref refs/remotes/origin/main HEAD
+                & $pg config submodule.sub.ignore all
+                $clean = Get-ReadKey -Root $parent
+                'edited' | Add-Content -LiteralPath "$parent/sub/a.txt"
+                $none = [ordered]@{ 'a shallow clone' = (Get-ReadKey -Root $shallow); 'an unborn branch' = (Get-ReadKey -Root $unborn)
+                                    'an edit in a submodule set to ignore=all' = (Get-ReadKey -Root $parent) }
+                if (-not $clean) { throw 'a clean repository with a submodule had no key.' }
+                foreach ($k in $none.Keys) { if ($null -ne $none[$k]) { throw "$k had the key '$($none[$k])'." } }
+                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch and an edit in a submodule set to ignore=all have none.'
             } }
 
             @{ Name = 'unreachable-hash-caught'; Body = {
