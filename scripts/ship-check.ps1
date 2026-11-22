@@ -168,11 +168,11 @@
     split figure, which that tool does not mend, it names tools/rewrap.py, and it fails when that
     tool's width is not this script's. A line over the width only by a link's target or an address,
     which the shared tool does not count and so leaves as it is, is told to be broken before the
-    link by hand, or, where the link already stands alone on its line, to give the link a text with
-    no space. The sentence check, the tool's width and a missing file have no half: like sections 1
-    to 4 they name what they require, so a mistake in them fails and does not go quiet. It cannot
-    tell two numbers from a split figure when the second has three digits; the section comment has
-    the rest.
+    link by hand, or after it where it opens the line, or, where the link already stands alone on
+    its line, to give the link a text with no space. The sentence check, the tool's width and a
+    missing file have no half: like sections 1 to 4 they name what they require, so a mistake in
+    them fails and does not go quiet. It cannot tell two numbers from a split figure when the second
+    has three digits; the section comment has the rest.
 
     SECTION 13 HAS BOTH (#756). It fails a half a gate declares and its -SelfTest help leaves
     out, where that help names at least one of the gate's halves, and it skips and lists a gate
@@ -1570,19 +1570,20 @@ foreach ($rel in $WRAPPED) {
 # (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front matter
 # be. A line over the width only by a link's target or an address is a third: the shared rewrap
 # counts a line less those, as the shared check does, so it leaves the line as it is
-# (grado-factorio-tools#526), and the failure says to break it before the link by hand, or, where
-# the link already stands alone on its line, to give it a text with no space, since this section
-# fails a long link alone on its line when its text holds a space (#909). The counting here is an
-# approximation of the shared one: a target holding a space or a bracket is taken for shorter
-# than it is, so such a line is counted longer than the shared tool counts it, and where that
-# puts it over the width its failure names markdown-rewrap.ps1, which leaves the line as it is.
+# (grado-factorio-tools#526), and the failure says to break it before the link by hand, or after
+# it where it opens the line, or, where the link already stands alone on its line, to give it a
+# text with no space, since this section fails a long link alone on its line when its text holds
+# a space (#909). The counting here is an approximation of the shared one: a target holding a
+# space or a bracket is taken for shorter than it is, so such a line is counted longer than the
+# shared tool counts it, and where that puts it over the width its failure names
+# markdown-rewrap.ps1, which leaves the line as it is.
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
     $counted = ((($text -replace '\]\([^)\s]*\)', ']()') -replace '<[A-Za-z][A-Za-z0-9+.-]*:[^>\s]*>', '<>') -replace
         'https?://[^\s)>]+', '').TrimEnd().Length
     $mend = if ($counted -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by a link's target or an address, which markdown-rewrap.ps1 does " +
-        'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand. ' +
+        'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand, or after it where the link opens the line. ' +
         'Where the link already stands alone on its line, that does not mend it, since a link with a space in its text is ' +
         'held to the width here: give the link a text with no space in it (realistic-fusion-refreshed#909).'
     } elseif ($long.File -like '.claude/skills/*') {
