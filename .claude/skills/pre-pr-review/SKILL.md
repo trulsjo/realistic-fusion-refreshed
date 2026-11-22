@@ -331,8 +331,8 @@ pass.
    word for word, third, the pull request's head fourth and the send last, each joined to the next
    with `&&`. `<name>`, in the send's checks and wherever a log is looked for below, is this,
    pasted in place, the key the gate lines name their logs for; it prints nothing on a tree that
-   is not clean, where `origin/main` does not resolve, on a shallow clone, or where a git command
-   it needs fails:
+   is not clean, where `origin/main` does not resolve, on a shallow clone, where the pinned head's
+   tree is not the live HEAD's, or where a git command it needs fails:
 
    ```
    $(pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey)
