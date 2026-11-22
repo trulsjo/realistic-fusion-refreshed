@@ -169,8 +169,10 @@
     tool's width is not this script's. A line over the width only by a link's target or an address,
     which the shared tool does not count and so leaves as it is, is told to be broken before the
     link by hand, or after it where it opens the line, or, where the link already stands alone on
-    its line, to give the link a text with no space. The sentence check, the tool's width and a
-    missing file have no half: like sections 1 to 4 they name what they require, so a mistake in
+    its line, to give the link a text with no space. A line holding a code span longer than the
+    width, which no rewrap breaks, is told to shorten it or move it into a fenced block, and one
+    over the width only by trailing spaces to remove them. The sentence check, the tool's width and
+    a missing file have no half: like sections 1 to 4 they name what they require, so a mistake in
     them fails and does not go quiet. It cannot tell two numbers from a split figure when the second
     has three digits; the section comment has the rest.
 
@@ -1618,13 +1620,19 @@ foreach ($rel in $WRAPPED) {
 # the shared tool rewraps by, so the two agree on which lines it leaves (Truls, posted on #908;
 # the review panel's finding 8 on #911). That library sets strict mode, which this script does
 # not, so it is dot-sourced inside a child scope for each flagged line. A line over the width only
-# by trailing spaces, which the shared count leaves out, is told so.
+# by trailing spaces, which the shared count leaves out, is told so; and one holding a code span
+# longer than the width, which no rewrap breaks, is told to shorten it or fence it.
 $markdownLib = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/markdown-lib.ps1'
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
     $counted = (& { param($line, $lib) . $lib; Get-CountedLine -Line $line } $text $markdownLib).Length
+    $spans = @([regex]::Matches($text, '(`+)(?:(?!\1).)+?\1') | Where-Object { $_.Length -gt $WRAP_WIDTH })
     $mend = if ($text.TrimEnd().Length -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by trailing spaces: remove them."
+    } elseif ($spans) {
+        # A code span is never broken, so one longer than the width fails on any line it stands on.
+        "It holds a code span of $($spans[0].Length) characters, longer than the width, which no " +
+        'rewrap breaks: shorten it, or move it into a fenced block, whose lines are not held to the width.'
     } elseif ($counted -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by a link's target or an address, which markdown-rewrap.ps1 does " +
         'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand, or after it where the link opens the line. ' +
