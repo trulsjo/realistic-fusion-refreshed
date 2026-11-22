@@ -328,7 +328,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # #906 it was wrong twice: first the tree alone, then without origin/main, which sections 17 and
 # 19 read. So the script makes the key from the values its own reads use: the head's tree, the
 # Model-Growth machines section 19 accepts, through Get-AcceptedGrowth, which section 19 calls,
-# and $MAIN_REF's commit, which every read of origin/main below is handed. A reword that keeps
+# and $MAIN_AT, origin/main's commit read once by Get-PinnedMain, which the run hands every read
+# of origin/main below, so a fetch during the run moves none of them. A reword that keeps
 # the trailers keeps the key; a file changed, a trailer added or dropped, or a fetch that moves
 # origin/main changes it. The sections read the working tree, and section 11 the index, which
 # are the head's tree only when git status --porcelain prints nothing, so a tree it prints
@@ -357,6 +358,7 @@ $KEYED_READS = @{
     'Get-ModelGrowthRows'    = @('rev-parse', 'show')
     'Find-UnreachableHashes' = @('rev-parse', 'rev-list', 'cat-file')
     'Get-ReadKey'            = @('rev-parse')
+    'Get-PinnedMain'         = @('rev-parse')
 }
 $HISTORY_READS = @('log', 'rev-list', 'show', 'cat-file', 'rev-parse', 'merge-base', 'diff', 'blame',
                    'for-each-ref', 'describe', 'reflog', 'branch', 'tag', 'shortlog', 'name-rev',
@@ -377,7 +379,7 @@ function Get-ReadKey {
     $mainCommit = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
     if ($LASTEXITCODE -ne 0) { return $null }
     $tree = git -C $Root rev-parse 'HEAD^{tree}'
-    $names = (@(Get-AcceptedGrowth -Root $Root -Main $Main) | Sort-Object -Unique) -join "`n"
+    $names = (@(Get-AcceptedGrowth -Root $Root -Main $mainCommit) | Sort-Object -Unique) -join "`n"
     $hash = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData([Text.Encoding]::UTF8.GetBytes($names)))
     "$tree-$($hash.ToLowerInvariant())-$mainCommit"
 }
@@ -409,8 +411,22 @@ function Find-UnkeyedReads {
     }
 }
 
+function Get-PinnedMain {
+    <#  $MAIN_REF's commit in the repository at $Root, or $MAIN_REF itself where it does not
+        resolve, so each read that is handed it fails as it would on the name.  #>
+    param([Parameter(Mandatory)] [string] $Root)
+    $commit = git -C $Root rev-parse --verify --quiet "$MAIN_REF^{commit}" 2>$null
+    if ($LASTEXITCODE -eq 0 -and $commit) { $commit } else { $MAIN_REF }
+}
+
+# One commit of origin/main for the whole run, read once here: the key and sections 17 and 19 are
+# each handed it, so a fetch during a run cannot give them two mains under one key (#907, the
+# review panel's finding 2 on #911). The functions' defaults stay $MAIN_REF, as the self-test hands
+# them scratch repositories of their own.
+$MAIN_AT = Get-PinnedMain -Root $repoRoot
+
 if ($PrintKey) {
-    $key = Get-ReadKey -Root $repoRoot
+    $key = Get-ReadKey -Root $repoRoot -Main $MAIN_AT
     if (-not $key) {
         [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, or $MAIN_REF does not resolve.")
         exit 1
@@ -422,7 +438,7 @@ if ($PrintKey) {
 # Before any section reads a file: section 16 compares the tree with this when they have all run.
 $treeRoot   = if ($StandInTree) { $StandInTree } else { $repoRoot }
 $treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
-$readKey    = Get-ReadKey -Root $treeRoot      # section 22's, read beside the fingerprint
+$readKey    = Get-ReadKey -Root $treeRoot -Main $MAIN_AT   # section 22's, beside the fingerprint
 
 $mods      = Get-RepoMods
 $assetsMod = 'realistic-fusion-refreshed-assets'
@@ -1920,7 +1936,7 @@ function Get-ModelGrowthRows {
 
 $checks++
 try {
-    foreach ($why in Find-ModelGrowth -Rows @(Get-ModelGrowthRows -Root $repoRoot)) { $failures.Add($why) }
+    foreach ($why in Find-ModelGrowth -Rows @(Get-ModelGrowthRows -Root $repoRoot -Main $MAIN_AT)) { $failures.Add($why) }
 } catch { $failures.Add("section 19 could not hold the rendered models against origin/main: $($_.Exception.Message)") }
 
 # ----------------------------------------------------------------- what a model directory holds
@@ -2076,7 +2092,7 @@ function Find-UnreachableHashes {
 
 $checks++
 try {
-    $hashesRead = Find-UnreachableHashes -Files $citingCode -Root $repoRoot
+    $hashesRead = Find-UnreachableHashes -Files $citingCode -Root $repoRoot -Main $MAIN_AT
     foreach ($cite in $hashesRead.Unreachable) {
         $failures.Add(("$($cite.File), line $($cite.Line), cites commit $($cite.Hash), which no ref on origin/main " +
             'reaches, so a rebase or `git gc` can take it away. Cite the commit main holds, or the pull request.'))
