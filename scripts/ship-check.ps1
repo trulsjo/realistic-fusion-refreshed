@@ -439,11 +439,12 @@ function Find-UnkeyedReads {
 }
 
 function Get-PinnedMain {
-    <#  $MAIN_REF's commit in the repository at $Root, or $MAIN_REF itself where it does not
-        resolve, so each read that is handed it fails as it would on the name.  #>
+    <#  $MAIN_REF's commit in the repository at $Root, or, where it does not resolve, a name no
+        ref can have, so every read handed it fails, as a fetch during the run cannot make
+        $MAIN_REF resolve for some of them and not others.  #>
     param([Parameter(Mandatory)] [string] $Root)
     $commit = git -C $Root rev-parse --verify --quiet "$MAIN_REF^{commit}" 2>$null
-    if ($LASTEXITCODE -eq 0 -and $commit) { $commit } else { $MAIN_REF }
+    if ($LASTEXITCODE -eq 0 -and $commit) { $commit } else { "$MAIN_REF (unresolved when the run began)" }
 }
 
 # One commit of origin/main for the whole run, read once here: the key and sections 17 and 19 are
