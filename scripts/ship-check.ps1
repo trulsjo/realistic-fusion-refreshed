@@ -272,9 +272,9 @@
     variable and one in an else; the read-key-follows-its-inputs half requires the key to stay on
     rewords that keep the trailers and to move with a trailer, origin/main and a file, each in its
     own part, and gives a shallow clone, an unborn branch, an edit in an ignore=all submodule, a
-    clone whose git status fails and a pin that is not the live HEAD none. It cannot see what a
-    listed function's command reads, nor which objects the clone holds; the section comment has the
-    rest.
+    clone whose git status fails and a pin whose tree is not the live HEAD's none. It cannot see
+    what a listed function's command reads, nor which objects the clone holds; the section comment
+    has the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -358,7 +358,7 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # read-key-follows-its-inputs half moves each input of a scratch repository and requires the key to
 # move with it, in that input's part alone, and to stay on a reword, and requires no key of a
 # shallow clone, an unborn branch, an edit in a submodule whose ignore setting is all, a clone whose
-# git status fails, and a pin older than the live HEAD on a clean tree.
+# git status fails, and a clean tree whose pin's tree is not the live HEAD's.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
@@ -2868,7 +2868,7 @@ if ($SelfTest) {
                 # No key where the key cannot be trusted: a shallow clone of the repository, with
                 # origin/main set; an unborn branch, which has no tree; and an edit in a submodule
                 # whose ignore setting is all, which plain git status does not print; a clone whose
-                # git status fails; and a pin older than the live HEAD, on a clean tree.
+                # git status fails; and a clean tree whose pin's tree is not the live HEAD's.
                 & $git reset -q --hard
                 $url = 'file:///' + $root.Replace('\', '/')
                 $shallow = "$root-shallow"
@@ -2913,14 +2913,14 @@ if ($SelfTest) {
                 $none = [ordered]@{ 'a shallow clone' = (Get-ReadKey -Root $shallow); 'an unborn branch' = (Get-ReadKey -Root $unborn)
                                     'an edit in a submodule set to ignore=all' = (Get-ReadKey -Root $parent)
                                     'a clone whose git status fails' = (Get-ReadKey -Root $badIndex)
-                                    'an older pin on a clean tree' = (Get-ReadKey -Root $root -Head 'HEAD~1') }
+                                    'a pin on another tree than the live HEAD' = (Get-ReadKey -Root $root -Head 'HEAD~1') }
                 if ((git -C $root rev-parse 'HEAD~1^{tree}') -ceq (git -C $root rev-parse 'HEAD^{tree}') -or
                     @(git -C $root status --porcelain).Count) {
-                    throw "the older pin's tree at $root is the live one's, or the tree is not clean"
+                    throw "the tree of the pin HEAD~1 at $root is the live HEAD's, or the tree is not clean"
                 }
                 if (-not $clean) { throw 'a clean repository with a submodule had no key.' }
                 foreach ($k in $none.Keys) { if ($null -ne $none[$k]) { throw "$k had the key '$($none[$k])'." } }
-                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch, an edit in a submodule set to ignore=all, a clone whose git status fails and an older pin on a clean tree have none.'
+                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch, an edit in a submodule set to ignore=all, a clone whose git status fails and a pin on another tree than the live HEAD have none.'
             } }
 
             @{ Name = 'unreachable-hash-caught'; Body = {
