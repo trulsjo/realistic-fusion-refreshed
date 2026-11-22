@@ -28,6 +28,7 @@ pass.
    ```
    git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; steps 3 and 4 need it. Never pushed
+   git tag -f pre-pr-base origin/main      # the base it is read against; step 3 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
    git log --output="<scratch>/messages.txt" origin/main..HEAD   # the commit messages (#864)
    ```
@@ -150,10 +151,10 @@ pass.
    > detail for a finding when you are asked for it. A long reply arrives cut off.
 
    **Once it is spawned, record the range its diff holds** (#781, #787, #910), step 5's to check,
-   which ends at step 1's tag whatever has been committed since:
+   which runs between step 1's two tags whatever has been committed or fetched since:
 
    ```
-   python tools/review-coverage.py record origin/main..pre-pr-reviewed
+   python tools/review-coverage.py record pre-pr-base..pre-pr-reviewed
    ```
 
    **The report comes as a reply, not as a file**, where the shared procedure's sixth step has
@@ -251,7 +252,7 @@ pass.
    one in its place.
 
    The same section says why the rebase starts at the commit's parent and why the `fixes.diff` line
-   above gives the same diff after a reword. Delete the tag when the branch has merged.
+   above gives the same diff after a reword. Delete both tags when the branch has merged.
 
    The confirmation arrives as step 3's report does.
 
