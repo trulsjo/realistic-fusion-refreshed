@@ -74,8 +74,13 @@ self-tests prove them, what the harness shares, the timings of `run-gates.ps1`, 
 about the research ladders. Read it when a gate's pass or failure has to be interpreted, when a
 gate or its self-test is being changed, and when a sentence here is wanted with its date or its
 ticket. A change to a gate adds a dated line at the foot of that page, in the commit that changes
-the gate, so a branch whose tickets each change one adds a line for each. A line here changes only
-when what the gate proves in a line has changed.
+the gate, so a branch whose tickets each change one adds a line for each. **The `commit-msg` hook
+holds that** (#913), through `.githooks/dated-line.ps1`: it refuses a commit that changes the code
+of `ship-check.ps1`, `load-check.ps1`, a `check-*.ps1` or `run-gates.ps1`, outside comments and
+help, where that page gains no line opening with a date and the message has no `Dated-Line: none`
+trailer. It reads no other file as a gate, not what the line says, and an amend against the commit
+it amends; its header has the rest. A line here changes only when what the gate proves in a line
+has changed.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
@@ -133,7 +138,8 @@ read them (#863), and they run on every pull request; Truls kept the exception o
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` with `commit-scopes.txt` over the
 commits that event brought, a step failing any `.githooks/` file not committed as mode 100755
-(#862), each session hook's `-SelfTest` against `.claude/settings.json` (#861), three
+(#862), each session hook's `-SelfTest` against `.claude/settings.json` (#861), the `-SelfTest`
+of the `commit-msg` hook's `dated-line.ps1` (#913), three
 whole-tree checks from the tools submodule that hold what `ship-check.ps1` sections 7 and 17
 hold, and section 12 for seven of its eight files (#863) -- no line-number citation of our own
 code, no cited commit `origin/main` does not reach outside the record pages, and seven wrapped
@@ -269,7 +275,7 @@ edit instead of three. If the submodule is not initialised, read it at
 <https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/commit-convention.md> — but that
 shows `main`, which may be ahead of the commit this repo has pinned.
 
-Three things are this repository's own, because all three are its domain rather than shared
+Four things are this repository's own, because all four are its domain rather than shared
 mechanics:
 
 - **Scope vocabulary.** A scope is the module or the area a change is in. The list is
@@ -282,6 +288,10 @@ mechanics:
 - **What a body has to name.** Reference the Factorio API version when a change depends on one, and
   when code is lifted from a predecessor mod, name the author and the mod there (see Upstream
   material above).
+- **The `Dated-Line: none` trailer** (#913). A commit that changes a gate's code and adds no dated
+  line to `docs/agents/state-detail.md`, as the State section requires, carries it, its value
+  opening with `none` and saying why, as `Dated-Line: none, it renames a variable`. The
+  `commit-msg` hook refuses such a commit without it, and says when it honoured one.
 
 Example:
 
@@ -294,8 +304,9 @@ and not yet checked against the 1.1 original's numbers.
 ```
 
 **A hook checks all of this, and it is not installed by default.** `.githooks/commit-msg` runs the
-shared check on the message before the commit is written. Git tracks neither `.git/hooks` nor a
-submodule's contents, so every clone opts in twice:
+shared check on the message before the commit is written, and then the dated-line check the State
+section names, which needs no submodule. Git tracks neither `.git/hooks` nor a submodule's contents,
+so every clone opts in twice:
 
 ```
 git submodule update --init

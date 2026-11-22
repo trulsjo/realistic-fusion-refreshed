@@ -7,7 +7,8 @@
 # arithmetic, which needs no Blender and runs as a script of its own (#810, #803). Two more
 # tools' self-tests, mesh-overlap and compare-sheets, run there and not here: this runner has no
 # Blender, and its Python no Pillow (#850, #853). The self-tests of the eight session hooks wired
-# from vendor/ run here and not there (#861): none is a gate, and each needs its wiring read.
+# from vendor/ run here and not there (#861): none is a gate, and each needs its wiring read. So
+# does the self-test of the commit-msg hook's dated-line check (#913), which is not a gate either.
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings and, since #753, its four markers, no commit cited that is not on main, and no
@@ -125,6 +126,13 @@ jobs:
           bad=$(printf '%s\n' "$modes" | awk '$1 != "100755"')
           if [ -n "$bad" ]; then echo "FAILED - not mode 100755, so git off Windows skips it:"; printf '%s\n' "$bad"; exit 1; fi
           echo "OK - $(printf '%s\n' "$modes" | wc -l | tr -d ' ') file(s) under .githooks, each mode 100755."
+      # The commit-msg hook's dated-line check (#913): each case in a scratch repository, and one
+      # commit refused and one made through a copy of the hook. It is not run over this event's
+      # commits.
+      - name: dated-line.ps1 -SelfTest
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./.githooks/dated-line.ps1 -SelfTest
       # Three whole-tree checks from vendor/ that hold what ship-check.ps1 sections 7 and 17 hold,
       # and section 12 for seven of its eight files, with this repository's own as their
       # parameters (#863), so that #865 can delete sections 7 and 17. Section 12 alone still holds

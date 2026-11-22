@@ -1,24 +1,32 @@
 #!/bin/sh
-# Checks the message against vendor/grado-factorio-tools/docs/commit-convention.md.
+# Checks the message against vendor/grado-factorio-tools/docs/commit-convention.md, and then runs
+# dated-line.ps1 beside this file (#913), which refuses a commit that changes a gate script's code
+# with no dated line in docs/agents/state-detail.md and no Dated-Line: none trailer. That check is
+# here and not in pre-commit because it reads the message, which git writes after pre-commit runs;
+# its header has the rest. Both run, so one commit shows what each found.
 #
-# Held against the first .EXAMPLE of commit-check.ps1 (#862), with nothing of this repository's
-# own but these comment lines: the scopes are commit-scopes.txt. INSTALL, twice per clone, because
-# git tracks neither .git/hooks nor a submodule's contents:
+# The message check is held against the first .EXAMPLE of commit-check.ps1 (#862), with nothing of
+# this repository's own but the scopes, commit-scopes.txt. INSTALL, twice per clone, because git
+# tracks neither .git/hooks nor a submodule's contents:
 #
 #     git submodule update --init
 #     git config core.hooksPath .githooks
 #
 # The message file survives a rejection, so `git commit -e -F .git/COMMIT_EDITMSG` reopens what you
-# typed rather than making you write it again.
+# typed rather than making you write it again. A missing submodule skips the message check and says
+# so; the dated-line check needs none, and still runs.
 if ! command -v pwsh >/dev/null 2>&1; then
-    echo "commit-msg: pwsh not found, so the message format was NOT checked." >&2
+    echo "commit-msg: pwsh not found, so neither the message format nor the dated line was checked." >&2
     exit 0
 fi
 ROOT="$(git rev-parse --show-toplevel)"
 CHECK="$ROOT/vendor/grado-factorio-tools/scripts/commit-check.ps1"
+status=0
 if [ ! -f "$CHECK" ]; then
     echo "commit-msg: $CHECK not found, so the message format was NOT checked." >&2
     echo "commit-msg: run 'git submodule update --init' to fetch the shared check." >&2
-    exit 0
+else
+    pwsh -NoProfile -File "$CHECK" -ScopeFile "$ROOT/commit-scopes.txt" "$1" || status=1
 fi
-exec pwsh -NoProfile -File "$CHECK" -ScopeFile "$ROOT/commit-scopes.txt" "$1"
+pwsh -NoProfile -File "$ROOT/.githooks/dated-line.ps1" -Root "$ROOT" "$1" || status=1
+exit $status
