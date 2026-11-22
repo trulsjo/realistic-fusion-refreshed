@@ -1582,8 +1582,8 @@ foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
         'figure grouped in thousands on one line, though not a code span: check that none is split.'
     } else {
         "``pwsh -File vendor/grado-factorio-tools/scripts/markdown-rewrap.ps1 -Path $($long.File) " +
-        "-MaxLineLength $WRAP_WIDTH`` rewraps each long line of the file and keeps a code span, " +
-        'but one a flagged line starts inside, ' +
+        "-MaxLineLength $WRAP_WIDTH`` rewraps each long line of the file and keeps a code span " +
+        '(but not one a flagged line starts inside), ' +
         'a link and a figure grouped in thousands on one line.'
     }
     $failures.Add(("$($long.File), line $($long.Line): a prose line of $($long.Length) characters in a file " +
