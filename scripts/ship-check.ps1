@@ -1560,16 +1560,20 @@ foreach ($rel in $WRAPPED) {
 # (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front matter
 # be. A line over the width only by a link's target or an address is a third: the shared rewrap
 # counts a line less those, as the shared check does, so it leaves the line as it is
-# (grado-factorio-tools#526), and the failure says to break it before the link by hand. The counting
-# here is an approximation of the shared one: a target holding a space or a bracket is taken for
-# shorter than it is.
+# (grado-factorio-tools#526), and the failure says to break it before the link by hand, or, where
+# the link already starts its line, to give it a text with no space, since this section fails a
+# long link alone on its line when its text holds a space (#909). The counting here is an
+# approximation of the shared one: a target holding a space or a bracket is taken for shorter
+# than it is.
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
     $counted = ((($text -replace '\]\([^)\s]*\)', ']()') -replace '<[A-Za-z][A-Za-z0-9+.-]*:[^>\s]*>', '<>') -replace
         'https?://[^\s)>]+', '').TrimEnd().Length
     $mend = if ($counted -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by a link's target or an address, which markdown-rewrap.ps1 does " +
-        'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand.'
+        'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand. ' +
+        'Where the link already starts its line, that does not mend it, since a link with a space in its text is ' +
+        'held to the width here: give the link a text with no space in it (realistic-fusion-refreshed#909).'
     } elseif ($long.File -like '.claude/skills/*') {
         "``python tools/rewrap.py $($long.File) $($long.Line)`` rewraps its paragraph and keeps a " +
         'figure grouped in thousands on one line, though not a code span: check that none is split.'
