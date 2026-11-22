@@ -326,8 +326,8 @@ pass.
    line, which must name `<name>` itself, second, the log's pass line, which the body must hold
    word for word, third, the pull request's head fourth and the send last, each joined to the next
    with `&&`. `<name>`, in these lines and the `run-gates.ps1` line below, is
-   this, pasted in place; it prints nothing on a tree that is not clean or where `origin/main` does
-   not resolve:
+   this, pasted in place; it prints nothing on a tree that is not clean, where `origin/main` does
+   not resolve, on a shallow clone, or where a git command it needs fails:
 
    ```
    $(pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey)
