@@ -329,9 +329,10 @@ pass.
    what it read (#903, #907); then send with the body check first, the log's `ship-check: read`
    line, which must name `<name>` itself, second, the log's pass line, which the body must hold
    word for word, third, the pull request's head fourth and the send last, each joined to the next
-   with `&&`. `<name>`, in these lines and the `run-gates.ps1` line below, is
-   this, pasted in place; it prints nothing on a tree that is not clean, where `origin/main` does
-   not resolve, on a shallow clone, or where a git command it needs fails:
+   with `&&`. `<name>`, in the send's checks and wherever a log is looked for below, is this,
+   pasted in place, the key the gate lines name their logs for; it prints nothing on a tree that
+   is not clean, where `origin/main` does not resolve, on a shallow clone, or where a git command
+   it needs fails:
 
    ```
    $(pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey)
@@ -340,12 +341,13 @@ pass.
    Both lines are PowerShell 7's:
 
    ```
-   pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey *> $null && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-<name>.txt"
+   pwsh -NoProfile -Command '$k = pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey; if (-not $k) { exit 1 }; pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-$k.txt"; exit $LASTEXITCODE'
    pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -CaseSensitive -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: read <name>$')" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -SimpleMatch -LiteralPath '<scratch>/body.md' -Pattern (Select-String -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$').Line)" && pwsh -NoProfile -Command "exit [int]((gh pr view <n> --json headRefOid --jq .headRefOid) -ne (git rev-parse HEAD))" && gh pr edit <n> --body-file "<scratch>/body.md"
    ```
 
-   Each gate line starts with `-PrintKey`, which exits 1 where it prints no key, a tree that is not
-   clean among them, so no gate runs and no log is written under an empty `<name>`. A failing
+   Each gate line takes the key once, with `-PrintKey`, and names its log from that one reading:
+   where it prints no key, a tree that is not clean among them, no gate runs and no log is written,
+   and no second reading can name the log for anything else. A failing
    run's log has no pass line, and a commit or a fetch that changes what the key is made of moves
    it, so no log stands under the new `<name>`; either sends nothing until the gate is run again.
    So does a log whose `ship-check: read` line names another key than `<name>`, as one a fetch
@@ -357,7 +359,7 @@ pass.
    has, and is not the head's:
 
    ```
-   pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey *> $null && pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-<name>.log"
+   pwsh -NoProfile -Command '$k = pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey; if (-not $k) { exit 1 }; pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-$k.log"; exit $LASTEXITCODE'
    ```
 
    A body that quotes another count of checks than the log's sends nothing until it is brought up
