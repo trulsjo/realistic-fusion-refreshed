@@ -1554,15 +1554,16 @@ foreach ($rel in $WRAPPED) {
         $failures.Add("$rel is one of the files section 12 holds to a wrap width, and it is not there.")
     }
 }
-# A long line's way out is the shared rewrap, which never breaks inside a code span; tools/rewrap.py
-# does, and split `gh pr create` on #906 (#908). The skill is the exception: the shared rewrap
-# rewraps its front matter's description, which this section leaves alone
-# (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front
-# matter be. A line over the width only by a link's target or an address is a third: the shared
-# rewrap counts a line less those, as the shared check does, so it leaves the line as it is
-# (grado-factorio-tools#526), and the failure says to break it before the link by hand. The
-# counting here is an approximation of the shared one: a target holding a space or a bracket is
-# taken for shorter than it is.
+# A long line's way out is the shared rewrap, which breaks only between words outside a code span,
+# but where a flagged line starts inside one opened above, as its header says; tools/rewrap.py
+# breaks inside any, and split `gh pr create` on #906 (#908). The skill is the exception: the shared
+# rewrap rewraps its front matter's description, which this section leaves alone
+# (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front matter
+# be. A line over the width only by a link's target or an address is a third: the shared rewrap
+# counts a line less those, as the shared check does, so it leaves the line as it is
+# (grado-factorio-tools#526), and the failure says to break it before the link by hand. The counting
+# here is an approximation of the shared one: a target holding a space or a bracket is taken for
+# shorter than it is.
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
     $counted = ((($text -replace '\]\([^)\s]*\)', ']()') -replace '<[A-Za-z][A-Za-z0-9+.-]*:[^>\s]*>', '<>') -replace

@@ -80,10 +80,11 @@ sits in, at this width, and keeps such a figure together; section 12's failures 
 the line. With the file alone it lists the prose lines over the width that have a space to break at,
 and writes nothing (#680). It breaks inside a code span, as it split `gh pr create` on #906, so
 section 12's failure for a long line names `markdown-rewrap.ps1 -Path <file> -MaxLineLength 100`,
-which never does, in every file but the skill, whose front matter that tool rewraps
-(grado-factorio-tools#496); the skill's, and a split figure's, which that tool does not mend, name
-`tools/rewrap.py` (#908). The shared tool does not count a link's target or an address, so it
-leaves a line over the width only by one as it is (grado-factorio-tools#526), and that line's
+which breaks only between words, outside a code span but where a flagged line starts inside one
+opened on the line before, as its header says, in every file but the skill, whose front matter that
+tool rewraps (grado-factorio-tools#496); the skill's, and a split figure's, which that tool does not
+mend, name `tools/rewrap.py` (#908). The shared tool does not count a link's target or an address,
+so it leaves a line over the width only by one as it is (grado-factorio-tools#526), and that line's
 failure says to break it before the link by hand. `tools/rewrap.py` counts a line in UTF-16 code
 units, as section 12 does, where `awk` in Git Bash counts bytes. Neither check can tell a split
 figure from two numbers, so each also fails a line that ends in a number of one to three digits
