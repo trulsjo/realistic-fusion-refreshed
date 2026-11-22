@@ -258,14 +258,14 @@
     SECTION 22 HAS A -SelfTest AND NO FLOOR (#907). Every run prints, beside its pass or fail line,
     `ship-check: read <key>`: the head's tree, a hash of the Model-Growth machines section 19
     accepts, and origin/main's commit, made from the values those reads use, so a log named for the
-    key is the head's while none of the three has changed, but for the objects section 17 asks the
-    clone for, which the key does not hold. A tree git status --porcelain prints anything for has no
-    key, and the line says so. -PrintKey prints the key alone. The every-history-read-is-keyed half
-    requires each git read of history outside the self-test to stand in a function the key covers,
-    and two planted outside it to be named; the read-key-follows-its-inputs half requires the key to
-    stay on rewords that keep the trailers and to move with a trailer, origin/main and a file. It
-    cannot see what a listed function's command reads, nor which objects the clone holds; the
-    section comment has the rest.
+    key is the head's while none of the three has changed, but for what the section comment says the
+    key cannot see, the objects section 17 asks the clone for among it. A tree git status
+    --porcelain prints anything for has no key, and the line says so. -PrintKey prints the key
+    alone. The every-history-read-is-keyed half requires each git read of history outside the
+    self-test to stand in a function the key covers, and two planted outside it to be named; the
+    read-key-follows-its-inputs half requires the key to stay on rewords that keep the trailers and
+    to move with a trailer, origin/main and a file. It cannot see what a listed function's command
+    reads, nor which objects the clone holds; the section comment has the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
