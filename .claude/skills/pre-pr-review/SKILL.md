@@ -340,21 +340,24 @@ pass.
    Both lines are PowerShell 7's:
 
    ```
-   pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-<name>.txt"
+   pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey *> $null && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-<name>.txt"
    pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -CaseSensitive -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: read <name>$')" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -SimpleMatch -LiteralPath '<scratch>/body.md' -Pattern (Select-String -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$').Line)" && pwsh -NoProfile -Command "exit [int]((gh pr view <n> --json headRefOid --jq .headRefOid) -ne (git rev-parse HEAD))" && gh pr edit <n> --body-file "<scratch>/body.md"
    ```
 
-   A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
-   run's log has no such line, and a commit or a fetch that changes what the key is made of moves
+   Each gate line starts with `-PrintKey`, which exits 1 where it prints no key, a tree that is not
+   clean among them, so no gate runs and no log is written under an empty `<name>`. A failing
+   run's log has no pass line, and a commit or a fetch that changes what the key is made of moves
    it, so no log stands under the new `<name>`; either sends nothing until the gate is run again.
    So does a log whose `ship-check: read` line names another key than `<name>`, as one a fetch
    made between naming the log and the run's start, and an empty `<name>`, whose log holds no key.
    A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1`
    run the body quotes is made the same way, on a clean tree with its log under `<name>`, and the
-   body calls it the head's only while a log under `<name>` holds its pass line:
+   body calls it the head's only while a log under `<name>`, read when the body is sent, holds its
+   pass line; a run during which a fetch moved `origin/main` stands under a key the head no longer
+   has, and is not the head's:
 
    ```
-   pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-<name>.log"
+   pwsh -NoProfile -File scripts/ship-check.ps1 -PrintKey *> $null && pwsh -NoProfile -File scripts/run-gates.ps1 *> "<scratch>/run-gates-<name>.log"
    ```
 
    A body that quotes another count of checks than the log's sends nothing until it is brought up
