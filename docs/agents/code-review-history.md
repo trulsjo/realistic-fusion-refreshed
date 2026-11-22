@@ -566,5 +566,6 @@ One line for each, newest last. The passages above are not edited.
   `tools/rewrap.py` split `gh pr create` across a line end, which no gate sees. Truls chose at
   triage that section 12's failures name the shared tool, route (a) in the triage comment on #908.
   On the branch's pre-PR review a line long only by a link, which the shared tool leaves as it is
-  (grado-factorio-tools#526), was given its own way out, a break by hand. Section 12's failures
-  carry it out; no gate reads the paragraph that states it.
+  (grado-factorio-tools#526), was given its own ways out: a break before the link by hand, or after
+  it where it opens the line, or, where it stands alone on its line, a link text with no space.
+  Section 12's failures carry it out; no gate reads the paragraph that states it.
