@@ -405,6 +405,10 @@ function Get-ReadKey {
     if ($LASTEXITCODE -ne 0) { return $null }
     $tree = git -C $Root rev-parse --verify --quiet "$Head^{tree}" 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $tree) { return $null }   # an unborn branch has no tree
+    # git status compared the index with the live HEAD: a checkout since $Head was pinned would
+    # leave the status clean on a tree the key does not name.
+    $live = git -C $Root rev-parse --verify --quiet 'HEAD^{tree}' 2>$null
+    if ($LASTEXITCODE -ne 0 -or $live -cne $tree) { return $null }
     $accepted = @(Get-AcceptedGrowth -Root $Root -Main $mainCommit -Head $Head)
     if ($LASTEXITCODE -ne 0) { return $null }
     $names = ($accepted | Sort-Object -Unique) -join "`n"
