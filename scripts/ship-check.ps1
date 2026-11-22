@@ -346,9 +346,10 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # directory, as several do, among them section 3 for a PNG in each code mod, section 6 under docs/
 # and section 19 for each rendered manifest, whose result the key's history reads also feed;
 # a git read outside this script's own text, since the half scans no other file: on 2026-11-22
-# factorio-lib.ps1, which this script dot-sources, ran only `ls-files -s`, of the index; one
-# written so that its command is not named git, as `git.exe` or a command held in a variable,
-# though none here is; the game, the shared scripts' own reads beyond the tree, and the clock.
+# factorio-lib.ps1, which this script dot-sources, read git only through `ls-files -s`, of the
+# index; one written so that its command is not named git, as `git.exe` or a command held in a
+# variable, though none here is; the game, the shared scripts' own reads beyond the tree, and the
+# clock.
 $MAIN_REF = 'origin/main'
 $KEYED_READS = @{
     'Get-AcceptedGrowth'     = @('log')
