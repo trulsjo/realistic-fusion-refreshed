@@ -657,4 +657,6 @@ One line for each change to a gate, newest last, with its date and its ticket.
   hides; and `Find-UnkeyedReads` fails every verb but those `$NO_HISTORY_VERBS` lists as reading
   no history, unless `$KEYED_READS` lists it, skipping only an `if ($SelfTest)` clause's own body.
   Step 6 checks the log's `ship-check: read` line against `<name>`. Its two halves now plant six
-  unkeyed reads and require no key of the three cases; `-SelfTest` passed 31 of 31 halves.
+  unkeyed reads and require no key of the three cases; `-SelfTest` passed 31 of 31 halves. Every
+  plain run scans the script's own git commands too, and fails on one the key does not hold
+  (Truls, on #907), as `run-gates.ps1` and the workflow run no `-SelfTest`.
