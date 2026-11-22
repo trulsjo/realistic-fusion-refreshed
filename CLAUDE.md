@@ -78,9 +78,10 @@ a branch whose tickets each change one adds a line for each. **The `commit-msg` 
 (#913), through `.githooks/dated-line.ps1`: it refuses a commit that changes the code of
 `ship-check.ps1`, `load-check.ps1`, a `check-*.ps1` or `run-gates.ps1`, outside comments and help,
 where that page gains no line opening `- ` and a date, net of any it removes, and the message has no
-`Dated-Line: none` line. It reads no other file as a gate, not what the line says, and an amend
-against the commit it amends; its header has the rest. A line here changes only when what the gate
-proves in a line has changed.
+`Dated-Line: none` line. It reads no other file as a gate and not what the line says, and it reads
+an amend against the commit it amends, so amending a code change into a commit that already carries
+its dated line is refused and wants the `Dated-Line: none` line; its header has the rest. A line
+here changes only when what the gate proves in a line has changed.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
