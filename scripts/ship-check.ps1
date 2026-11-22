@@ -1564,7 +1564,8 @@ foreach ($rel in $WRAPPED) {
 # the link already starts its line, to give it a text with no space, since this section fails a
 # long link alone on its line when its text holds a space (#909). The counting here is an
 # approximation of the shared one: a target holding a space or a bracket is taken for shorter
-# than it is.
+# than it is, so such a line is counted longer than the shared tool counts it, and where that
+# puts it over the width its failure names markdown-rewrap.ps1, which leaves the line as it is.
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
     $counted = ((($text -replace '\]\([^)\s]*\)', ']()') -replace '<[A-Za-z][A-Za-z0-9+.-]*:[^>\s]*>', '<>') -replace
