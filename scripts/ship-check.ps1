@@ -166,15 +166,15 @@
     the shared markdown-rewrap.ps1, which keeps a code span whole but where a flagged line starts
     inside one (#908), but in the skill, whose front matter that tool rewraps; there, and for a
     split figure, which that tool does not mend, it names tools/rewrap.py, and it fails when that
-    tool's width is not this script's. A line over the width only by a link's target or an address,
-    which the shared tool does not count and so leaves as it is, is told to be broken before the
-    link by hand, or after it where it opens the line, or, where the link already stands alone on
-    its line, to give the link a text with no space. A line holding a code span longer than the
-    width, which no rewrap breaks, is told to shorten it or move it into a fenced block, and one
-    over the width only by trailing spaces to remove them. The sentence check, the tool's width and
-    a missing file have no half: like sections 1 to 4 they name what they require, so a mistake in
-    them fails and does not go quiet. It cannot tell two numbers from a split figure when the second
-    has three digits; the section comment has the rest.
+    tool's width is not this script's. A line outside the skill over the width only by a link's
+    target or an address, which the shared tool does not count and so leaves as it is, is told to be
+    broken before the link by hand, or after it where it opens the line, or, where the link already
+    stands alone on its line, to give the link a text with no space. A line holding a code span
+    longer than the width, which no rewrap breaks, is told to shorten it or move it into a fenced
+    block, and one over the width only by trailing spaces to remove them. The sentence check, the
+    tool's width and a missing file have no half: like sections 1 to 4 they name what they require,
+    so a mistake in them fails and does not go quiet. It cannot tell two numbers from a split figure
+    when the second has three digits; the section comment has the rest.
 
     SECTION 13 HAS BOTH (#756). It fails a half a gate declares and its -SelfTest help leaves
     out, where that help names at least one of the gate's halves, and it skips and lists a gate
@@ -1611,17 +1611,17 @@ foreach ($rel in $WRAPPED) {
 # breaks inside any, and split `gh pr create` on #906 (#908). The skill is the exception: the shared
 # rewrap rewraps its front matter's description, which this section leaves alone
 # (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front matter
-# be. A line over the width only by a link's target or an address is a third: the shared rewrap
-# counts a line less those, as the shared check does, so it leaves the line as it is
-# (grado-factorio-tools#526), and the failure says to break it before the link by hand, or after
-# it where it opens the line, or, where the link already stands alone on its line, to give it a
-# text with no space, since this section fails a long link alone on its line when its text holds
-# a space (#909). The line is counted by the shared markdown-lib.ps1's Get-CountedLine, the count
-# the shared tool rewraps by, so the two agree on which lines it leaves (Truls, posted on #908;
-# the review panel's finding 8 on #911). That library sets strict mode, which this script does
-# not, so it is dot-sourced inside a child scope for each flagged line. A line over the width only
-# by trailing spaces, which the shared count leaves out, is told so; and one holding a code span
-# longer than the width, which no rewrap breaks, is told to shorten it or fence it.
+# be. A line outside the skill over the width only by a link's target or an address is a third:
+# the shared rewrap counts a line less those, as the shared check does, so it leaves the line as
+# it is (grado-factorio-tools#526), and the failure says to break it before the link by hand, or
+# after it where it opens the line, or, where the link already stands alone on its line, to give it
+# a text with no space, since this section fails a long link alone on its line when its text holds a
+# space (#909). The line is counted by the shared markdown-lib.ps1's Get-CountedLine, the count the
+# shared tool rewraps by, so the two agree on which lines it leaves (Truls, posted on #908; the
+# review panel's finding 8 on #911). That library sets strict mode, which this script does not, so
+# it is dot-sourced inside a child scope for each flagged line. A line over the width only by
+# trailing spaces, which the shared count leaves out, is told so; and one holding a code span longer
+# than the width, which no rewrap breaks, is told to shorten it or fence it.
 $markdownLib = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/markdown-lib.ps1'
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
@@ -1633,14 +1633,15 @@ foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
         # A code span is never broken, so one longer than the width fails on any line it stands on.
         "It holds a code span of $($spans[0].Length) characters, longer than the width, which no " +
         'rewrap breaks: shorten it, or move it into a fenced block, whose lines are not held to the width.'
+    } elseif ($long.File -like '.claude/skills/*') {
+        # Before the link case: the skill's way out is tools/rewrap.py, which counts a link whole.
+        "``python tools/rewrap.py $($long.File) $($long.Line)`` rewraps its paragraph and keeps a " +
+        'figure grouped in thousands on one line, though not a code span: check that none is split.'
     } elseif ($counted -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by a link's target or an address, which markdown-rewrap.ps1 does " +
         'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand, or after it where the link opens the line. ' +
         'Where the link already stands alone on its line, that does not mend it, since a link with a space in its text is ' +
         'held to the width here: give the link a text with no space in it (realistic-fusion-refreshed#909).'
-    } elseif ($long.File -like '.claude/skills/*') {
-        "``python tools/rewrap.py $($long.File) $($long.Line)`` rewraps its paragraph and keeps a " +
-        'figure grouped in thousands on one line, though not a code span: check that none is split.'
     } else {
         "``pwsh -File vendor/grado-factorio-tools/scripts/markdown-rewrap.ps1 -Path $($long.File) " +
         "-MaxLineLength $WRAP_WIDTH`` rewraps each long line of the file and keeps a code span " +

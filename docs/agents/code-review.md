@@ -84,16 +84,16 @@ which breaks only between words, outside a code span but where a flagged line st
 opened on the line before, as its header says, in every file but the skill, whose front matter that
 tool rewraps (grado-factorio-tools#496); the skill's, and a split figure's, which that tool does not
 mend, name `tools/rewrap.py` (#908). The shared tool does not count a link's target or an address,
-so it leaves a line over the width only by such a target as it is (grado-factorio-tools#526), and
-that line's failure says to break it before the link by hand, or after it where it opens the line,
-or, where the link already stands alone on its line, to give the link a text with no space, since
-section 12 fails a long link alone on its line whose text holds one (#909). A code span longer than
-the width no rewrap breaks, and its line's failure says to shorten it or move it into a fenced
-block. `tools/rewrap.py` counts a line in UTF-16 code units, as section 12 does, where `awk` in Git
-Bash counts bytes. Neither check can tell a split figure from two numbers, so each also fails a line
-that ends in a number of one to three digits above a line that opens with an unrelated one of
-exactly three, and the way out is to break the line a word earlier or later. #646 has the findings
-that asked for a stated width.
+so it leaves a line outside the skill over the width only by such a target as it is
+(grado-factorio-tools#526), and that line's failure says to break it before the link by hand, or
+after it where it opens the line, or, where the link already stands alone on its line, to give the
+link a text with no space, since section 12 fails a long link alone on its line whose text holds one
+(#909). A code span longer than the width no rewrap breaks, and its line's failure says to shorten
+it or move it into a fenced block. `tools/rewrap.py` counts a line in UTF-16 code units, as section
+12 does, where `awk` in Git Bash counts bytes. Neither check can tell a split figure from two
+numbers, so each also fails a line that ends in a number of one to three digits above a line that
+opens with an unrelated one of exactly three, and the way out is to break the line a word earlier or
+later. #646 has the findings that asked for a stated width.
 
 **A file that is not one of those eight has no width for its prose** (Truls, 2026-10-11, #667). A
 long line in it is not a finding, and a reviewer does not report one. That covers the code of the
