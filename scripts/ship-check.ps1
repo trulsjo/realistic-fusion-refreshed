@@ -271,9 +271,9 @@
     six planted outside it to be named, among them a quoted verb, one held in a variable and one in
     an else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
     trailers and to move with a trailer, origin/main and a file, each in its own part, and gives a
-    shallow clone, an unborn branch and an edit in an ignore=all submodule none. It cannot see what
-    a listed function's command reads, nor which objects the clone holds; the section comment has
-    the rest.
+    shallow clone, an unborn branch, an edit in an ignore=all submodule and a clone whose git
+    status fails none. It cannot see what a listed function's command reads, nor which objects the
+    clone holds; the section comment has the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -354,7 +354,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # arguments, unquoted, and git is matched in any case and as git.exe; the
 # read-key-follows-its-inputs half moves each input of a scratch repository and requires the key to
 # move with it, in that input's part alone, and to stay on a reword, and requires no key of a
-# shallow clone, an unborn branch and an edit in a submodule whose ignore setting is all.
+# shallow clone, an unborn branch, an edit in a submodule whose ignore setting is all, and a
+# clone whose git status fails.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
@@ -2861,7 +2862,8 @@ if ($SelfTest) {
                 if ($null -ne $dirty) { throw "a tree with an uncommitted edit had the key '$dirty'." }
                 # No key where the key cannot be trusted: a shallow clone of the repository, with
                 # origin/main set; an unborn branch, which has no tree; and an edit in a submodule
-                # whose ignore setting is all, which plain git status does not print.
+                # whose ignore setting is all, which plain git status does not print; and a clone
+                # whose git status fails.
                 & $git reset -q --hard
                 $url = 'file:///' + $root.Replace('\', '/')
                 $shallow = "$root-shallow"
@@ -2882,6 +2884,16 @@ if ($SelfTest) {
                     (git -C $unborn rev-parse --verify --quiet 'HEAD^{commit}' 2>$null)) {
                     throw "could not make an unborn branch with origin/main fetched at $unborn"
                 }
+                # A clone whose index is forty bytes of nothing, on which git status exits non-zero
+                # and prints nothing to standard output, so only its exit code can refuse the key.
+                $badIndex = "$root-badindex"
+                git -c protocol.file.allow=always clone -q $url $badIndex 2>&1 | Out-Null
+                git -C $badIndex update-ref refs/remotes/origin/main HEAD 2>&1 | Out-Null
+                [IO.File]::WriteAllBytes("$badIndex/.git/index", [byte[]]::new(40))
+                $statusOut = @(git -C $badIndex status --porcelain --ignore-submodules=none 2>$null)
+                if ($LASTEXITCODE -eq 0 -or $statusOut.Count) {
+                    throw "could not make a clone whose git status fails and prints nothing at $badIndex"
+                }
                 $parent = "$root-parent"
                 New-Item -ItemType Directory -Path $parent -Force | Out-Null
                 $pg = { git -C $parent -c user.name=t -c user.email=t@t -c protocol.file.allow=always @args 2>&1 | Out-Null }
@@ -2894,10 +2906,11 @@ if ($SelfTest) {
                 $clean = Get-ReadKey -Root $parent
                 'edited' | Add-Content -LiteralPath "$parent/sub/a.txt"
                 $none = [ordered]@{ 'a shallow clone' = (Get-ReadKey -Root $shallow); 'an unborn branch' = (Get-ReadKey -Root $unborn)
-                                    'an edit in a submodule set to ignore=all' = (Get-ReadKey -Root $parent) }
+                                    'an edit in a submodule set to ignore=all' = (Get-ReadKey -Root $parent)
+                                    'a clone whose git status fails' = (Get-ReadKey -Root $badIndex) }
                 if (-not $clean) { throw 'a clean repository with a submodule had no key.' }
                 foreach ($k in $none.Keys) { if ($null -ne $none[$k]) { throw "$k had the key '$($none[$k])'." } }
-                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch and an edit in a submodule set to ignore=all have none.'
+                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch, an edit in a submodule set to ignore=all and a clone whose git status fails have none.'
             } }
 
             @{ Name = 'unreachable-hash-caught'; Body = {
