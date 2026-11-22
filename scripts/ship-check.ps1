@@ -2858,10 +2858,21 @@ if ($SelfTest) {
                 $shallow = "$root-shallow"
                 git -c protocol.file.allow=always clone -q --depth 1 $url $shallow 2>&1 | Out-Null
                 git -C $shallow update-ref refs/remotes/origin/main HEAD 2>&1 | Out-Null
+                # Each fixture is what it says before its null key counts: the clone is shallow
+                # with origin/main resolving, and the unborn branch has origin/main fetched, so
+                # only its missing HEAD can refuse the key.
+                if ((git -C $shallow rev-parse --is-shallow-repository 2>$null) -ne 'true' -or
+                    -not (git -C $shallow rev-parse --verify --quiet 'origin/main^{commit}' 2>$null)) {
+                    throw "could not make a shallow clone with origin/main at $shallow"
+                }
                 $unborn = "$root-unborn"
                 New-Item -ItemType Directory -Path $unborn -Force | Out-Null
                 git -C $unborn init -q -b main 2>&1 | Out-Null
-                git -C $unborn update-ref refs/remotes/origin/main (git -C $root rev-parse HEAD) 2>&1 | Out-Null
+                git -C $unborn -c protocol.file.allow=always fetch -q $url 'main:refs/remotes/origin/main' 2>&1 | Out-Null
+                if (-not (git -C $unborn rev-parse --verify --quiet 'origin/main^{commit}' 2>$null) -or
+                    (git -C $unborn rev-parse --verify --quiet 'HEAD^{commit}' 2>$null)) {
+                    throw "could not make an unborn branch with origin/main fetched at $unborn"
+                }
                 $parent = "$root-parent"
                 New-Item -ItemType Directory -Path $parent -Force | Out-Null
                 $pg = { git -C $parent -c user.name=t -c user.email=t@t -c protocol.file.allow=always @args 2>&1 | Out-Null }
