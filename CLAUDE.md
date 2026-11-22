@@ -58,8 +58,9 @@ about whether a change is safe. What each proves, in a line:
   doubles against `origin/main`'s manifest, unless a commit on the branch carries a `Model-Growth:`
   trailer naming the machine; and this file, when it holds more clauses that date something with
   "since" and a ticket, wherever they stand, than the floor the script holds, because that history
-  is `docs/agents/state-detail.md`'s. Each run prints the key of what it read, which a quoted run's
-  log is named for, and fails when the script gains a git read outside what that key holds (#907).
+  is `docs/agents/state-detail.md`'s. A plain run prints the key of what it read, which a quoted
+  run's log is named for, and fails when the script gains a git read outside what that key holds
+  (#907).
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 

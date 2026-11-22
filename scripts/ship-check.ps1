@@ -259,21 +259,22 @@
     file to pass. It cannot see an untracked file made after its reading; the section comment has
     the rest.
 
-    SECTION 22 HAS A -SelfTest AND NO FLOOR (#907). Every run prints, beside its pass or fail line,
-    `ship-check: read <key>`: the head's tree, a hash of the Model-Growth machines section 19
-    accepts, and origin/main's commit, made from the values those reads use, so a log named for the
-    key is the head's while none of the three has changed, but for what the section comment says the
-    key cannot see, the objects section 17 asks the clone for among it. A tree git status
-    --porcelain prints anything for has no key, and the line says so. -PrintKey prints the key
-    alone. Every run scans this script's own git commands, and fails on one the key does not hold
-    (Truls, on #907). The every-history-read-is-keyed half requires each git command outside the
-    self-test whose verb is not one that reads no history to stand in a function the key covers, and
-    six planted outside it to be named, among them a quoted verb, one held in a variable and one in
-    an else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
-    trailers and to move with a trailer, origin/main and a file, each in its own part, and gives a
-    shallow clone, an unborn branch, an edit in an ignore=all submodule, a clone whose git status
-    fails and a pin that is not the live HEAD none. It cannot see what a listed function's command
-    reads, nor which objects the clone holds; the section comment has the rest.
+    SECTION 22 HAS A -SelfTest AND NO FLOOR (#907). A plain or -SelfTest run prints, beside its pass
+    or fail line, `ship-check: read <key>`: the head's tree, a hash of the Model-Growth machines
+    section 19 accepts, and origin/main's commit, made from the values those reads use, so a log
+    named for the key is the head's while none of the three has changed, but for what the section
+    comment says the key cannot see, the objects section 17 asks the clone for among it. A tree git
+    status --porcelain prints anything for has no key, and the line says so. -PrintKey prints the
+    key alone. A plain or -SelfTest run scans this script's own git commands, and fails on one the
+    key does not hold (Truls, on #907). The every-history-read-is-keyed half requires each git
+    command outside the self-test whose verb is not one that reads no history to stand in a function
+    the key covers, and six planted outside it to be named, among them a quoted verb, one held in a
+    variable and one in an else; the read-key-follows-its-inputs half requires the key to stay on
+    rewords that keep the trailers and to move with a trailer, origin/main and a file, each in its
+    own part, and gives a shallow clone, an unborn branch, an edit in an ignore=all submodule, a
+    clone whose git status fails and a pin that is not the live HEAD none. It cannot see what a
+    listed function's command reads, nor which objects the clone holds; the section comment has the
+    rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -347,17 +348,17 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # is not the live HEAD's, which a checkout since the pin leaves, as git status compares the index
 # with the live HEAD and not the pin.
 #
-# Every run reads this script's git commands, as the every-history-read-is-keyed half does,
-# outside the body of each if ($SelfTest), and fails on each whose verb is not one $NO_HISTORY_VERBS
-# lists as reading no history, unless $KEYED_READS lists it for the function it stands in, so a read
-# added without the key changing with it fails, under any verb, and one whose verb cannot be read
-# from the text fails too (Truls, posted on #907; the review panel's finding 4 on #911). The verb is
-# read past -C, -c, --git-dir, --work-tree, --namespace, --config-env and --super-prefix and their
-# arguments, unquoted, and git is matched in any case and as git.exe; the
+# A plain or -SelfTest run reads this script's git commands, as the every-history-read-is-keyed half
+# does, outside the body of each if ($SelfTest), and fails on each whose verb is not one
+# $NO_HISTORY_VERBS lists as reading no history, unless $KEYED_READS lists it for the function it
+# stands in, so a read added without the key changing with it fails, under any verb, and one whose
+# verb cannot be read from the text fails too (Truls, posted on #907; the review panel's finding 4
+# on #911). The verb is read past -C, -c, --git-dir, --work-tree, --namespace, --config-env and
+# --super-prefix and their arguments, unquoted, and git is matched in any case and as git.exe; the
 # read-key-follows-its-inputs half moves each input of a scratch repository and requires the key to
 # move with it, in that input's part alone, and to stay on a reword, and requires no key of a
-# shallow clone, an unborn branch, an edit in a submodule whose ignore setting is all, a clone
-# whose git status fails, and a pin older than the live HEAD on a clean tree.
+# shallow clone, an unborn branch, an edit in a submodule whose ignore setting is all, a clone whose
+# git status fails, and a pin older than the live HEAD on a clean tree.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
@@ -503,9 +504,10 @@ $codeMods  = @($mods | Where-Object { $_ -ne $assetsMod })
 $failures = [System.Collections.Generic.List[string]]::new()
 $checks   = 0
 
-# Section 22's scan on every run, not only under -SelfTest, which neither run-gates.ps1 nor the
-# workflow runs: a git read this script gains outside what the key holds fails the plain run (Truls,
-# posted on #907, during the review panel's turn 3 on #911). It parses this file and reads no git.
+# Section 22's scan, on a plain run as under -SelfTest, which neither run-gates.ps1 nor the workflow
+# runs; -PrintKey exits before it. A git read this script gains outside what the key holds fails the
+# plain run (Truls, posted on #907, during the review panel's turn 3 on #911). It parses this file
+# and reads no git.
 $checks++
 foreach ($read in Find-UnkeyedReads -Text (Get-Content -Raw -LiteralPath $PSCommandPath)) {
     $failures.Add(("section 22: $read reads what the key does not hold. Read it through a function " +
