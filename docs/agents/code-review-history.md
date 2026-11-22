@@ -568,4 +568,4 @@ One line for each, newest last. The passages above are not edited.
   On the branch's pre-PR review a line long only by a link, which the shared tool leaves as it is
   (grado-factorio-tools#526), was given its own ways out: a break before the link by hand, or after
   it where it opens the line, or, where it stands alone on its line, a link text with no space.
-  Section 12's failures carry it out; no gate reads the paragraph that states it.
+  Section 12's failures carry it out; no gate reads what the paragraph says of the rewrap.
