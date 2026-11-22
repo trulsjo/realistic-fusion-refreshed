@@ -263,11 +263,12 @@
     key is the head's while none of the three has changed, but for what the section comment says the
     key cannot see, the objects section 17 asks the clone for among it. A tree git status
     --porcelain prints anything for has no key, and the line says so. -PrintKey prints the key
-    alone. The every-history-read-is-keyed half requires each git read of history outside the
-    self-test to stand in a function the key covers, and two planted outside it to be named; the
-    read-key-follows-its-inputs half requires the key to stay on rewords that keep the trailers and
-    to move with a trailer, origin/main and a file. It cannot see what a listed function's command
-    reads, nor which objects the clone holds; the section comment has the rest.
+    alone. The every-history-read-is-keyed half requires each git command outside the self-test
+    whose verb is not one that reads no history to stand in a function the key covers, and six
+    planted outside it to be named, among them a quoted verb, one held in a variable and one in an
+    else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
+    trailers and to move with a trailer, origin/main and a file. It cannot see what a listed
+    function's command reads, nor which objects the clone holds; the section comment has the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -339,10 +340,13 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # fails, as on an unborn branch; git status is told to inspect submodules whatever their ignore
 # setting says, as the gate runs the shared scripts in vendor/.
 #
-# The every-history-read-is-keyed half reads this script's git commands outside -SelfTest and
-# fails on one that reads history (a log, rev-list, show, cat-file, rev-parse, merge-base, diff
-# and the like) in a function not listed in $KEYED_READS with that command, so a read added
-# without the key changing with it fails; the read-key-follows-its-inputs half moves each input
+# The every-history-read-is-keyed half reads this script's git commands outside the body of each
+# if ($SelfTest), and fails on each whose verb is not one $NO_HISTORY_VERBS lists as reading no
+# history, unless $KEYED_READS lists it for the function it stands in, so a read added without
+# the key changing with it fails, under any verb, and one whose verb cannot be read from the text
+# fails too (Truls, posted on #907; the review panel's finding 4 on #911). The verb is read past
+# -C, -c, --git-dir, --work-tree, --namespace and --config-env and their arguments, unquoted, and
+# git is matched in any case and as git.exe; the read-key-follows-its-inputs half moves each input
 # of a scratch repository and requires the key to move with it, and to stay on a reword.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
@@ -353,8 +357,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # and section 19 for each rendered manifest, whose result the key's history reads also feed;
 # a git read outside this script's own text, since the half scans no other file: on 2026-11-22
 # factorio-lib.ps1, which this script dot-sources, read git only through `ls-files -s`, of the
-# index; one written so that its command is not named git, as `git.exe` or a command held in a
-# variable, though none here is; an edit to a file the index marks skip-worktree or
+# index; one whose command is not written as git or git.exe, as a git held in a variable or run
+# through Invoke-Expression, though none here is; an edit to a file the index marks skip-worktree or
 # assume-unchanged, which git status does not print; the game, the shared scripts' own reads
 # beyond the tree, and the clock.
 $MAIN_REF = 'origin/main'
@@ -365,9 +369,10 @@ $KEYED_READS = @{
     'Get-ReadKey'            = @('rev-parse')
     'Get-PinnedMain'         = @('rev-parse')
 }
-$HISTORY_READS = @('log', 'rev-list', 'show', 'cat-file', 'rev-parse', 'merge-base', 'diff', 'blame',
-                   'for-each-ref', 'describe', 'reflog', 'branch', 'tag', 'shortlog', 'name-rev',
-                   'whatchanged', 'show-ref', 'ls-tree', 'archive', 'notes')
+# The verbs that read the working tree, the index or the configuration and no history. status
+# compares the index with HEAD's tree, which the key holds. Any other verb outside the self-test
+# fails the half unless $KEYED_READS lists it.
+$NO_HISTORY_VERBS = @('ls-files', 'status', 'check-ignore', 'hash-object', 'write-tree', 'config')
 
 function Get-AcceptedGrowth {
     <#  The machines a Model-Growth trailer names in the body of a commit $Main..HEAD holds.  #>
@@ -398,25 +403,32 @@ function Get-ReadKey {
 }
 
 function Find-UnkeyedReads {
-    <#  Each git command in the script $Text, outside its if ($SelfTest) blocks, that reads
-        history in a function $KEYED_READS does not list with that command, as
-        "<function>: git <command>".  #>
+    <#  Each git command in the script $Text, outside the body of each of its if ($SelfTest)
+        statements, whose verb $NO_HISTORY_VERBS does not list and $KEYED_READS does not list for
+        the function it stands in, as "<function>: git <verb>"; a verb not written as a constant
+        is "<function>: git (a verb not written out)".  #>
     param([Parameter(Mandatory)] [string] $Text)
     $ast = [System.Management.Automation.Language.Parser]::ParseInput($Text, [ref] $null, [ref] $null)
+    # The body of the if clause alone: an else or elseif runs on a plain run.
     $selfTests = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] -and
-        $n.Clauses[0].Item1.Extent.Text -ceq '$SelfTest' }, $false))
+        $n.Clauses[0].Item1.Extent.Text -ceq '$SelfTest' }, $false) | ForEach-Object { $_.Clauses[0].Item2 })
     foreach ($cmd in $ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and
-            $n.GetCommandName() -ceq 'git' }, $true)) {
+            $n.GetCommandName() -in 'git', 'git.exe' }, $true)) {
         if (@($selfTests | Where-Object { $cmd.Extent.StartOffset -ge $_.Extent.StartOffset -and
             $cmd.Extent.EndOffset -le $_.Extent.EndOffset }).Count) { continue }
-        $words = @($cmd.CommandElements | Select-Object -Skip 1 | ForEach-Object { $_.Extent.Text })
+        $elements = @($cmd.CommandElements | Select-Object -Skip 1)
         $sub = $null
-        for ($i = 0; $i -lt $words.Count; $i++) {
-            if ($words[$i] -cin '-C', '-c') { $i++; continue }
-            if ($words[$i].StartsWith('-')) { continue }
-            $sub = $words[$i]; break
+        for ($i = 0; $i -lt $elements.Count; $i++) {
+            $e = $elements[$i]
+            $word = if ($e -is [System.Management.Automation.Language.StringConstantExpressionAst]) { $e.Value }
+                    elseif ($e -is [System.Management.Automation.Language.CommandParameterAst]) { $e.Extent.Text }
+                    else { $null }
+            if ($null -eq $word) { $sub = '(a verb not written out)'; break }
+            if ($word -cin '-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env') { $i++; continue }
+            if ($word.StartsWith('-')) { continue }
+            $sub = $word; break
         }
-        if ($sub -cnotin $HISTORY_READS) { continue }
+        if ($null -eq $sub -or $sub -cin $NO_HISTORY_VERBS) { continue }
         $fn = $cmd.Parent
         while ($fn -and $fn -isnot [System.Management.Automation.Language.FunctionDefinitionAst]) { $fn = $fn.Parent }
         $name = if ($fn) { $fn.Name } else { '(the script)' }
@@ -2729,21 +2741,28 @@ if ($SelfTest) {
             } }
 
             @{ Name = 'every-history-read-is-keyed'; Body = {
-                # Section 22 passes when every git read of history here is one the key covers. This
-                # script must give none; with a function planted that reads the branch's messages,
-                # and a read planted in a listed function under a command not listed for it, both
-                # must be named, and a read inside the self-test block must not.
+                # Section 22 passes when every git command here is one the key covers. This script
+                # must give none. Planted: a function reading the branch's messages; a listed one
+                # reading under a verb not listed for it; a quoted verb no list names, behind
+                # --git-dir; a verb held in a variable; a top-level read; and Git, in another case,
+                # in the else of an if ($SelfTest). Each must be named, and the read in that if's
+                # own body must not.
                 $own = Get-Content -Raw -LiteralPath $PSCommandPath
                 $found = @(Find-UnkeyedReads -Text $own)
                 if ($found.Count) { throw "this script's own reads were reported: $($found -join '; ')" }
                 $plant = $own + "`nfunction Get-Planted { git -C . log --format=%B HEAD }" +
                     "`nfunction Get-AcceptedGrowth { git -C . rev-list HEAD }" +
-                    "`nif (`$SelfTest) { git log HEAD }`n"
+                    "`nfunction Get-Quoted { git --git-dir .git 'diff-tree' HEAD }" +
+                    "`nfunction Get-Held { git `$verb HEAD }" +
+                    "`ngit log HEAD" +
+                    "`nif (`$SelfTest) { git log HEAD } else { Git cherry origin/main }`n"
                 $found = @(Find-UnkeyedReads -Text $plant | Sort-Object)
-                if (($found -join '; ') -cne 'Get-AcceptedGrowth: git rev-list; Get-Planted: git log') {
-                    throw "of two planted reads outside the key, '$($found -join '; ')' was reported."
+                $want = '(the script): git cherry; (the script): git log; Get-AcceptedGrowth: git rev-list; ' +
+                        'Get-Held: git (a verb not written out); Get-Planted: git log; Get-Quoted: git diff-tree'
+                if (($found -join '; ') -cne $want) {
+                    throw "of six planted reads outside the key, '$($found -join '; ')' was reported."
                 }
-                'no read of history here stands outside the key; a planted function reading the log, and a listed one reading under a command not listed, are each named.'
+                'no git command here stands outside the key; six planted outside it, under a verb not listed, quoted, held in a variable, at the top level and in an else, are each named.'
             } }
 
             @{ Name = 'read-key-follows-its-inputs'; Body = {
