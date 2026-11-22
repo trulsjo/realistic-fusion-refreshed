@@ -349,8 +349,9 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # history, unless $KEYED_READS lists it for the function it stands in, so a read added without
 # the key changing with it fails, under any verb, and one whose verb cannot be read from the text
 # fails too (Truls, posted on #907; the review panel's finding 4 on #911). The verb is read past
-# -C, -c, --git-dir, --work-tree, --namespace and --config-env and their arguments, unquoted, and
-# git is matched in any case and as git.exe; the read-key-follows-its-inputs half moves each input
+# -C, -c, --git-dir, --work-tree, --namespace, --config-env and --super-prefix and their
+# arguments, unquoted, and git is matched in any case and as git.exe; the
+# read-key-follows-its-inputs half moves each input
 # of a scratch repository and requires the key to move with it, in that input's part alone, and
 # to stay on a reword, and requires no key of a shallow clone, an unborn branch and an edit in a
 # submodule whose ignore setting is all.
@@ -364,7 +365,9 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # a git read outside this script's own text, since the half scans no other file: on 2026-11-22
 # factorio-lib.ps1, which this script dot-sources, read git only through `ls-files -s`, of the
 # index; one whose command is not written as git or git.exe, as a git held in a variable or run
-# through Invoke-Expression, though none here is; an edit to a file the index marks skip-worktree or
+# through Invoke-Expression, though none here is; a listed verb told to read a commit, as
+# `git ls-files --with-tree=origin/main`, and a verb behind another option that takes an argument,
+# whose argument the half reads as the verb; an edit to a file the index marks skip-worktree or
 # assume-unchanged, which git status does not print; the game, the shared scripts' own reads
 # beyond the tree, and the clock.
 $MAIN_REF = 'origin/main'
@@ -431,7 +434,7 @@ function Find-UnkeyedReads {
                     elseif ($e -is [System.Management.Automation.Language.CommandParameterAst]) { $e.Extent.Text }
                     else { $null }
             if ($null -eq $word) { $sub = '(a verb not written out)'; break }
-            if ($word -cin '-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env') { $i++; continue }
+            if ($word -cin '-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env', '--super-prefix') { $i++; continue }
             if ($word.StartsWith('-')) { continue }
             $sub = $word; break
         }
