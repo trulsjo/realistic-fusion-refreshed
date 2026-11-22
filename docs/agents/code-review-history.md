@@ -554,3 +554,17 @@ One line for each, newest last. The passages above are not edited.
   own, and on its plugin pass he added `origin/main`, which sections 17 and 19 read. The triage
   brief and three comments on #903 record them. Step 6 of `/pre-pr-review` carries it out. No gate
   reads it.
+- **2026-11-22, #907: a gate run's log is named for the key `scripts/ship-check.ps1` prints of what
+  it read, and no page keeps a list of the gate's inputs.** It amends #903's line above, whose three
+  parts step 6 wrote out by hand: on #906 that list was wrong twice before it was right. Truls had
+  it filed from #906's retrospective and triaged it, and the triage brief on #907 records it. The
+  gate's section 22 prints the key and says what the key cannot see, and its
+  every-history-read-is-keyed half fails a read of history added outside the functions the key
+  covers. Step 6 of `/pre-pr-review` names the log for it.
+- **2026-11-22, #908: a long line in a wrapped file is mended with the shared
+  `markdown-rewrap.ps1`, and the skill and a split figure with `tools/rewrap.py`.** On #906
+  `tools/rewrap.py` split `gh pr create` across a line end, which no gate sees. Truls chose at
+  triage that section 12's failures name the shared tool, route (a) in the triage comment on #908.
+  On the branch's pre-PR review a line long only by a link, which the shared tool leaves as it is
+  (grado-factorio-tools#526), was given its own way out, a break by hand. Section 12's failures
+  carry it out; no gate reads the paragraph that states it.
