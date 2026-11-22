@@ -1614,15 +1614,18 @@ foreach ($rel in $WRAPPED) {
 # (grado-factorio-tools#526), and the failure says to break it before the link by hand, or after
 # it where it opens the line, or, where the link already stands alone on its line, to give it a
 # text with no space, since this section fails a long link alone on its line when its text holds
-# a space (#909). The counting here is an approximation of the shared one: a target holding a
-# space or a bracket is taken for shorter than it is, so such a line is counted longer than the
-# shared tool counts it, and where that puts it over the width its failure names
-# markdown-rewrap.ps1, which leaves the line as it is.
+# a space (#909). The line is counted by the shared markdown-lib.ps1's Get-CountedLine, the count
+# the shared tool rewraps by, so the two agree on which lines it leaves (Truls, posted on #908;
+# the review panel's finding 8 on #911). That library sets strict mode, which this script does
+# not, so it is dot-sourced inside a child scope for each flagged line. A line over the width only
+# by trailing spaces, which the shared count leaves out, is told so.
+$markdownLib = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/markdown-lib.ps1'
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
-    $counted = ((($text -replace '\]\([^)\s]*\)', ']()') -replace '<[A-Za-z][A-Za-z0-9+.-]*:[^>\s]*>', '<>') -replace
-        'https?://[^\s)>]+', '').TrimEnd().Length
-    $mend = if ($counted -le $WRAP_WIDTH) {
+    $counted = (& { param($line, $lib) . $lib; Get-CountedLine -Line $line } $text $markdownLib).Length
+    $mend = if ($text.TrimEnd().Length -le $WRAP_WIDTH) {
+        "It is over $WRAP_WIDTH only by trailing spaces: remove them."
+    } elseif ($counted -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by a link's target or an address, which markdown-rewrap.ps1 does " +
         'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand, or after it where the link opens the line. ' +
         'Where the link already stands alone on its line, that does not mend it, since a link with a space in its text is ' +
