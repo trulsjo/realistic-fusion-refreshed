@@ -302,7 +302,7 @@
 .PARAMETER PrintKey
     Print the key a run on this tree would read, section 22's, and exit 0; print nothing to the
     output and exit 1 where git status --porcelain prints anything, origin/main does not resolve,
-    the clone is shallow or a git command fails.
+    the clone is shallow, the pinned head's tree is not the live HEAD's or a git command fails.
     Step 6 of /pre-pr-review names a gate's log for it.
 
 .EXAMPLE
