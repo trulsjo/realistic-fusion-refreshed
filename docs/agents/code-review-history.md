@@ -560,7 +560,7 @@ One line for each, newest last. The passages above are not edited.
   it filed from #906's retrospective; the triage brief on #907 records what it asks. The
   gate's section 22 prints the key and says what the key cannot see, and its
   every-history-read-is-keyed half fails a read of history added outside the functions the key
-  covers. Step 6 of `/pre-pr-review` names the log for it.
+  covers. Step 6 of `/pre-pr-review` names the log for it. No gate reads the rule.
 - **2026-11-22, #908: a long line in a wrapped file is mended with the shared
   `markdown-rewrap.ps1`, and the skill and a split figure with `tools/rewrap.py`.** On #906
   `tools/rewrap.py` split `gh pr create` across a line end, which no gate sees. Truls chose at
