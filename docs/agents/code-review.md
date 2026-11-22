@@ -347,6 +347,17 @@ repository's tool, and the new pin's `markdown-rewrap.ps1` takes any Markdown fi
 pass's reviewer 4 raised it, and #870's row in the first table of
 [`review-figures.md`](review-figures.md) records the miss, graded then as one-off, no rule.
 
+**A sentence saying a case cannot be tested, cannot be made or cannot be reached, or needs a stub or
+a mock, names what was tried and how it failed** (Truls, 2026-11-22, #914). It holds in tracked
+prose, a commit message, a pull request's body, a ticket and a reply to a reviewer, and a reviewer
+raises such a sentence that names nothing tried. The claim is tested before it is made, because the
+next reader takes "cannot" as the end of the search. On #911 a commit message said the exit code of
+`git status` had no case, since "no scratch repository makes it fail without stubbing git", when
+nothing had been tried; Fable then made it fail with a clone whose index is forty zero bytes, and
+the claim cost a reword and a force-push. [The case in
+full](code-review-evidence.md#a-case-called-untestable-with-nothing-tried-on-911-914) is on the
+evidence page.
+
 **A change that adds or rewords a review rule applies it to the case that prompted it, before its
 first commit** (2026-10-15, #714). The session applies the rule to that case across the tracked
 files, by the rule's own search where it gives one, and reads each hit against the new wording; the

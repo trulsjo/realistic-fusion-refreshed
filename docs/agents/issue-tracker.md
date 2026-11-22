@@ -90,8 +90,8 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 Create a GitHub issue, after the shared page's *Search the open issues before filing*. **A
 ticket's evidence** follows `claim-grades.md`'s *Tickets and ruling comments*, and this
 repository's own rules beside it are in `docs/agents/code-review.md`, under *Review the prose, not
-only the code*: the paragraph on a ticket's evidence and a retrospective's (#637), and the one on
-the four shared rules (#657).
+only the code*: the paragraph on a ticket's evidence and a retrospective's (#637), the one on the
+four shared rules (#657), and the one on a sentence saying a case cannot be tested (#914).
 
 ## When a skill says "fetch the relevant ticket"
 
