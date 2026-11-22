@@ -569,3 +569,13 @@ One line for each, newest last. The passages above are not edited.
   (grado-factorio-tools#526), was given its own ways out: a break before the link by hand, or after
   it where it opens the line, or, where it stands alone on its line, a link text with no space.
   Section 12's failures carry it out; no gate reads what the paragraph says of the rewrap.
+- **2026-11-22, #914: a sentence saying a case cannot be tested, made or reached, or needs a stub
+  or a mock, names what was tried and how it failed**, under *Review the prose, not only the code*.
+  On #911 a commit message said `git status`'s exit code had no case, as "no scratch repository
+  makes it fail without stubbing git", when nothing had been tried, and a clone whose index is
+  forty zero bytes made it fail. Truls placed the rule in this repository's `code-review.md` at
+  triage, not in the shared `code-review-rules.md`; the triage brief on #914 records it. It holds
+  in tracked prose, a commit message, a pull request's body, a ticket and a reply to a reviewer, and
+  a reviewer raises such a sentence that names nothing tried. The fix steps of `/pre-pr-review`
+  and `/plugin-pass` and `issue-tracker.md`'s list for a ticket's evidence name it. No gate reads
+  it: it is a reviewer's judgement.
