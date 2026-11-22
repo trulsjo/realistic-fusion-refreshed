@@ -265,10 +265,11 @@
     key is the head's while none of the three has changed, but for what the section comment says the
     key cannot see, the objects section 17 asks the clone for among it. A tree git status
     --porcelain prints anything for has no key, and the line says so. -PrintKey prints the key
-    alone. The every-history-read-is-keyed half requires each git command outside the self-test
-    whose verb is not one that reads no history to stand in a function the key covers, and six
-    planted outside it to be named, among them a quoted verb, one held in a variable and one in an
-    else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
+    alone. Every run scans this script's own git commands, and fails on one the key does not hold
+    (Truls, on #907). The every-history-read-is-keyed half requires each git command outside the
+    self-test whose verb is not one that reads no history to stand in a function the key covers, and
+    six planted outside it to be named, among them a quoted verb, one held in a variable and one in
+    an else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
     trailers and to move with a trailer, origin/main and a file, each in its own part, and gives a
     shallow clone, an unborn branch and an edit in an ignore=all submodule none. It cannot see what
     a listed function's command reads, nor which objects the clone holds; the section comment has
@@ -344,17 +345,16 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # fails, as on an unborn branch; git status is told to inspect submodules whatever their ignore
 # setting says, as the gate runs the shared scripts in vendor/.
 #
-# The every-history-read-is-keyed half reads this script's git commands outside the body of each
-# if ($SelfTest), and fails on each whose verb is not one $NO_HISTORY_VERBS lists as reading no
-# history, unless $KEYED_READS lists it for the function it stands in, so a read added without
-# the key changing with it fails, under any verb, and one whose verb cannot be read from the text
-# fails too (Truls, posted on #907; the review panel's finding 4 on #911). The verb is read past
-# -C, -c, --git-dir, --work-tree, --namespace, --config-env and --super-prefix and their
+# Every run reads this script's git commands, as the every-history-read-is-keyed half does,
+# outside the body of each if ($SelfTest), and fails on each whose verb is not one $NO_HISTORY_VERBS
+# lists as reading no history, unless $KEYED_READS lists it for the function it stands in, so a read
+# added without the key changing with it fails, under any verb, and one whose verb cannot be read
+# from the text fails too (Truls, posted on #907; the review panel's finding 4 on #911). The verb is
+# read past -C, -c, --git-dir, --work-tree, --namespace, --config-env and --super-prefix and their
 # arguments, unquoted, and git is matched in any case and as git.exe; the
-# read-key-follows-its-inputs half moves each input
-# of a scratch repository and requires the key to move with it, in that input's part alone, and
-# to stay on a reword, and requires no key of a shallow clone, an unborn branch and an edit in a
-# submodule whose ignore setting is all.
+# read-key-follows-its-inputs half moves each input of a scratch repository and requires the key to
+# move with it, in that input's part alone, and to stay on a reword, and requires no key of a
+# shallow clone, an unborn branch and an edit in a submodule whose ignore setting is all.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
@@ -498,6 +498,15 @@ $codeMods  = @($mods | Where-Object { $_ -ne $assetsMod })
 
 $failures = [System.Collections.Generic.List[string]]::new()
 $checks   = 0
+
+# Section 22's scan on every run, not only under -SelfTest, which neither run-gates.ps1 nor the
+# workflow runs: a git read this script gains outside what the key holds fails the plain run (Truls,
+# posted on #907, during the review panel's turn 3 on #911). It parses this file and reads no git.
+$checks++
+foreach ($read in Find-UnkeyedReads -Text (Get-Content -Raw -LiteralPath $PSCommandPath)) {
+    $failures.Add(("section 22: $read reads what the key does not hold. Read it through a function " +
+        '$KEYED_READS lists for that verb, so the key changes when it does, or list it there with the key made to hold it.'))
+}
 
 # ----------------------------------------------------------------- no stray file in the tree
 # 21. NO UNTRACKED FILE STANDS IN THE TREE WHEN THE RUN STARTS (#896).
