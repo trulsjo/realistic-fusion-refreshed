@@ -294,7 +294,8 @@
 
 .PARAMETER PrintKey
     Print the key a run on this tree would read, section 22's, and exit 0; print nothing to the
-    output and exit 1 where git status --porcelain prints anything or origin/main does not resolve.
+    output and exit 1 where git status --porcelain prints anything, origin/main does not resolve,
+    the clone is shallow or a git command fails.
     Step 6 of /pre-pr-review names a gate's log for it.
 
 .EXAMPLE
@@ -333,7 +334,10 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # the trailers keeps the key; a file changed, a trailer added or dropped, or a fetch that moves
 # origin/main changes it. The sections read the working tree, and section 11 the index, which
 # are the head's tree only when git status --porcelain prints nothing, so a tree it prints
-# anything for has no key: the run says so, and -PrintKey prints nothing and exits 1.
+# anything for has no key: the run says so, and -PrintKey prints nothing and exits 1. Nor has a
+# shallow clone, which sections 17 and 19 fail, or a tree where a git command the key needs
+# fails, as on an unborn branch; git status is told to inspect submodules whatever their ignore
+# setting says, as the gate runs the shared scripts in vendor/.
 #
 # The every-history-read-is-keyed half reads this script's git commands outside -SelfTest and
 # fails on one that reads history (a log, rev-list, show, cat-file, rev-parse, merge-base, diff
@@ -350,8 +354,9 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # a git read outside this script's own text, since the half scans no other file: on 2026-11-22
 # factorio-lib.ps1, which this script dot-sources, read git only through `ls-files -s`, of the
 # index; one written so that its command is not named git, as `git.exe` or a command held in a
-# variable, though none here is; the game, the shared scripts' own reads beyond the tree, and the
-# clock.
+# variable, though none here is; an edit to a file the index marks skip-worktree or
+# assume-unchanged, which git status does not print; the game, the shared scripts' own reads
+# beyond the tree, and the clock.
 $MAIN_REF = 'origin/main'
 $KEYED_READS = @{
     'Get-AcceptedGrowth'     = @('log')
@@ -373,13 +378,21 @@ function Get-AcceptedGrowth {
 
 function Get-ReadKey {
     <#  "<tree>-<hash of the accepted machines>-<$Main's commit>" for the tree at $Root, or $null
-        where git status --porcelain prints anything there or $Main does not resolve.  #>
+        where git status --porcelain prints anything there, $Main does not resolve, the clone is
+        shallow, or a git command fails. A submodule is inspected whatever its ignore setting,
+        since the gate runs the shared scripts in one.  #>
     param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
-    if (@(git -C $Root status --porcelain).Count) { return $null }
+    $dirty = @(git -C $Root status --porcelain --ignore-submodules=none)
+    if ($LASTEXITCODE -ne 0 -or $dirty.Count) { return $null }
+    # Sections 17 and 19 fail a shallow clone; it gets no key, so no log is named for one.
+    if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') { return $null }
     $mainCommit = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
     if ($LASTEXITCODE -ne 0) { return $null }
-    $tree = git -C $Root rev-parse 'HEAD^{tree}'
-    $names = (@(Get-AcceptedGrowth -Root $Root -Main $mainCommit) | Sort-Object -Unique) -join "`n"
+    $tree = git -C $Root rev-parse --verify --quiet 'HEAD^{tree}' 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $tree) { return $null }   # an unborn branch has no tree
+    $accepted = @(Get-AcceptedGrowth -Root $Root -Main $mainCommit)
+    if ($LASTEXITCODE -ne 0) { return $null }
+    $names = ($accepted | Sort-Object -Unique) -join "`n"
     $hash = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData([Text.Encoding]::UTF8.GetBytes($names)))
     "$tree-$($hash.ToLowerInvariant())-$mainCommit"
 }
@@ -428,7 +441,7 @@ $MAIN_AT = Get-PinnedMain -Root $repoRoot
 if ($PrintKey) {
     $key = Get-ReadKey -Root $repoRoot -Main $MAIN_AT
     if (-not $key) {
-        [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, or $MAIN_REF does not resolve.")
+        [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, $MAIN_REF does not resolve, the clone is shallow, or a git command failed.")
         exit 1
     }
     $key
@@ -2121,7 +2134,7 @@ foreach ($moved in Get-TreeChangeFailures -Before $treeBefore -Root $treeRoot) {
 
 # Section 22's line, pass or fail: the key a log of this run is named for, or why it has none.
 Write-Host $(if ($readKey) { "ship-check: read $readKey" } else {
-    "ship-check: read no key: git status --porcelain printed something, or $MAIN_REF did not resolve." })
+    "ship-check: read no key: git status --porcelain printed something, $MAIN_REF did not resolve, the clone is shallow, or a git command failed." })
 
 if ($failures.Count) {
     Write-Host ''

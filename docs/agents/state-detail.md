@@ -636,6 +636,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-11-21, #907: `ship-check.ps1` section 22 prints `ship-check: read <key>` on every run,
   the head's tree, a hash of the `Model-Growth:` machines section 19 accepts and `origin/main`'s
   commit, from the values those reads use (`Get-AcceptedGrowth`, `$MAIN_REF`), and
-  `-PrintKey` prints it alone, or nothing on a tree that is not clean or where `origin/main` does
-  not resolve; step 6 of `/pre-pr-review` names a gate's log for it. `-SelfTest` passed 31 of 31
-  halves, the every-history-read-is-keyed and read-key-follows-its-inputs halves among them.
+  `-PrintKey` prints it alone, or nothing on a tree that is not clean, where `origin/main` does
+  not resolve, on a shallow clone or where a git command it needs fails; step 6 of
+  `/pre-pr-review` names a gate's log for it. `-SelfTest` passed 31 of 31 halves, the
+  every-history-read-is-keyed and read-key-follows-its-inputs halves among them.
