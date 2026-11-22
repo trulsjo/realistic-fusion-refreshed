@@ -660,3 +660,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   unkeyed reads and require no key of the three cases; `-SelfTest` passed 31 of 31 halves. Every
   plain run scans the script's own git commands too, and fails on one the key does not hold
   (Truls, on #907), as `run-gates.ps1` and the workflow run no `-SelfTest`.
+- 2026-11-22, #907, on #911's review panel, turns 3 and 4: `Get-ReadKey` gives no key either
+  where the pinned head's tree is not the live HEAD's, as a checkout since the pin leaves. The
+  read-key-follows-its-inputs half now requires no key of that, of a clone whose `git status`
+  fails on an index of forty zero bytes, of a shallow clone checked to be shallow and of an unborn
+  branch checked to have `origin/main`; with the live-tree check or the status exit-code check
+  removed, the half fails, and `-SelfTest` passed 31 of 31 halves.
