@@ -271,9 +271,9 @@
     six planted outside it to be named, among them a quoted verb, one held in a variable and one in
     an else; the read-key-follows-its-inputs half requires the key to stay on rewords that keep the
     trailers and to move with a trailer, origin/main and a file, each in its own part, and gives a
-    shallow clone, an unborn branch, an edit in an ignore=all submodule and a clone whose git
-    status fails none. It cannot see what a listed function's command reads, nor which objects the
-    clone holds; the section comment has the rest.
+    shallow clone, an unborn branch, an edit in an ignore=all submodule, a clone whose git status
+    fails and a pin that is not the live HEAD none. It cannot see what a listed function's command
+    reads, nor which objects the clone holds; the section comment has the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -343,7 +343,9 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # anything for has no key: the run says so, and -PrintKey prints nothing and exits 1. Nor has a
 # shallow clone, which sections 17 and 19 fail, or a tree where a git command the key needs
 # fails, as on an unborn branch; git status is told to inspect submodules whatever their ignore
-# setting says, as the gate runs the shared scripts in vendor/.
+# setting says, as the gate runs the shared scripts in vendor/. Nor has a pinned head whose tree
+# is not the live HEAD's, which a checkout since the pin leaves, as git status compares the index
+# with the live HEAD and not the pin.
 #
 # Every run reads this script's git commands, as the every-history-read-is-keyed half does,
 # outside the body of each if ($SelfTest), and fails on each whose verb is not one $NO_HISTORY_VERBS
@@ -354,8 +356,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # arguments, unquoted, and git is matched in any case and as git.exe; the
 # read-key-follows-its-inputs half moves each input of a scratch repository and requires the key to
 # move with it, in that input's part alone, and to stay on a reword, and requires no key of a
-# shallow clone, an unborn branch, an edit in a submodule whose ignore setting is all, and a
-# clone whose git status fails.
+# shallow clone, an unborn branch, an edit in a submodule whose ignore setting is all, a clone
+# whose git status fails, and a pin older than the live HEAD on a clean tree.
 #
 # WHAT IT CANNOT SEE: what a listed function's command reads, so a `git show HEAD:<path>` added to
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
@@ -395,7 +397,8 @@ function Get-AcceptedGrowth {
 function Get-ReadKey {
     <#  "<tree>-<hash of the accepted machines>-<$Main's commit>" for the tree at $Root, or $null
         where git status --porcelain prints anything there, $Main does not resolve, the clone is
-        shallow, or a git command fails. A submodule is inspected whatever its ignore setting,
+        shallow, $Head's tree is not the live HEAD's, or a git command fails. A submodule is
+        inspected whatever its ignore setting,
         since the gate runs the shared scripts in one.  #>
     param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF, [string] $Head = 'HEAD')
     $dirty = @(git -C $Root status --porcelain --ignore-submodules=none)
@@ -480,7 +483,7 @@ $HEAD_AT = Get-PinnedHead -Root $repoRoot
 if ($PrintKey) {
     $key = Get-ReadKey -Root $repoRoot -Main $MAIN_AT -Head $HEAD_AT
     if (-not $key) {
-        [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, $MAIN_REF does not resolve, the clone is shallow, or a git command failed.")
+        [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, $MAIN_REF does not resolve, the clone is shallow, HEAD moved off the pinned tree, or a git command failed.")
         exit 1
     }
     $key
@@ -2194,7 +2197,7 @@ foreach ($moved in Get-TreeChangeFailures -Before $treeBefore -Root $treeRoot) {
 
 # Section 22's line, pass or fail: the key a log of this run is named for, or why it has none.
 Write-Host $(if ($readKey) { "ship-check: read $readKey" } else {
-    "ship-check: read no key: git status --porcelain printed something, $MAIN_REF did not resolve, the clone is shallow, or a git command failed." })
+    "ship-check: read no key: git status --porcelain printed something, $MAIN_REF did not resolve, the clone is shallow, HEAD moved off the pinned tree, or a git command failed." })
 
 if ($failures.Count) {
     Write-Host ''
@@ -2862,8 +2865,8 @@ if ($SelfTest) {
                 if ($null -ne $dirty) { throw "a tree with an uncommitted edit had the key '$dirty'." }
                 # No key where the key cannot be trusted: a shallow clone of the repository, with
                 # origin/main set; an unborn branch, which has no tree; and an edit in a submodule
-                # whose ignore setting is all, which plain git status does not print; and a clone
-                # whose git status fails.
+                # whose ignore setting is all, which plain git status does not print; a clone whose
+                # git status fails; and a pin older than the live HEAD, on a clean tree.
                 & $git reset -q --hard
                 $url = 'file:///' + $root.Replace('\', '/')
                 $shallow = "$root-shallow"
@@ -2907,10 +2910,15 @@ if ($SelfTest) {
                 'edited' | Add-Content -LiteralPath "$parent/sub/a.txt"
                 $none = [ordered]@{ 'a shallow clone' = (Get-ReadKey -Root $shallow); 'an unborn branch' = (Get-ReadKey -Root $unborn)
                                     'an edit in a submodule set to ignore=all' = (Get-ReadKey -Root $parent)
-                                    'a clone whose git status fails' = (Get-ReadKey -Root $badIndex) }
+                                    'a clone whose git status fails' = (Get-ReadKey -Root $badIndex)
+                                    'an older pin on a clean tree' = (Get-ReadKey -Root $root -Head 'HEAD~1') }
+                if ((git -C $root rev-parse 'HEAD~1^{tree}') -ceq (git -C $root rev-parse 'HEAD^{tree}') -or
+                    @(git -C $root status --porcelain).Count) {
+                    throw "the older pin's tree at $root is the live one's, or the tree is not clean"
+                }
                 if (-not $clean) { throw 'a clean repository with a submodule had no key.' }
                 foreach ($k in $none.Keys) { if ($null -ne $none[$k]) { throw "$k had the key '$($none[$k])'." } }
-                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch, an edit in a submodule set to ignore=all and a clone whose git status fails have none.'
+                'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit, a shallow clone, an unborn branch, an edit in a submodule set to ignore=all, a clone whose git status fails and an older pin on a clean tree have none.'
             } }
 
             @{ Name = 'unreachable-hash-caught'; Body = {
