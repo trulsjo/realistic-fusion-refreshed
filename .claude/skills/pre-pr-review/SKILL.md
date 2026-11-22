@@ -363,7 +363,7 @@ pass.
    A body that quotes another count of checks than the log's sends nothing until it is brought up
    to date. A gate run is never joined to the send with `;`. The first send is
    `gh pr create --head <branch>` with `--body-file` in place of `gh pr edit <n>`, so that it
-   opens the pull request from the branch its third check reads; that check reads the pushed
+   opens the pull request from the branch its head check reads; that check reads the pushed
    branch, since there is no pull request yet:
 
    ```
