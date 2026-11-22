@@ -640,3 +640,21 @@ One line for each change to a gate, newest last, with its date and its ticket.
   not resolve, on a shallow clone or where a git command it needs fails; step 6 of
   `/pre-pr-review` names a gate's log for it. `-SelfTest` passed 31 of 31 halves, the
   every-history-read-is-keyed and read-key-follows-its-inputs halves among them.
+- 2026-11-22, #908, on #911's review panel: section 12 counts a long line with the shared
+  `markdown-lib.ps1`'s `Get-CountedLine`, dot-sourced in a child scope as it sets strict mode,
+  where it had approximated it and sent a line of two short links, 127 characters and 97 by the
+  shared count, to the shared tool; it tests the skill before the link case, so the skill's
+  link-only line names `tools/rewrap.py`; a line over the width only by trailing spaces is told
+  to remove them, and one holding a code span longer than the width, paired on whole backtick
+  runs, to shorten it or fence it. Planted at the head, the two-link line got the link case, a
+  line holding a 122-character span its own way out and the skill's link-only line
+  `tools/rewrap.py`; a 102-character line of words ending in two spaces took the trailing-space
+  branch, probed with section 12's two functions.
+- 2026-11-22, #907, on #911's review panel: section 22 reads `origin/main` and HEAD once, as
+  `$MAIN_AT` and `$HEAD_AT` through `Get-PinnedMain` and `Get-PinnedHead`, and hands them to
+  the key and to sections 17 and 19, each falling back to a name no ref has where it does not
+  resolve; it gives no key to a shallow clone, an unborn branch or a submodule edit `ignore=all`
+  hides; and `Find-UnkeyedReads` fails every verb but those `$NO_HISTORY_VERBS` lists as reading
+  no history, unless `$KEYED_READS` lists it, skipping only an `if ($SelfTest)` clause's own body.
+  Step 6 checks the log's `ship-check: read` line against `<name>`. Its two halves now plant six
+  unkeyed reads and require no key of the three cases; `-SelfTest` passed 31 of 31 halves.
