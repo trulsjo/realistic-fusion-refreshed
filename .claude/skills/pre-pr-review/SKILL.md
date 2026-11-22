@@ -27,10 +27,10 @@ pass.
 
    ```
    git fetch origin main                   # moves origin/main only
-   git tag -f pre-pr-reviewed HEAD         # the reviewed commit; steps 3 and 4 need it. Never pushed
-   git tag -f pre-pr-base origin/main      # the base it is read against; step 3 needs it. Never pushed
-   git diff --output="<scratch>/branch.diff" origin/main...HEAD
-   git log --output="<scratch>/messages.txt" origin/main..HEAD   # the commit messages (#864)
+   git tag -f pre-pr-reviewed HEAD         # the reviewed commit; steps 1, 3 and 4 need it. Never pushed
+   git tag -f pre-pr-base origin/main      # the base it is read against; steps 1 and 3 need it. Never pushed
+   git diff --output="<scratch>/branch.diff" pre-pr-base...pre-pr-reviewed
+   git log --output="<scratch>/messages.txt" pre-pr-base..pre-pr-reviewed   # the messages (#864)
    ```
 
    **A review of part of the branch gives these lines that part's range, before they run**
