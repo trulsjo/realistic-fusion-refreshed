@@ -71,16 +71,16 @@ message, not a skip.
 **[`docs/agents/state-detail.md`](docs/agents/state-detail.md) has what this section carried until
 #591**: when each gate gained each check and by which ticket, what each check cannot see, how the
 self-tests prove them, what the harness shares, the timings of `run-gates.ps1`, and three facts
-about the research ladders. Read it when a gate's pass or failure has to be interpreted, when a
-gate or its self-test is being changed, and when a sentence here is wanted with its date or its
-ticket. A change to a gate adds a dated line at the foot of that page, in the commit that changes
-the gate, so a branch whose tickets each change one adds a line for each. **The `commit-msg` hook
-holds that** (#913), through `.githooks/dated-line.ps1`: it refuses a commit that changes the code
-of `ship-check.ps1`, `load-check.ps1`, a `check-*.ps1` or `run-gates.ps1`, outside comments and
-help, where that page gains no line opening with a date and the message has no `Dated-Line: none`
-trailer. It reads no other file as a gate, not what the line says, and an amend against the commit
-it amends; its header has the rest. A line here changes only when what the gate proves in a line
-has changed.
+about the research ladders. Read it when a gate's pass or failure has to be interpreted, when a gate
+or its self-test is being changed, and when a sentence here is wanted with its date or its ticket. A
+change to a gate adds a dated line at the foot of that page, in the commit that changes the gate, so
+a branch whose tickets each change one adds a line for each. **The `commit-msg` hook holds that**
+(#913), through `.githooks/dated-line.ps1`: it refuses a commit that changes the code of
+`ship-check.ps1`, `load-check.ps1`, a `check-*.ps1` or `run-gates.ps1`, outside comments and help,
+where that page gains no line opening `- ` and a date, net of any it removes, and the message has no
+`Dated-Line: none` line. It reads no other file as a gate, not what the line says, and an amend
+against the commit it amends; its header has the rest. A line here changes only when what the gate
+proves in a line has changed.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
@@ -290,8 +290,10 @@ mechanics:
   material above).
 - **The `Dated-Line: none` trailer** (#913). A commit that changes a gate's code and adds no dated
   line to `docs/agents/state-detail.md`, as the State section requires, carries it, its value
-  opening with `none` and saying why, as `Dated-Line: none, it renames a variable`. The
-  `commit-msg` hook refuses such a commit without it, and says when it honoured one.
+  opening with `none` and saying why, as `Dated-Line: none, it renames a variable`. It is written
+  among the trailers, and the hook reads it on any line of the message, so a last paragraph that
+  also holds `Closes #N`, which git does not read as trailers, still carries it. The `commit-msg`
+  hook refuses such a commit without it, and says when it honoured one.
 
 Example:
 
@@ -314,14 +316,17 @@ git config core.hooksPath .githooks
 ```
 
 **Skipping either step is loud rather than silent.** The hook says the message was not checked and
-lets the commit through, instead of passing everything quietly — the posture [ADR
+lets the message through, instead of passing everything quietly, though the dated-line check needs
+no submodule and still runs, and can refuse the commit — the posture [ADR
 0001](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/adr/0001-siblings-consume-this-repo-as-a-submodule.md)
 in the tooling repo requires, and what makes the second step safe to ask for.
 
 **A clone that skips both is still checked, later** (#599). The workflow in the State section runs
 the same check over a pull request's commits and over each push to `main`, so the convention no
 longer depends on every clone opting in. The hook is still the only thing that stops a bad message
-before it is written; the workflow reports one after it is pushed.
+before it is written; the workflow reports one after it is pushed. The dated-line check is not run
+over the commits: the workflow runs its `-SelfTest` alone, so a clone without the hook is not held
+to the dated line.
 
 **A second hook, `.githooks/pre-commit`, reads the staged Markdown** (#658). It runs the tools
 submodule's `scripts/markdown-check.ps1` on the staged `.md` files as staged, and refuses the commit

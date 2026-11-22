@@ -19,18 +19,22 @@
     A CODE CHANGE is one that moves a token outside the comments. Each version of a staged gate
     script, the one at HEAD and the one in the index, is read by PowerShell's own tokenizer, its
     comment tokens dropped, a help block among them, and each run of line ends taken as one; the
-    two sequences are compared. So an edit to a comment or to help, a comment line added or
-    removed, and a change of indent or of spacing inside a line pass, and a changed string, a
-    printed message among them, is code. A script added or deleted is a code change, since one
-    side has no code.
+    two sequences are compared. A #Requires line is a comment token that PowerShell acts on, so it
+    is kept as code. So an edit to a comment or to help, a comment line added or removed, and a
+    change of indent or of spacing inside a line pass, and a changed string, a printed message or a
+    self-test's label among them, is code. A script added or deleted is a code change whatever it
+    holds, since one side is not there.
 
-    A DATED LINE is an added line of docs/agents/state-detail.md, in the index against HEAD, that
-    opens with "- " and a date written YYYY-MM-DD. Its words, its ticket and where it stands are
-    not read.
+    A DATED LINE is a line of docs/agents/state-detail.md that opens with "- " and a date written
+    YYYY-MM-DD. The page gains one when the index, against HEAD, adds more such lines than it
+    removes, so rewording a dated line already there gains none. Its words, its ticket and where it
+    stands are not read.
 
-    THE WAY OUT is a trailer in the message whose key is Dated-Line, in any case, and whose value
-    opens with the word none, as `Dated-Line: none, the change is a rename`, read by git
-    interpret-trailers. The run says it honoured it, and names the scripts it let through.
+    THE WAY OUT is a line of the message, anywhere in it, that opens with Dated-Line, in any case,
+    a colon and the word none, as `Dated-Line: none, the change
+    is a rename`. It is written as a trailer, but is read on any line, since git interpret-trailers
+    reads none in a last paragraph that also holds a `Closes #N` line. The run says it honoured it,
+    and names the scripts it let through.
 
     WHAT IT CANNOT SEE: an amend is read against the commit it amends, so amending a code change
     into a commit that already carries its dated line is refused and wants the trailer; a merge
@@ -49,9 +53,11 @@
 .PARAMETER SelfTest
     Build a scratch repository in the temp directory and require the check to refuse a code change
     to a gate with no dated line, a code change to a check-*.ps1, a gate added, a gate deleted, a
-    line added without a date and a trailer whose value is not none; and to pass a code change with
-    a dated line, a change to comments and help alone, a code change with the trailer, naming the
-    script, and a code change to a script not in the list. Then commit through the commit-msg hook
+    line added without a date, a trailer whose value is not none, a changed #Requires line, a gate
+    added that holds only comments and a dated line reworded with none added; and to pass a code
+    change with a dated line, a change to comments and help alone, a code change with the trailer,
+    naming the script, the trailer in a paragraph with a Closes line, and a code change to a script
+    not in the list. Then commit through the commit-msg hook
     in a copy of .githooks, once refused and once let through, so the hook's wiring is held too.
 
 .EXAMPLE
@@ -89,7 +95,8 @@ function Get-CodeToken([string] $Text) {
     $atLineEnd = $true
     foreach ($token in $tokens) {
         $kind = "$($token.Kind)"
-        if ($kind -in 'Comment', 'LineContinuation', 'EndOfInput') { continue }
+        if ($kind -eq 'Comment' -and $token.Text -notmatch '^(?i)#requires\b') { continue }
+        if ($kind -in 'LineContinuation', 'EndOfInput') { continue }
         if ($kind -eq 'NewLine') {
             if (-not $atLineEnd) { $out.Add('<line end>') }
             $atLineEnd = $true
@@ -103,9 +110,9 @@ function Get-CodeToken([string] $Text) {
 }
 
 function Get-BlobText([string] $Root, [string] $Spec) {
-    <#  The text of the object $Spec names, or '' where it names none.  #>
+    <#  The text of the object $Spec names, or $null where it names none.  #>
     $lines = @(git -C $Root show $Spec 2>$null)
-    if ($LASTEXITCODE -ne 0) { return '' }
+    if ($LASTEXITCODE -ne 0) { return $null }
     $lines -join "`n"
 }
 
@@ -123,9 +130,10 @@ function Invoke-DatedLineCheck {
     $code = @()
     $commentOnly = @()
     foreach ($path in $staged | Where-Object { Test-GateScript $_ }) {
-        $old = if ($base -eq $EMPTY_TREE) { '' } else { Get-BlobText $Root "${base}:$path" }
+        $old = if ($base -eq $EMPTY_TREE) { $null } else { Get-BlobText $Root "${base}:$path" }
         $new = Get-BlobText $Root ":$path"
-        if ((Get-CodeToken $old) -ceq (Get-CodeToken $new) -and ($old -or $new)) {
+        # Added or deleted: one side is not there, which is a code change whatever the other holds.
+        if ($null -ne $old -and $null -ne $new -and (Get-CodeToken $old) -ceq (Get-CodeToken $new)) {
             $commentOnly += $path
         } else {
             $code += $path
@@ -138,15 +146,17 @@ function Invoke-DatedLineCheck {
         if (-not $commentOnly) { $lines.Add('OK - dated-line: no gate script is staged.') }
         return @{ Code = 0; Lines = $lines }
     }
-    $added = @(git -C $Root diff --cached -U0 --no-renames $base -- $STATE_DETAIL) |
-        Where-Object { $_ -match '^\+- \d{4}-\d{2}-\d{2}\b' }
+    # Added dated lines less removed ones, so a reworded line nets none.
+    $diff = @(git -C $Root diff --cached -U0 --no-renames $base -- $STATE_DETAIL)
+    $added = @($diff | Where-Object { $_ -match '^\+- \d{4}-\d{2}-\d{2}\b' }).Count
+    $removed = @($diff | Where-Object { $_ -match '^-- \d{4}-\d{2}-\d{2}\b' }).Count
     $named = $code -join ', '
-    if ($added) {
+    if ($added -gt $removed) {
         $lines.Add("OK - dated-line: $named changes a gate's code, and $STATE_DETAIL gains a dated line.")
         return @{ Code = 0; Lines = $lines }
     }
-    $trailers = @(git -C $Root interpret-trailers --parse $MessageFile 2>$null)
-    if ($trailers | Where-Object { $_ -match '^(?i)dated-line:\s*none\b' }) {
+    $message = @(Get-Content -LiteralPath $MessageFile -ErrorAction SilentlyContinue)
+    if ($message | Where-Object { $_ -match '^(?i)dated-line:\s*none\b' }) {
         $lines.Add("OK - dated-line: $named changes a gate's code with no dated line in $STATE_DETAIL; the message's Dated-Line: none trailer was honoured.")
         return @{ Code = 0; Lines = $lines }
     }
@@ -213,6 +223,7 @@ $gate = @'
 .SYNOPSIS
     A stand-in gate.
 #>
+#Requires -Version 7
 param([switch] $SelfTest)
 # Says what it checks.
 $x = 1
@@ -272,6 +283,19 @@ try {
     }
     Test-Case 'a code change to a script not in the list passes' 0 $plain 'no gate script is staged' {
         Write-Fixture 'scripts/other.ps1' $codeEdit
+    }
+    Test-Case 'a change to a #Requires line is refused' 1 $plain 'scripts/ship-check.ps1 changes' {
+        Write-Fixture 'scripts/ship-check.ps1' $gate.Replace('#Requires -Version 7', '#Requires -Version 5.1')
+    }
+    Test-Case 'a gate added that holds only comments is refused' 1 $plain 'scripts/check-empty.ps1 changes' {
+        Write-Fixture 'scripts/check-empty.ps1' "# Nothing yet.`n"
+    }
+    Test-Case 'a dated line reworded, and none added, is refused' 1 $plain 'refused' {
+        Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+        Write-Fixture $STATE_DETAIL $detail.Replace('the first line.', 'the first line, reworded.')
+    }
+    Test-Case 'the trailer in a paragraph with a Closes line passes' 0 "subject`n`nA body.`n`nCloses #1`nDated-Line: none, a stand-in`n" 'trailer was honoured' {
+        Write-Fixture 'scripts/ship-check.ps1' $codeEdit
     }
 
     # The hook's wiring: a commit through a copy of commit-msg, which finds no shared message
