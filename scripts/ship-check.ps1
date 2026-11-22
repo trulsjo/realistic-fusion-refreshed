@@ -1627,7 +1627,9 @@ $markdownLib = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/markdown
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
     $counted = (& { param($line, $lib) . $lib; Get-CountedLine -Line $line } $text $markdownLib).Length
-    $spans = @([regex]::Matches($text, '(`+)(?:(?!\1).)+?\1') | Where-Object { $_.Length -gt $WRAP_WIDTH })
+    # A span opens and closes on whole backtick runs of one length, so a longer run inside it is
+    # part of it and does not close it.
+    $spans = @([regex]::Matches($text, '(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)') | Where-Object { $_.Length -gt $WRAP_WIDTH })
     $mend = if ($text.TrimEnd().Length -le $WRAP_WIDTH) {
         "It is over $WRAP_WIDTH only by trailing spaces: remove them."
     } elseif ($spans) {
