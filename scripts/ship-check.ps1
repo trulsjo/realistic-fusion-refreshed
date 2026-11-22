@@ -2794,10 +2794,23 @@ if ($SelfTest) {
                 $changed = Get-ReadKey -Root $root
                 $same = @{ 'a second reading' = $again; 'a reword that keeps the trailers' = $reworded
                            'a reword that drops the added trailer again' = $dropped }
-                $moved = @{ 'a trailer added' = $trailer; 'origin/main moved' = $fetched; 'a file changed' = $changed }
+                # Each move names the one part of the key it must change: the tree, the trailers'
+                # hash or origin/main's commit. A null key is no key, not a changed one.
+                $moved = @{ 'a file changed' = @($changed, 0); 'a trailer added' = @($trailer, 1)
+                            'origin/main moved' = @($fetched, 2) }
                 if (-not $first) { throw 'a clean scratch tree had no key.' }
                 foreach ($k in $same.Keys) { if ($same[$k] -cne $first) { throw "the key changed on $k." } }
-                foreach ($k in $moved.Keys) { if ($moved[$k] -ceq $first) { throw "the key stayed the same on $k." } }
+                $was = $first -split '-'
+                foreach ($k in $moved.Keys) {
+                    $key, $part = $moved[$k]
+                    if (-not $key) { throw "a clean tree had no key after $k." }
+                    $now = $key -split '-'
+                    for ($i = 0; $i -lt 3; $i++) {
+                        if (($now[$i] -cne $was[$i]) -ne ($i -eq $part)) {
+                            throw "on $k, part $($i + 1) of the key $(if ($i -eq $part) { 'stayed the same' } else { 'changed' })."
+                        }
+                    }
+                }
                 if ($null -ne $dirty) { throw "a tree with an uncommitted edit had the key '$dirty'." }
                 'the key stays on a second reading and on rewords that keep the trailers, moves with a trailer, origin/main and a file, and a tree with an edit has none.'
             } }
