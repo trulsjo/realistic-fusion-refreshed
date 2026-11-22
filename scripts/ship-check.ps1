@@ -154,23 +154,22 @@
     proves it can fail; here a missing script fails by name, and so does a run that does not say it
     read a file. It reads the index and not the working tree; the section comment has the rest.
 
-    SECTION 12 HAS A -SelfTest AND NO FLOOR (#646). It fails a prose line over the wrap width in
-    the files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
-    is not the one this script's width and file list make. The files are named and not scanned for,
-    so a missing one fails by name and there is no count to hold. The overlong-prose-caught and
+    SECTION 12 HAS A -SelfTest AND NO FLOOR (#646). It fails a prose line over the wrap width in the
+    files docs/agents/code-review.md names as wrapped, and fails when that file's sentence is not
+    the one this script's width and file list make. The files are named and not scanned for, so a
+    missing one fails by name and there is no count to hold. The overlong-prose-caught and
     unwrappable-line-not-flagged halves plant what the scan of the lines must and must not report.
-    Since #662 it also fails a figure grouped in thousands that is split across a line end in
-    those files, and the split-figure-caught and unsplit-figure-not-flagged halves plant what that
-    scan must and must not report. Since #860 section 11's shared check fails such a split in
-    every tracked .md as well, so in these files one fails in both sections. A long line's
-    failure names the shared markdown-rewrap.ps1, which keeps a code span whole (#908), but in the
-    skill, whose front matter that tool rewraps; there, and for a split figure, which that tool
-    does not mend, it names tools/rewrap.py, and it fails when that tool's width is not this
-    script's.
-    The sentence check, the tool's width and a missing file have no half: like sections 1 to 4
-    they name what they require, so a mistake in them fails and does not go quiet. It cannot tell
-    two numbers from a split figure when the second has three digits; the section comment has the
-    rest.
+    Since #662 it also fails a figure grouped in thousands that is split across a line end in those
+    files, and the split-figure-caught and unsplit-figure-not-flagged halves plant what that scan
+    must and must not report. Since #860 section 11's shared check fails such a split in every
+    tracked .md as well, so in these files one fails in both sections. A long line's failure names
+    the shared markdown-rewrap.ps1, which keeps a code span whole but where a flagged line starts
+    inside one (#908), but in the skill, whose front matter that tool rewraps; there, and for a
+    split figure, which that tool does not mend, it names tools/rewrap.py, and it fails when that
+    tool's width is not this script's. The sentence check, the tool's width and a missing file have
+    no half: like sections 1 to 4 they name what they require, so a mistake in them fails and does
+    not go quiet. It cannot tell two numbers from a split figure when the second has three digits;
+    the section comment has the rest.
 
     SECTION 13 HAS BOTH (#756). It fails a half a gate declares and its -SelfTest help leaves
     out, where that help names at least one of the gate's halves, and it skips and lists a gate
@@ -1577,6 +1576,7 @@ foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     } else {
         "``pwsh -File vendor/grado-factorio-tools/scripts/markdown-rewrap.ps1 -Path $($long.File) " +
         "-MaxLineLength $WRAP_WIDTH`` rewraps each long line of the file and keeps a code span, " +
+        'but one a flagged line starts inside, ' +
         'a link and a figure grouped in thousands on one line.'
     }
     $failures.Add(("$($long.File), line $($long.Line): a prose line of $($long.Length) characters in a file " +
