@@ -1558,9 +1558,19 @@ foreach ($rel in $WRAPPED) {
 # does, and split `gh pr create` on #906 (#908). The skill is the exception: the shared rewrap
 # rewraps its front matter's description, which this section leaves alone
 # (grado-factorio-tools#496), so its failures still name tools/rewrap.py, which leaves front
-# matter be.
+# matter be. A line over the width only by a link's target or an address is a third: the shared
+# rewrap counts a line less those, as the shared check does, so it leaves the line as it is
+# (grado-factorio-tools#526), and the failure says to break it before the link by hand. The
+# counting here is an approximation of the shared one: a target holding a space or a bracket is
+# taken for shorter than it is.
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
-    $mend = if ($long.File -like '.claude/skills/*') {
+    $text = @(Get-Content -LiteralPath (Join-Path $repoRoot $long.File))[$long.Line - 1]
+    $counted = ((($text -replace '\]\([^)\s]*\)', ']()') -replace '<[A-Za-z][A-Za-z0-9+.-]*:[^>\s]*>', '<>') -replace
+        'https?://[^\s)>]+', '').TrimEnd().Length
+    $mend = if ($counted -le $WRAP_WIDTH) {
+        "It is over $WRAP_WIDTH only by a link's target or an address, which markdown-rewrap.ps1 does " +
+        'not count, so that tool leaves it as it is (grado-factorio-tools#526): break the line before the link by hand.'
+    } elseif ($long.File -like '.claude/skills/*') {
         "``python tools/rewrap.py $($long.File) $($long.Line)`` rewraps its paragraph and keeps a " +
         'figure grouped in thousands on one line, though not a code span: check that none is split.'
     } else {
