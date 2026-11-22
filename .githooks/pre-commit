@@ -29,7 +29,7 @@
 #
 # A missing pwsh says nothing was checked and lets the commit through, and an uninitialised
 # submodule says the shared checks did NOT run and lets it through, the posture commit-msg takes
-# and for its reasons.
+# for its message check and for its reasons.
 #
 # Each refusal, the live run's included, ends with a line saying the message was not saved, since
 # .git/COMMIT_EDITMSG still holds the last message git wrote there, not this one (#898). A commit

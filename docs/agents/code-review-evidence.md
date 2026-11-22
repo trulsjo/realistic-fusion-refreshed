@@ -176,8 +176,8 @@ pull request's body, on 2026-11-22.
 - **What made it fail.** The case `scripts/ship-check.ps1` now plants in the
   read-key-follows-its-inputs half writes forty zero bytes over a scratch clone's `.git/index`,
   after which `git status --porcelain` exits non-zero and prints nothing. #911's body: "it was first
-  left, on the grounds that no scratch repository could make it fail. Fable showed a corrupt index
-  does, and the case was added."
+  left, on the grounds that a scratch repository could not make it fail without stubbing git. Fable
+  showed in turn 4 that a corrupt index does, and the case was added."
 - **What it cost.** The message was reworded to say a later commit gives the case one, which meant a
   rewrite of the branch and a force-push, and by #914's account a turn of the panel's. The body's
   findings table has Fable 10 confirmed at the panel's fifth turn.

@@ -247,7 +247,7 @@ it. They are outside the repository, so a worktree does not lack them."
    `/pre-pr-review` says (#781). Before a fix is written, *Review the prose, not only the code*
    says what the session reads of its source (#632), before a fix that changes what a rule
    allows is sent, what it reads again of that rule (#788), and what a sentence in a fix, its
-   commit message or a reply saying a case cannot be tested names (#914).
+   commit message, the pull request's body or a reply saying a case cannot be tested names (#914).
 
    **Each edit of the body is checked before it is sent** (#730), as step 6 of `/pre-pr-review`
    sends one, with the `ship-check` log's pass line and the pull request's head where the body
