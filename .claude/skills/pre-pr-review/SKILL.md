@@ -27,7 +27,7 @@ pass.
 
    ```
    git fetch origin main                   # moves origin/main only
-   git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
+   git tag -f pre-pr-reviewed HEAD         # the reviewed commit; steps 3 and 4 need it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
    git log --output="<scratch>/messages.txt" origin/main..HEAD   # the commit messages (#864)
    ```
