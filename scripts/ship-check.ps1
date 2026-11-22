@@ -370,6 +370,7 @@ $KEYED_READS = @{
     'Find-UnreachableHashes' = @('rev-parse', 'rev-list', 'cat-file')
     'Get-ReadKey'            = @('rev-parse')
     'Get-PinnedMain'         = @('rev-parse')
+    'Get-PinnedHead'         = @('rev-parse')
 }
 # The verbs that read the working tree, the index or the configuration and no history. status
 # compares the index with HEAD's tree, which the key holds. Any other verb outside the self-test
@@ -377,9 +378,9 @@ $KEYED_READS = @{
 $NO_HISTORY_VERBS = @('ls-files', 'status', 'check-ignore', 'hash-object', 'write-tree', 'config')
 
 function Get-AcceptedGrowth {
-    <#  The machines a Model-Growth trailer names in the body of a commit $Main..HEAD holds.  #>
-    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
-    @(git -C $Root log --format=%B "$Main..HEAD" | Where-Object { $_ -match '^Model-Growth:\s*(\S+)\s*$' } |
+    <#  The machines a Model-Growth trailer names in the body of a commit $Main..$Head holds.  #>
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF, [string] $Head = 'HEAD')
+    @(git -C $Root log --format=%B "$Main..$Head" | Where-Object { $_ -match '^Model-Growth:\s*(\S+)\s*$' } |
         ForEach-Object { $Matches[1] })
 }
 
@@ -388,16 +389,16 @@ function Get-ReadKey {
         where git status --porcelain prints anything there, $Main does not resolve, the clone is
         shallow, or a git command fails. A submodule is inspected whatever its ignore setting,
         since the gate runs the shared scripts in one.  #>
-    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF, [string] $Head = 'HEAD')
     $dirty = @(git -C $Root status --porcelain --ignore-submodules=none)
     if ($LASTEXITCODE -ne 0 -or $dirty.Count) { return $null }
     # Sections 17 and 19 fail a shallow clone; it gets no key, so no log is named for one.
     if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') { return $null }
     $mainCommit = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
     if ($LASTEXITCODE -ne 0) { return $null }
-    $tree = git -C $Root rev-parse --verify --quiet 'HEAD^{tree}' 2>$null
+    $tree = git -C $Root rev-parse --verify --quiet "$Head^{tree}" 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $tree) { return $null }   # an unborn branch has no tree
-    $accepted = @(Get-AcceptedGrowth -Root $Root -Main $mainCommit)
+    $accepted = @(Get-AcceptedGrowth -Root $Root -Main $mainCommit -Head $Head)
     if ($LASTEXITCODE -ne 0) { return $null }
     $names = ($accepted | Sort-Object -Unique) -join "`n"
     $hash = [Convert]::ToHexString([Security.Cryptography.SHA1]::HashData([Text.Encoding]::UTF8.GetBytes($names)))
@@ -447,14 +448,25 @@ function Get-PinnedMain {
     if ($LASTEXITCODE -eq 0 -and $commit) { $commit } else { "$MAIN_REF (unresolved when the run began)" }
 }
 
+function Get-PinnedHead {
+    <#  HEAD's commit in the repository at $Root, or, where it does not resolve, as on an unborn
+        branch, a name no ref can have, for the reason Get-PinnedMain gives.  #>
+    param([Parameter(Mandatory)] [string] $Root)
+    $commit = git -C $Root rev-parse --verify --quiet 'HEAD^{commit}' 2>$null
+    if ($LASTEXITCODE -eq 0 -and $commit) { $commit } else { 'HEAD (unresolved when the run began)' }
+}
+
 # One commit of origin/main for the whole run, read once here: the key and sections 17 and 19 are
 # each handed it, so a fetch during a run cannot give them two mains under one key (#907, the
 # review panel's finding 2 on #911). The functions' defaults stay $MAIN_REF, as the self-test hands
-# them scratch repositories of their own.
+# them scratch repositories of their own. HEAD's commit is read once the same way, for the key and
+# section 19, so an amend during the run that changes a Model-Growth trailer cannot give the key one
+# history and section 19 another (the review panel's turn 2, Antigravity 3, on #911).
 $MAIN_AT = Get-PinnedMain -Root $repoRoot
+$HEAD_AT = Get-PinnedHead -Root $repoRoot
 
 if ($PrintKey) {
-    $key = Get-ReadKey -Root $repoRoot -Main $MAIN_AT
+    $key = Get-ReadKey -Root $repoRoot -Main $MAIN_AT -Head $HEAD_AT
     if (-not $key) {
         [Console]::Error.WriteLine("ship-check: no key: git status --porcelain prints something here, $MAIN_REF does not resolve, the clone is shallow, or a git command failed.")
         exit 1
@@ -466,7 +478,7 @@ if ($PrintKey) {
 # Before any section reads a file: section 16 compares the tree with this when they have all run.
 $treeRoot   = if ($StandInTree) { $StandInTree } else { $repoRoot }
 $treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
-$readKey    = Get-ReadKey -Root $treeRoot -Main $MAIN_AT   # section 22's, beside the fingerprint
+$readKey    = Get-ReadKey -Root $treeRoot -Main $MAIN_AT -Head $HEAD_AT   # section 22's
 
 $mods      = Get-RepoMods
 $assetsMod = 'realistic-fusion-refreshed-assets'
@@ -1956,14 +1968,14 @@ function Find-ModelGrowth {
 
 function Get-ModelGrowthRows {
     <#  One row per rendered manifest in the tree at $Root, with $Main's copy and whether a commit
-        $Main..HEAD carries its Model-Growth trailer. Throws where $Main cannot be read.  #>
-    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF)
+        $Main..$Head carries its Model-Growth trailer. Throws where $Main cannot be read.  #>
+    param([Parameter(Mandatory)] [string] $Root, [string] $Main = $MAIN_REF, [string] $Head = 'HEAD')
     if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') {
         throw "$Root is a shallow clone, so $Main's manifests cannot be trusted to be its own. Fetch the whole history (git fetch --unshallow)."
     }
     $null = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
     if ($LASTEXITCODE -ne 0) { throw "git cannot resolve $Main in $Root, so no model can be held against it. Fetch it." }
-    $accepted = @(Get-AcceptedGrowth -Root $Root -Main $Main)   # section 22's key hashes the same
+    $accepted = @(Get-AcceptedGrowth -Root $Root -Main $Main -Head $Head)   # section 22's key hashes the same
     foreach ($manifest in @(Get-ChildItem -Path (Join-Path $Root $RENDERED) -Filter manifest.json -Recurse -File | Sort-Object FullName)) {
         $rel = [IO.Path]::GetRelativePath($Root, $manifest.FullName) -replace '\\', '/'
         $branch = Get-Content -Raw -LiteralPath $manifest.FullName | ConvertFrom-Json -AsHashtable
@@ -1976,7 +1988,7 @@ function Get-ModelGrowthRows {
 
 $checks++
 try {
-    foreach ($why in Find-ModelGrowth -Rows @(Get-ModelGrowthRows -Root $repoRoot -Main $MAIN_AT)) { $failures.Add($why) }
+    foreach ($why in Find-ModelGrowth -Rows @(Get-ModelGrowthRows -Root $repoRoot -Main $MAIN_AT -Head $HEAD_AT)) { $failures.Add($why) }
 } catch { $failures.Add("section 19 could not hold the rendered models against origin/main: $($_.Exception.Message)") }
 
 # ----------------------------------------------------------------- what a model directory holds
