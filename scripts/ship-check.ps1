@@ -343,7 +343,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 # Get-ModelGrowthRows passes; which objects the clone holds, which section 17's `cat-file` asks of
 # a cited hash, so a fetch that brings a commit main does not reach can change its result under
 # the same key; a file git ignores, which git status does not print, where a section lists a
-# directory, as section 3's scan for a PNG in each code mod and section 6's reading of docs/ do;
+# directory, as several do, among them section 3 for a PNG in each code mod, section 6 under docs/
+# and section 19 for each rendered manifest, whose result the key's history reads also feed;
 # a git read outside this script's own text, since the half scans no other file: on 2026-11-22
 # factorio-lib.ps1, which this script dot-sources, ran only `ls-files -s`, of the index; one
 # written so that its command is not named git, as `git.exe` or a command held in a variable,
