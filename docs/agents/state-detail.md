@@ -627,7 +627,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   figure, which it leaves as it is, the failure still names `tools/rewrap.py`. With a line of 118
   characters holding a code span planted at the foot of `docs/agents/plugin-pass.md` and of the
   skill, the run named the shared tool for the first and `tools/rewrap.py` for the second, and the
-  shared tool, run as named, kept the span on one line.
+  shared tool, run as named, kept the span on one line. A line over the width only by a link's
+  target or an address, which the shared tool does not count and leaves as it is
+  (grado-factorio-tools#526), is told to be broken before the link by hand, or, where the link
+  already starts its line, to give the link a text with no space; planted with a 125-character line
+  of that kind, the run said so and the shared tool left the line as it was.
 - 2026-11-21, #907: `ship-check.ps1` section 22 prints `ship-check: read <key>` on every run,
   the head's tree, a hash of the `Model-Growth:` machines section 19 accepts and `origin/main`'s
   commit, from the values those reads use (`Get-AcceptedGrowth`, `$MAIN_REF`), and
