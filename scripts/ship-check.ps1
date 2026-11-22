@@ -168,10 +168,11 @@
     split figure, which that tool does not mend, it names tools/rewrap.py, and it fails when that
     tool's width is not this script's. A line over the width only by a link's target or an address,
     which the shared tool does not count and so leaves as it is, is told to be broken before the
-    link by hand. The sentence check, the tool's width and a missing file have no half: like
-    sections 1 to 4 they name what they require, so a mistake in them fails and does not go quiet.
-    It cannot tell two numbers from a split figure when the second has three digits; the section
-    comment has the rest.
+    link by hand, or, where the link already stands alone on its line, to give the link a text with
+    no space. The sentence check, the tool's width and a missing file have no half: like sections 1
+    to 4 they name what they require, so a mistake in them fails and does not go quiet. It cannot
+    tell two numbers from a split figure when the second has three digits; the section comment has
+    the rest.
 
     SECTION 13 HAS BOTH (#756). It fails a half a gate declares and its -SelfTest help leaves
     out, where that help names at least one of the gate's halves, and it skips and lists a gate
