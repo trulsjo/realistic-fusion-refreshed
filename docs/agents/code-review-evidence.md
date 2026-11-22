@@ -1,11 +1,11 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but twenty-one was part of that file and is as it stood there, so "this file" in one is
+but twenty-two was part of that file and is as it stood there, so "this file" in one is
 `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 but one of those were moved on 2026-10-10 (#672), and the one on what the threshold dropped on
-2026-10-11 (#626). The twenty-one written for this page are the ones for #651, #653, #670, #671,
-#720, #753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820, #878, #879 and #892, the
+2026-10-11 (#626). The twenty-two written for this page are the ones for #651, #653, #670, #671,
+#720, #753, #755, #761, #780 to #783, #788, #813, #816, #818 to #820, #878, #879, #892 and #914, the
 ones on the verdicts of 2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the
 one on what the scores decided. What each pull request's two passes found and cost is on a third
 page, [`review-figures.md`](review-figures.md).
@@ -164,6 +164,23 @@ plugin-pass comment of 2026-11-15, posted at 17:44 UTC, on 2026-11-15.
   not been made yet."
 - **The words "the plugin pass's fixes included" were the paragraph before**, #663's, which places
   the reading. The #716 paragraph said "at the start of this reading" and nothing of when that is.
+
+### A case called untestable with nothing tried, on #911 (#914)
+
+Under the paragraph on a sentence saying a case cannot be tested. Read from #911's commits and its
+pull request's body, on 2026-11-22.
+
+- **The claim.** The commit "make the half's shallow and unborn fixtures what they say", as first
+  written, ended: "git status's own exit code has no case: no scratch repository makes it fail
+  without stubbing git." It named nothing tried.
+- **What made it fail.** The case `scripts/ship-check.ps1` now plants in the
+  read-key-follows-its-inputs half writes forty zero bytes over a scratch clone's `.git/index`,
+  after which `git status --porcelain` exits non-zero and prints nothing. #911's body: "it was first
+  left, on the grounds that no scratch repository could make it fail. Fable showed a corrupt index
+  does, and the case was added."
+- **What it cost.** The message was reworded to say a later commit gives the case one, which meant a
+  rewrite of the branch and a force-push, and by #914's account a turn of the panel's. The body's
+  findings table has Fable 10 confirmed at the panel's fifth turn.
 
 ## A review before the pull request, and the plugin pass after it
 
