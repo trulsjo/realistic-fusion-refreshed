@@ -322,9 +322,10 @@ pass.
    **A body that quotes a `scripts/ship-check.ps1` result is sent only when a run on the head
    being sent passed** (#884). Run the gate first, as a command of its own, on a tree
    `git status --porcelain` prints nothing for, with its log named for the key the gate prints of
-   what it read (#903, #907); then send with the body check first, the log's pass line, which the
-   body must hold word for word, second, the pull request's head third and the send last, each
-   joined to the next with `&&`. `<name>`, in these lines and the `run-gates.ps1` line below, is
+   what it read (#903, #907); then send with the body check first, the log's `ship-check: read`
+   line, which must name `<name>` itself, second, the log's pass line, which the body must hold
+   word for word, third, the pull request's head fourth and the send last, each joined to the next
+   with `&&`. `<name>`, in these lines and the `run-gates.ps1` line below, is
    this, pasted in place; it prints nothing on a tree that is not clean or where `origin/main` does
    not resolve:
 
@@ -336,12 +337,14 @@ pass.
 
    ```
    pwsh -NoProfile -Command "exit [int][bool](git status --porcelain)" && pwsh -NoProfile -File scripts/ship-check.ps1 *> "<scratch>/ship-check-<name>.txt"
-   pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -SimpleMatch -LiteralPath '<scratch>/body.md' -Pattern (Select-String -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$').Line)" && pwsh -NoProfile -Command "exit [int]((gh pr view <n> --json headRefOid --jq .headRefOid) -ne (git rev-parse HEAD))" && gh pr edit <n> --body-file "<scratch>/body.md"
+   pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -CaseSensitive -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: read <name>$')" && pwsh -NoProfile -Command "exit [int]!(Select-String -Quiet -SimpleMatch -LiteralPath '<scratch>/body.md' -Pattern (Select-String -LiteralPath '<scratch>/ship-check-<name>.txt' -Pattern '^ship-check: \d+ checks, 0 failures\.$').Line)" && pwsh -NoProfile -Command "exit [int]((gh pr view <n> --json headRefOid --jq .headRefOid) -ne (git rev-parse HEAD))" && gh pr edit <n> --body-file "<scratch>/body.md"
    ```
 
    A tree `git status --porcelain` prints anything for runs no gate and writes no log. A failing
    run's log has no such line, and a commit or a fetch that changes what the key is made of moves
    it, so no log stands under the new `<name>`; either sends nothing until the gate is run again.
+   So does a log whose `ship-check: read` line names another key than `<name>`, as one a fetch
+   made between naming the log and the run's start, and an empty `<name>`, whose log holds no key.
    A head not pushed, a reworded one included, sends nothing until it is. A `scripts/run-gates.ps1`
    run the body quotes is made the same way, on a clean tree with its log under `<name>`, and the
    body calls it the head's only while a log under `<name>` holds its pass line:
