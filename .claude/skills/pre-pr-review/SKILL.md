@@ -235,6 +235,9 @@ pass.
    git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
 
+   **The `record` line is for a commit whose old subject was recorded**, one already handed to the
+   reviewer (#910). A held fix that is reworded keeps no record until the message that sends it.
+
    **The `git log` line joins each message onto one line before it matches** (#814). A body is
    wrapped at 72, and `--grep` matches within one line, so it misses words a wrap splits. On
    #811 the claim "prints ok or raises" was wrapped after "prints" in the branch's first commit,
