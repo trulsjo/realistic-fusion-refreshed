@@ -35,7 +35,8 @@
     read.
 
     THE WAY OUT is a line of the message, anywhere in it, that opens with Dated-Line, in any case, a
-    colon and the word none, as `Dated-Line: none, the change is a rename`. It is written as a
+    colon and the word none, ended by the line's end, a space or one of , ; . : so that
+    `none-of-the-above` is not it, as `Dated-Line: none, the change is a rename`. It is written as a
     trailer, but is read on any line, since git interpret-trailers reads none in a last paragraph
     that also holds a `Closes #N` line. The run says it honoured it, and names the scripts it let
     through.
@@ -57,13 +58,14 @@
 .PARAMETER SelfTest
     Build a scratch repository in the temp directory and require the check to refuse a code change
     to a gate with no dated line, a code change to a check-*.ps1, a gate added, a gate deleted, a
-    line added without a date, a trailer whose value is not none, a changed #Requires line, a gate
-    added that holds only comments, a dated line reworded with none added and a gate left with an
-    unclosed block comment; and to pass a code change with a dated line, one under color.ui,
-    diff.external and a textconv, a change to comments and help alone, a code change with the
-    trailer, naming the script, the trailer in a paragraph with a Closes line, and a code change to
-    a script not in the list. Then commit through the commit-msg hook in a copy of .githooks, once
-    refused and once let through, so the hook's wiring is held too.
+    line added without a date, a trailer whose value is not none, one whose value only starts with
+    none, a changed #Requires line, a gate added that holds only comments, a dated line reworded
+    with none added and a gate left with an unclosed block comment; and to pass a code change with a
+    dated line, one under color.ui, diff.external and a textconv, a change to comments and help
+    alone, a code change with the trailer, naming the script, the trailer in a paragraph with a
+    Closes line, and a code change to a script not in the list. Then commit through the commit-msg
+    hook in a copy of .githooks, once refused and once let through, so the hook's wiring is held
+    too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -169,7 +171,8 @@ function Invoke-DatedLineCheck {
         return @{ Code = 0; Lines = $lines }
     }
     $message = @(Get-Content -LiteralPath $MessageFile -ErrorAction SilentlyContinue)
-    if ($message | Where-Object { $_ -match '^(?i)dated-line:\s*none\b' }) {
+    # none ends at the line's end, a space or , ; . : so none-of-the-above is not it.
+    if ($message | Where-Object { $_ -match '^(?i)dated-line:\s*none(?=$|[\s,;.:])' }) {
         $lines.Add("OK - dated-line: $named changes a gate's code with no dated line in $STATE_DETAIL; the message's Dated-Line: none trailer was honoured.")
         return @{ Code = 0; Lines = $lines }
     }
@@ -308,6 +311,9 @@ try {
         Write-Fixture $STATE_DETAIL $detail.Replace('the first line.', 'the first line, reworded.')
     }
     Test-Case 'the trailer in a paragraph with a Closes line passes' 0 "subject`n`nA body.`n`nCloses #1`nDated-Line: none, a stand-in`n" 'trailer was honoured' {
+        Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+    }
+    Test-Case 'a trailer whose value only starts with none is refused' 1 "subject`n`nA body.`n`nDated-Line: none-of-the-above`n" 'refused' {
         Write-Fixture 'scripts/ship-check.ps1' $codeEdit
     }
     Test-Case 'a gate left with an unclosed block comment is refused' 1 $plain 'scripts/ship-check.ps1 changes' {
