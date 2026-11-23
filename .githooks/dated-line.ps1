@@ -42,12 +42,14 @@
     through.
 
     WHAT IT CANNOT SEE: an amend is read against the commit it amends, so amending a code change
-    into a commit that already carries its dated line is refused and wants the trailer; a merge is
-    read against its first parent; a change to a gate that is not a script in the list, a shared
-    check in vendor/, gates.yml or a hook, is not read; a token the tokenizer gives a different text
-    for the same code, and joining two lines that a line end kept apart as two statements, are not
-    told from a change of meaning in one direction or the other. A commit made with --no-verify runs
-    no hook, and the workflow does not run this over a pull request.
+    into a commit that already carries its dated line is refused and wants the trailer; a merge,
+    while MERGE_HEAD stands, is let through unread, as its commits were each checked as they were
+    made, so a gate's code that a conflict's resolution changes is not read; a change to a gate that
+    is not a script in the list, a shared check in vendor/, gates.yml or a hook, is not read; a
+    token the tokenizer gives a different text for the same code, and joining two lines that a line
+    end kept apart as two statements, are not told from a change of meaning in one direction or the
+    other. A commit made with --no-verify runs no hook, and the workflow does not run this over a
+    pull request.
 
 .PARAMETER MessageFile
     The file holding the commit message, as git hands it to commit-msg.
@@ -65,10 +67,10 @@
     refused as NOT checked, and a gate left with an unclosed block comment; and to pass a code
     change with a dated line, one under color.ui, diff.external and a textconv, a change to comments
     and help alone, a code change with the trailer, naming the script, the trailer in a paragraph
-    with a Closes line, and a code change to a script not in the list. In a linked worktree of it,
-    require a refusal to name the COMMIT_EDITMSG that git rev-parse --git-path gives. Then commit
-    through the commit-msg hook in a copy of .githooks, once refused and once let through, so the
-    hook's wiring is held too.
+    with a Closes line, a code change to a script not in the list, and a merge of a gate change. In
+    a linked worktree of it, require a refusal to name the COMMIT_EDITMSG that git rev-parse
+    --git-path gives. Then commit through the commit-msg hook in a copy of .githooks, once refused
+    and once let through, so the hook's wiring is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -133,6 +135,13 @@ function Invoke-DatedLineCheck {
     <#  @{ Code = 0 or 1; Lines = what the run prints } for the commit staged at $Root.  #>
     param([Parameter(Mandatory)] [string] $Root, [Parameter(Mandatory)] [string] $MessageFile)
     $lines = [Collections.Generic.List[string]]::new()
+    # A merge: its commits were each checked as they were made, one by its trailer perhaps, and
+    # its diff against the first parent would read them all again without their messages.
+    git -C $Root rev-parse --verify --quiet MERGE_HEAD 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        $lines.Add('OK - dated-line: a merge is being made, and its commits were each checked as they were made, so it is not read.')
+        return @{ Code = 0; Lines = $lines }
+    }
     $base = git -C $Root rev-parse --verify --quiet 'HEAD^{commit}' 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $base) { $base = $EMPTY_TREE }
     $staged = @(git -C $Root -c core.quotePath=false diff --cached --name-only --no-renames $base)
@@ -360,6 +369,18 @@ try {
     git -C $repo config --unset color.ui
     git -C $repo config --unset diff.external
     git -C $repo config --unset diff.bad.textconv
+
+    # A merge of a branch whose gate change was let through by its trailer: MERGE_HEAD stands while
+    # the merge commit's message is checked, and the merge is not read again.
+    git -C $repo checkout -q -b side 2>&1 | Out-Null
+    Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+    git -C $repo commit -q -a -m "side`n`nDated-Line: none, a stand-in" 2>&1 | Out-Null
+    git -C $repo checkout -q main 2>&1 | Out-Null
+    Test-Case 'a merge of a gate change is let through' 0 $plain 'a merge' {
+        git -C $repo merge -q --no-ff --no-commit side 2>&1 | Out-Null
+    }
+    git -C $repo merge --abort 2>&1 | Out-Null
+    git -C $repo branch -q -D side 2>&1 | Out-Null
 
     # A linked worktree, where .git is a file: the refusal names the message file git keeps there.
     $cases++
