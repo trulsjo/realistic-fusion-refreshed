@@ -204,7 +204,7 @@ function Invoke-DatedLineCheck {
     }
     # Added dated lines less removed ones, so a reworded line nets none.
     # The clone's colour, external-diff and textconv settings would hide the lines from the match.
-    $diff = @(git -C $Root diff --cached -U0 --no-renames --no-color --no-ext-diff --no-textconv $base -- $STATE_DETAIL)
+    $diff = @(git -C $Root diff --cached -U0 --no-renames --no-color --no-ext-diff --no-textconv $base -- $STATE_DETAIL 2>$null)
     if ($LASTEXITCODE -ne 0) {
         $lines.Add("dated-line: git diff --cached of $STATE_DETAIL failed, so whether it gains a dated line was NOT checked.")
         return @{ Code = 1; Lines = $lines }
