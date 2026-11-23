@@ -69,11 +69,12 @@
     line reworded with none added, a date in an added line that does not open it, a Dated-Line: none
     that does not open its line, a string whose case alone changes, a staged list git cannot read,
     refused as NOT checked, a gate left with an unclosed block comment and one whose name git quotes
-    and one whose name holds a line break, each staged in the index alone; and to pass a code change
-    with a dated line, one under color.ui, diff.external and a textconv, a change to comments and
-    help alone, a code change with the trailer, naming the script, the trailer in a paragraph with a
-    Closes line, a code change to a script not in the list, and a merge of a gate change. In a
-    linked worktree of it, require a refusal to name the COMMIT_EDITMSG that git rev-parse
+    and one whose name holds a line break, each staged in the index alone, and a gate change beside
+    the page staged as a blob the repository lacks, refused as NOT checked; and to pass a code
+    change with a dated line, one under color.ui, diff.external and a textconv, a change to comments
+    and help alone, a code change with the trailer, naming the script, the trailer in a paragraph
+    with a Closes line, a code change to a script not in the list, and a merge of a gate change. In
+    a linked worktree of it, require a refusal to name the COMMIT_EDITMSG that git rev-parse
     --git-path gives. Then commit through the commit-msg hook in a copy of .githooks, once refused
     and once let through, so the hook's wiring is held too.
 
@@ -414,6 +415,24 @@ try {
         "OK - dated-line -SelfTest: a gate whose name git quotes is read by its name (exit 1)."
     } else {
         "FAILED - dated-line -SelfTest: a gate whose name git quotes gave exit $($result.Code), wanted 1 naming it:"
+        $result.Lines | ForEach-Object { "    $_" }
+        $failures++
+    }
+    git -C $repo reset -q --hard HEAD 2>&1 | Out-Null
+
+    # The page staged as a blob the repository lacks, beside a gate change: the staged list reads
+    # names alone and passes, and the page's own diff fails, so only that diff can refuse it.
+    $cases++
+    Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+    git -C $repo add -A 2>&1 | Out-Null
+    git -C $repo update-index --cacheinfo "100644,$('1' * 40),$STATE_DETAIL" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "could not stage $STATE_DETAIL as a missing blob at $repo" }
+    [IO.File]::WriteAllText((Join-Path $scratch 'message.txt'), $plain)
+    $result = Invoke-DatedLineCheck -Root $repo -MessageFile (Join-Path $scratch 'message.txt')
+    if ($result.Code -eq 1 -and ($result.Lines -join "`n").Contains("of $STATE_DETAIL failed")) {
+        "OK - dated-line -SelfTest: a page git cannot diff is refused as NOT checked (exit 1)."
+    } else {
+        "FAILED - dated-line -SelfTest: a page git cannot diff gave exit $($result.Code), wanted 1 naming its failed diff:"
         $result.Lines | ForEach-Object { "    $_" }
         $failures++
     }
