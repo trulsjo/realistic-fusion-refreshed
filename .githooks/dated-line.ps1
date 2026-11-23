@@ -65,9 +65,10 @@
     refused as NOT checked, and a gate left with an unclosed block comment; and to pass a code
     change with a dated line, one under color.ui, diff.external and a textconv, a change to comments
     and help alone, a code change with the trailer, naming the script, the trailer in a paragraph
-    with a Closes line, and a code change to a script not in the list. Then commit through the
-    commit-msg hook in a copy of .githooks, once refused and once let through, so the hook's wiring
-    is held too.
+    with a Closes line, and a code change to a script not in the list. In a linked worktree of it,
+    require a refusal to name the COMMIT_EDITMSG that git rev-parse --git-path gives. Then commit
+    through the commit-msg hook in a copy of .githooks, once refused and once let through, so the
+    hook's wiring is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -180,7 +181,11 @@ function Invoke-DatedLineCheck {
     }
     $lines.Add("dated-line: refused. $named changes a gate's code, outside its comments and help, and $STATE_DETAIL gains no dated line, one opening '- YYYY-MM-DD'.")
     $lines.Add("dated-line: CLAUDE.md's State section: a change to a gate adds a dated line at the foot of that page, in the commit that changes the gate. Stage the line, or give the message a 'Dated-Line: none' trailer where the change needs none.")
-    $lines.Add('dated-line: the message is kept, so `git commit -e -F .git/COMMIT_EDITMSG` reopens it.')
+    # git's own path for the file, as .git is a file in a linked worktree and the message is kept
+    # under the main checkout's git directory.
+    $editMsg = git -C $Root rev-parse --git-path COMMIT_EDITMSG 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $editMsg) { $editMsg = '.git/COMMIT_EDITMSG' }
+    $lines.Add("dated-line: the message is kept, so ``git commit -e -F $editMsg`` reopens it.")
     @{ Code = 1; Lines = $lines }
 }
 
@@ -355,6 +360,25 @@ try {
     git -C $repo config --unset color.ui
     git -C $repo config --unset diff.external
     git -C $repo config --unset diff.bad.textconv
+
+    # A linked worktree, where .git is a file: the refusal names the message file git keeps there.
+    $cases++
+    $linked = Join-Path $scratch 'linked'
+    git -C $repo worktree add -q --detach $linked 2>&1 | Out-Null
+    $editMsg = git -C $linked rev-parse --git-path COMMIT_EDITMSG
+    [IO.File]::WriteAllText((Join-Path $linked 'scripts/ship-check.ps1'), $codeEdit)
+    git -C $linked add -A 2>&1 | Out-Null
+    [IO.File]::WriteAllText((Join-Path $scratch 'message.txt'), $plain)
+    $result = Invoke-DatedLineCheck -Root $linked -MessageFile (Join-Path $scratch 'message.txt')
+    $named = ($result.Lines -join "`n").Contains("git commit -e -F $editMsg``")
+    if ($result.Code -eq 1 -and $editMsg -notmatch '^\.git/' -and $named) {
+        "OK - dated-line -SelfTest: a refusal in a linked worktree names its message file, $editMsg."
+    } else {
+        "FAILED - dated-line -SelfTest: a refusal in a linked worktree gave exit $($result.Code), wanted 1 naming ${editMsg}:"
+        $result.Lines | ForEach-Object { "    $_" }
+        $failures++
+    }
+    git -C $repo worktree remove --force $linked 2>&1 | Out-Null
 
     # The hook's wiring: a commit through a copy of commit-msg, which finds no shared message
     # check in this repository's vendor/ and says so, and then runs this script.
