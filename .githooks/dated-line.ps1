@@ -20,7 +20,9 @@
     script, the one at HEAD and the one in the index, is read by PowerShell's own tokenizer, its
     comment tokens dropped, a help block among them, and each run of line ends taken as one; the
     two sequences are compared. A #Requires line is a comment token that PowerShell acts on, so it
-    is kept as code. So an edit to a comment or to help, a comment line added or removed, and a
+    is kept as code, and so is each parse error the tokenizer reports, by its error ID, so a script
+    left with an unclosed block comment, whose rest the tokenizer gives as one comment token, is a
+    code change. So an edit to a comment or to help, a comment line added or removed, and a
     change of indent or of spacing inside a line pass, and a changed string, a printed message or a
     self-test's label among them, is code. A script added or deleted is a code change whatever it
     holds, since one side is not there.
@@ -54,7 +56,8 @@
     Build a scratch repository in the temp directory and require the check to refuse a code change
     to a gate with no dated line, a code change to a check-*.ps1, a gate added, a gate deleted, a
     line added without a date, a trailer whose value is not none, a changed #Requires line, a gate
-    added that holds only comments and a dated line reworded with none added; and to pass a code
+    added that holds only comments, a dated line reworded with none added and a gate left with an
+    unclosed block comment; and to pass a code
     change with a dated line, a change to comments and help alone, a code change with the trailer,
     naming the script, the trailer in a paragraph with a Closes line, and a code change to a script
     not in the list. Then commit through the commit-msg hook
@@ -106,6 +109,9 @@ function Get-CodeToken([string] $Text) {
         $atLineEnd = $false
     }
     if ($out.Count -and $out[$out.Count - 1] -eq '<line end>') { $out.RemoveAt($out.Count - 1) }
+    # A parse error is code: an unclosed <# comes back as a Comment token holding the rest of the
+    # script, which the loop drops, so the error is what tells that script from a sound one.
+    foreach ($e in $errors) { $out.Add("ParseError: $($e.ErrorId)") }
     $out -join "`n"
 }
 
@@ -296,6 +302,9 @@ try {
     }
     Test-Case 'the trailer in a paragraph with a Closes line passes' 0 "subject`n`nA body.`n`nCloses #1`nDated-Line: none, a stand-in`n" 'trailer was honoured' {
         Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+    }
+    Test-Case 'a gate left with an unclosed block comment is refused' 1 $plain 'scripts/ship-check.ps1 changes' {
+        Write-Fixture 'scripts/ship-check.ps1' ($gate + "`n<# never closed`n")
     }
 
     # The hook's wiring: a commit through a copy of commit-msg, which finds no shared message
