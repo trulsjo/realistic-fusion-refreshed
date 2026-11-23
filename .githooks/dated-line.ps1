@@ -48,12 +48,14 @@
     as part of the string's one token, so an edit to that comment alone is refused as code; an amend
     is read against the commit it amends, so amending a code change into a commit that already
     carries its dated line is refused and wants the trailer; a merge, while MERGE_HEAD stands, is
-    let through unread, as its commits were each checked as they were made, so a gate's code that a
-    conflict's resolution changes is not read; a change to a gate that is not a script in the list,
-    a shared check in vendor/, gates.yml or a hook, is not read; a token the tokenizer gives a
-    different text for the same code, and joining two lines that a line end kept apart as two
-    statements, are not told from a change of meaning in one direction or the other. A commit made
-    with --no-verify runs no hook, and the workflow does not run this over a pull request.
+    let through unread: a commit it brings in was checked only where it was made with this hook, and
+    not where it was made with --no-verify, in a clone without the hook or by someone else, and a
+    gate's code that a conflict's resolution changes is not read; a change to a gate that is not a
+    script in the list, a shared check in vendor/, gates.yml or a hook, is not read; a token the
+    tokenizer gives a different text for the same code, and joining two lines that a line end kept
+    apart as two statements, are not told from a change of meaning in one direction or the other. A
+    commit made with --no-verify runs no hook, and the workflow does not run this over a pull
+    request.
 
 .PARAMETER MessageFile
     The file holding the commit message, as git hands it to commit-msg.
@@ -162,11 +164,12 @@ function Invoke-DatedLineCheck {
     <#  @{ Code = 0 or 1; Lines = what the run prints } for the commit staged at $Root.  #>
     param([Parameter(Mandatory)] [string] $Root, [Parameter(Mandatory)] [string] $MessageFile)
     $lines = [Collections.Generic.List[string]]::new()
-    # A merge: its commits were each checked as they were made, one by its trailer perhaps, and
-    # its diff against the first parent would read them all again without their messages.
+    # A merge: its diff against the first parent would read the commits it brings in again
+    # without their messages, refusing one its trailer let through where it was made. A commit
+    # made without this hook was never checked, which the header names.
     git -C $Root rev-parse --verify --quiet MERGE_HEAD 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) {
-        $lines.Add('OK - dated-line: a merge is being made, and its commits were each checked as they were made, so it is not read.')
+        $lines.Add('OK - dated-line: a merge is being made, so it is not read; a commit it brings in was checked only where it was made with this hook.')
         return @{ Code = 0; Lines = $lines }
     }
     $base = git -C $Root rev-parse --verify --quiet 'HEAD^{commit}' 2>$null
