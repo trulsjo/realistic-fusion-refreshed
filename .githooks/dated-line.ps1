@@ -8,9 +8,9 @@
     the commit that changes the gate." The commit-msg hook runs this after the message check.
 
     WHY commit-msg AND NOT pre-commit. pre-commit runs before git writes the message, so it cannot
-    read the trailer; commit-msg is handed the message and still sees the index the commit is
-    made from. A check split between the two would have to pass what pre-commit found to
-    commit-msg in a file, so the whole of it sits in commit-msg.
+    read the trailer; commit-msg is handed the message and still sees the index the commit is made
+    from. A check split between the two would have to pass what pre-commit found to commit-msg in a
+    file, so the whole of it sits in commit-msg.
 
     THE GATE SCRIPTS are $GATE_SCRIPTS below, and nowhere else: scripts/ship-check.ps1,
     scripts/load-check.ps1, every scripts/check-*.ps1 and scripts/run-gates.ps1. A staged path is
@@ -18,33 +18,35 @@
 
     A CODE CHANGE is one that moves a token outside the comments. Each version of a staged gate
     script, the one at HEAD and the one in the index, is read by PowerShell's own tokenizer, its
-    comment tokens dropped, a help block among them, and each run of line ends taken as one; the
-    two sequences are compared. A #Requires line is a comment token that PowerShell acts on, so it
-    is kept as code, and so is each parse error the tokenizer reports, by its error ID, so a script
+    comment tokens dropped, a help block among them, and each run of line ends taken as one; the two
+    sequences are compared. A #Requires line is a comment token that PowerShell acts on, so it is
+    kept as code, and so is each parse error the tokenizer reports, by its error ID, so a script
     left with an unclosed block comment, whose rest the tokenizer gives as one comment token, is a
-    code change. So an edit to a comment or to help, a comment line added or removed, and a
-    change of indent or of spacing inside a line pass, and a changed string, a printed message or a
+    code change. So an edit to a comment or to help, a comment line added or removed, and a change
+    of indent or of spacing inside a line pass, and a changed string, a printed message or a
     self-test's label among them, is code. A script added or deleted is a code change whatever it
     holds, since one side is not there.
 
     A DATED LINE is a line of docs/agents/state-detail.md that opens with "- " and a date written
     YYYY-MM-DD. The page gains one when the index, against HEAD, adds more such lines than it
-    removes, so rewording a dated line already there gains none. Its words, its ticket and where it
-    stands are not read.
+    removes, so rewording a dated line already there gains none. That diff is asked for with no
+    colour, no external diff program and no textconv driver, whatever the clone sets, and a diff
+    that fails refuses the commit as NOT checked. Its words, its ticket and where it stands are not
+    read.
 
-    THE WAY OUT is a line of the message, anywhere in it, that opens with Dated-Line, in any case,
-    a colon and the word none, as `Dated-Line: none, the change
-    is a rename`. It is written as a trailer, but is read on any line, since git interpret-trailers
-    reads none in a last paragraph that also holds a `Closes #N` line. The run says it honoured it,
-    and names the scripts it let through.
+    THE WAY OUT is a line of the message, anywhere in it, that opens with Dated-Line, in any case, a
+    colon and the word none, as `Dated-Line: none, the change is a rename`. It is written as a
+    trailer, but is read on any line, since git interpret-trailers reads none in a last paragraph
+    that also holds a `Closes #N` line. The run says it honoured it, and names the scripts it let
+    through.
 
     WHAT IT CANNOT SEE: an amend is read against the commit it amends, so amending a code change
-    into a commit that already carries its dated line is refused and wants the trailer; a merge
-    is read against its first parent; a change to a gate that is not a script in the list, a
-    shared check in vendor/, gates.yml or a hook, is not read; a token the tokenizer gives a
-    different text for the same code, and joining two lines that a line end kept apart as two
-    statements, are not told from a change of meaning in one direction or the other. A commit
-    made with --no-verify runs no hook, and the workflow does not run this over a pull request.
+    into a commit that already carries its dated line is refused and wants the trailer; a merge is
+    read against its first parent; a change to a gate that is not a script in the list, a shared
+    check in vendor/, gates.yml or a hook, is not read; a token the tokenizer gives a different text
+    for the same code, and joining two lines that a line end kept apart as two statements, are not
+    told from a change of meaning in one direction or the other. A commit made with --no-verify runs
+    no hook, and the workflow does not run this over a pull request.
 
 .PARAMETER MessageFile
     The file holding the commit message, as git hands it to commit-msg.
@@ -57,11 +59,11 @@
     to a gate with no dated line, a code change to a check-*.ps1, a gate added, a gate deleted, a
     line added without a date, a trailer whose value is not none, a changed #Requires line, a gate
     added that holds only comments, a dated line reworded with none added and a gate left with an
-    unclosed block comment; and to pass a code
-    change with a dated line, a change to comments and help alone, a code change with the trailer,
-    naming the script, the trailer in a paragraph with a Closes line, and a code change to a script
-    not in the list. Then commit through the commit-msg hook
-    in a copy of .githooks, once refused and once let through, so the hook's wiring is held too.
+    unclosed block comment; and to pass a code change with a dated line, one under color.ui,
+    diff.external and a textconv, a change to comments and help alone, a code change with the
+    trailer, naming the script, the trailer in a paragraph with a Closes line, and a code change to
+    a script not in the list. Then commit through the commit-msg hook in a copy of .githooks, once
+    refused and once let through, so the hook's wiring is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -153,7 +155,12 @@ function Invoke-DatedLineCheck {
         return @{ Code = 0; Lines = $lines }
     }
     # Added dated lines less removed ones, so a reworded line nets none.
-    $diff = @(git -C $Root diff --cached -U0 --no-renames $base -- $STATE_DETAIL)
+    # The clone's colour, external-diff and textconv settings would hide the lines from the match.
+    $diff = @(git -C $Root diff --cached -U0 --no-renames --no-color --no-ext-diff --no-textconv $base -- $STATE_DETAIL)
+    if ($LASTEXITCODE -ne 0) {
+        $lines.Add("dated-line: git diff --cached of $STATE_DETAIL failed, so whether it gains a dated line was NOT checked.")
+        return @{ Code = 1; Lines = $lines }
+    }
     $added = @($diff | Where-Object { $_ -match '^\+- \d{4}-\d{2}-\d{2}\b' }).Count
     $removed = @($diff | Where-Object { $_ -match '^-- \d{4}-\d{2}-\d{2}\b' }).Count
     $named = $code -join ', '
@@ -306,6 +313,19 @@ try {
     Test-Case 'a gate left with an unclosed block comment is refused' 1 $plain 'scripts/ship-check.ps1 changes' {
         Write-Fixture 'scripts/ship-check.ps1' ($gate + "`n<# never closed`n")
     }
+    # A clone's own diff settings: colour codes before each line, and an external diff program,
+    # would each hide the dated line from a diff that does not turn them off.
+    git -C $repo config color.ui always
+    git -C $repo config diff.external false
+    git -C $repo config diff.bad.textconv false
+    Test-Case 'a dated line is read under color.ui, diff.external and a textconv' 0 $plain 'gains a dated line' {
+        Write-Fixture '.gitattributes' "docs/agents/state-detail.md diff=bad`n"
+        Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+        Write-Fixture $STATE_DETAIL $dated
+    }
+    git -C $repo config --unset color.ui
+    git -C $repo config --unset diff.external
+    git -C $repo config --unset diff.bad.textconv
 
     # The hook's wiring: a commit through a copy of commit-msg, which finds no shared message
     # check in this repository's vendor/ and says so, and then runs this script.
