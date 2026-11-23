@@ -14,8 +14,10 @@
 
     THE GATE SCRIPTS are $GATE_SCRIPTS below, and nowhere else: scripts/ship-check.ps1,
     scripts/load-check.ps1, every scripts/check-*.ps1 and scripts/run-gates.ps1. A staged path is
-    read against them with -like, the staged list read NUL-separated, so a name git would quote, one
-    holding a double quote, a backslash or a control character, is read as it is.
+    read against them with -like, the staged list read NUL-separated from git's output as bytes, not
+    split at line ends as PowerShell splits a command's output, so a name git would quote, one
+    holding a double quote, a backslash or a control character, a line break among them, is read as
+    it is.
 
     A CODE CHANGE is one that moves a token outside the comments. Each version of a staged gate
     script, the one at HEAD and the one in the index, is read by PowerShell's own tokenizer, its
@@ -66,14 +68,14 @@
     none, a changed #Requires line, a gate added that holds only comments and one deleted, a dated
     line reworded with none added, a date in an added line that does not open it, a Dated-Line: none
     that does not open its line, a string whose case alone changes, a staged list git cannot read,
-    refused as NOT checked, a gate left with an unclosed block comment and one whose name git
-    quotes, staged in the index alone; and to pass a code change with a dated line, one under
-    color.ui, diff.external and a textconv, a change to comments and help alone, a code change with
-    the trailer, naming the script, the trailer in a paragraph with a Closes line, a code change to
-    a script not in the list, and a merge of a gate change. In a linked worktree of it, require a
-    refusal to name the COMMIT_EDITMSG that git rev-parse --git-path gives. Then commit through the
-    commit-msg hook in a copy of .githooks, once refused and once let through, so the hook's wiring
-    is held too.
+    refused as NOT checked, a gate left with an unclosed block comment and one whose name git quotes
+    and one whose name holds a line break, each staged in the index alone; and to pass a code change
+    with a dated line, one under color.ui, diff.external and a textconv, a change to comments and
+    help alone, a code change with the trailer, naming the script, the trailer in a paragraph with a
+    Closes line, a code change to a script not in the list, and a merge of a gate change. In a
+    linked worktree of it, require a refusal to name the COMMIT_EDITMSG that git rev-parse
+    --git-path gives. Then commit through the commit-msg hook in a copy of .githooks, once refused
+    and once let through, so the hook's wiring is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -127,6 +129,26 @@ function Get-CodeToken([string] $Text) {
     $out -join "`n"
 }
 
+function Get-GitBytes([string] $Root, [string[]] $GitArgs) {
+    <#  @{ Text = git's standard output, decoded as UTF-8 from its bytes; Code = its exit code }.
+        PowerShell splits a native command's output at line ends, which loses a line break held in a
+        NUL-separated name, so the output is read from the process's stream whole.  #>
+    $start = [Diagnostics.ProcessStartInfo]::new('git')
+    $start.ArgumentList.Add('-C')
+    $start.ArgumentList.Add($Root)
+    foreach ($a in $GitArgs) { $start.ArgumentList.Add($a) }
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $start.UseShellExecute = $false
+    $process = [Diagnostics.Process]::Start($start)
+    $buffer = [IO.MemoryStream]::new()
+    $errorRead = $process.StandardError.ReadToEndAsync()
+    $process.StandardOutput.BaseStream.CopyTo($buffer)
+    $process.WaitForExit()
+    [void] $errorRead.Result
+    @{ Text = [Text.Encoding]::UTF8.GetString($buffer.ToArray()); Code = $process.ExitCode }
+}
+
 function Get-BlobText([string] $Root, [string] $Spec) {
     <#  The text of the object $Spec names, or $null where it names none.  #>
     $lines = @(git -C $Root show $Spec 2>$null)
@@ -149,9 +171,9 @@ function Invoke-DatedLineCheck {
     if ($LASTEXITCODE -ne 0 -or -not $base) { $base = $EMPTY_TREE }
     # NUL-separated, as git quotes a name holding a double quote, a backslash or a control
     # character even with core.quotePath off, and a quoted name matches no pattern.
-    $listed = (git -C $Root diff --cached --name-only -z --no-renames $base) -join ''
-    $listedAt = $LASTEXITCODE
-    $staged = @($listed -split "`0" | Where-Object { $_ })
+    $listed = Get-GitBytes $Root @('diff', '--cached', '--name-only', '-z', '--no-renames', $base)
+    $listedAt = $listed.Code
+    $staged = @($listed.Text -split "`0" | Where-Object { $_ })
     if ($listedAt -ne 0) {
         $lines.Add("dated-line: git diff --cached failed, so whether a gate's code changed was NOT checked.")
         return @{ Code = 1; Lines = $lines }
@@ -392,6 +414,24 @@ try {
         "OK - dated-line -SelfTest: a gate whose name git quotes is read by its name (exit 1)."
     } else {
         "FAILED - dated-line -SelfTest: a gate whose name git quotes gave exit $($result.Code), wanted 1 naming it:"
+        $result.Lines | ForEach-Object { "    $_" }
+        $failures++
+    }
+    git -C $repo reset -q --hard HEAD 2>&1 | Out-Null
+
+    # A gate whose name holds a line break, which a read split at line ends would lose: without it
+    # the name is scripts/check-foo.ps1, a gate the change leaves as it is.
+    $cases++
+    $lfName = "scripts/check-`nfoo.ps1"
+    $blob = $gate.Replace('$x = 1', '$x = 3') | git -C $repo hash-object -w --stdin
+    git -C $repo -c core.protectNTFS=false update-index --add --cacheinfo "100644,$blob,$lfName" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "could not stage a gate whose name holds a line break at $repo" }
+    [IO.File]::WriteAllText((Join-Path $scratch 'message.txt'), $plain)
+    $result = Invoke-DatedLineCheck -Root $repo -MessageFile (Join-Path $scratch 'message.txt')
+    if ($result.Code -eq 1 -and ($result.Lines -join "`n").Contains("$lfName changes")) {
+        "OK - dated-line -SelfTest: a gate whose name holds a line break is read by its name (exit 1)."
+    } else {
+        "FAILED - dated-line -SelfTest: a gate whose name holds a line break gave exit $($result.Code), wanted 1 naming it:"
         $result.Lines | ForEach-Object { "    $_" }
         $failures++
     }
