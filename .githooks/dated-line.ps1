@@ -47,18 +47,18 @@
     WHAT IT CANNOT SEE: the recovery command a refusal prints double-quotes the message file's path,
     so a path holding a space stays one argument, but a character the shell it is pasted into treats
     as special inside double quotes is not kept as it is: a $ or a backtick in bash or PowerShell,
-    and a ! in an interactive bash; a comment inside a $( ) of a double-quoted string, which the
-    tokenizer gives as part of the string's one token, so an edit to that comment alone is refused
-    as code; an amend is read against the commit it amends, so amending a code change into a commit
-    that already carries its dated line is refused and wants the trailer; a merge, while MERGE_HEAD
-    stands, is let through unread: a commit it brings in was checked only where it was made with
-    this hook, and not where it was made with --no-verify or in a clone without the hook, and a
-    gate's code that a conflict's resolution changes is not read; a change to a gate that is not a
-    script in the list, a shared check in vendor/, gates.yml or a hook, is not read; a token the
-    tokenizer gives a different text for the same code, and joining two lines that a line end kept
-    apart as two statements, are not told from a change of meaning in one direction or the other. A
-    commit made with --no-verify runs no hook, and the workflow does not run this over a pull
-    request.
+    and a ! in a bash with history expansion on; a comment inside a $( ) of a double-quoted string,
+    which the tokenizer gives as part of the string's one token, so an edit to that comment alone is
+    refused as code; an amend is read against the commit it amends, so amending a code change into a
+    commit that already carries its dated line is refused and wants the trailer; a merge, while
+    MERGE_HEAD stands, is let through unread: a commit it brings in was checked only where it was
+    made with this hook, and not where it was made with --no-verify or in a clone without the hook,
+    and a gate's code that a conflict's resolution changes is not read; a change to a gate that is
+    not a script in the list, a shared check in vendor/, gates.yml or a hook, is not read; a token
+    the tokenizer gives a different text for the same code, and joining two lines that a line end
+    kept apart as two statements, are not told from a change of meaning in one direction or the
+    other. A commit made with --no-verify runs no hook, and the workflow does not run this over a
+    pull request.
 
 .PARAMETER MessageFile
     The file holding the commit message, as git hands it to commit-msg.
