@@ -59,13 +59,15 @@
     Build a scratch repository in the temp directory and require the check to refuse a code change
     to a gate with no dated line, a code change to a check-*.ps1, a gate added, a gate deleted, a
     line added without a date, a trailer whose value is not none, one whose value only starts with
-    none, a changed #Requires line, a gate added that holds only comments, a dated line reworded
-    with none added and a gate left with an unclosed block comment; and to pass a code change with a
-    dated line, one under color.ui, diff.external and a textconv, a change to comments and help
-    alone, a code change with the trailer, naming the script, the trailer in a paragraph with a
-    Closes line, and a code change to a script not in the list. Then commit through the commit-msg
-    hook in a copy of .githooks, once refused and once let through, so the hook's wiring is held
-    too.
+    none, a changed #Requires line, a gate added that holds only comments and one deleted, a dated
+    line reworded with none added, a date in an added line that does not open it, a Dated-Line: none
+    that does not open its line, a string whose case alone changes, a staged list git cannot read,
+    refused as NOT checked, and a gate left with an unclosed block comment; and to pass a code
+    change with a dated line, one under color.ui, diff.external and a textconv, a change to comments
+    and help alone, a code change with the trailer, naming the script, the trailer in a paragraph
+    with a Closes line, and a code change to a script not in the list. Then commit through the
+    commit-msg hook in a copy of .githooks, once refused and once let through, so the hook's wiring
+    is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -258,6 +260,7 @@ try {
     Write-Fixture 'scripts/ship-check.ps1' $gate
     Write-Fixture 'scripts/check-foo.ps1' $gate
     Write-Fixture 'scripts/other.ps1' $gate
+    Write-Fixture 'scripts/check-notes.ps1' "# Only notes, and no code.`n"
     Write-Fixture $STATE_DETAIL $detail
     git -C $repo add -A 2>&1 | Out-Null
     git -C $repo commit -q -m 'base' 2>&1 | Out-Null
@@ -316,6 +319,26 @@ try {
     Test-Case 'a trailer whose value only starts with none is refused' 1 "subject`n`nA body.`n`nDated-Line: none-of-the-above`n" 'refused' {
         Write-Fixture 'scripts/ship-check.ps1' $codeEdit
     }
+    Test-Case 'a dated line that does not open the line is refused' 1 $plain 'refused' {
+        Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+        Write-Fixture $STATE_DETAIL ($detail + "Moved on 2026-11-22, #913, in a sentence.`n")
+    }
+    Test-Case 'a Dated-Line: none that does not open its line is refused' 1 "subject`n`nSee the Dated-Line: none rule.`n" 'refused' {
+        Write-Fixture 'scripts/ship-check.ps1' $codeEdit
+    }
+    Test-Case 'a string whose case alone changes is code' 1 $plain 'scripts/ship-check.ps1 changes' {
+        Write-Fixture 'scripts/ship-check.ps1' $gate.Replace('"checked $x"', '"Checked $x"')
+    }
+    Test-Case 'a gate deleted that holds only comments is refused' 1 $plain 'scripts/check-notes.ps1 changes' {
+        Remove-Item -LiteralPath (Join-Path $repo 'scripts/check-notes.ps1')
+    }
+    # An index of forty zero bytes, on which git diff --cached fails: the case's own reset fails
+    # on it too, so the index is rebuilt after.
+    Test-Case 'a staged list git cannot read is refused as NOT checked' 1 $plain 'was NOT checked' {
+        [IO.File]::WriteAllBytes((Join-Path $repo '.git/index'), [byte[]]::new(40))
+    }
+    Remove-Item -LiteralPath (Join-Path $repo '.git/index')
+    git -C $repo reset -q --hard HEAD 2>&1 | Out-Null
     Test-Case 'a gate left with an unclosed block comment is refused' 1 $plain 'scripts/ship-check.ps1 changes' {
         Write-Fixture 'scripts/ship-check.ps1' ($gate + "`n<# never closed`n")
     }
