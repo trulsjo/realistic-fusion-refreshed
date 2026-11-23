@@ -75,8 +75,9 @@
     and help alone, a code change with the trailer, naming the script, the trailer in a paragraph
     with a Closes line, a code change to a script not in the list, and a merge of a gate change. In
     a linked worktree of it, require a refusal to name the COMMIT_EDITMSG that git rev-parse
-    --git-path gives. Then commit through the commit-msg hook in a copy of .githooks, once refused
-    and once let through, so the hook's wiring is held too.
+    --git-path gives, quoted, as the scratch folder's name holds a space. Then commit through the
+    commit-msg hook in a copy of .githooks, once refused and once let through, so the hook's wiring
+    is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -224,7 +225,8 @@ function Invoke-DatedLineCheck {
     # under the main checkout's git directory.
     $editMsg = git -C $Root rev-parse --git-path COMMIT_EDITMSG 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $editMsg) { $editMsg = '.git/COMMIT_EDITMSG' }
-    $lines.Add("dated-line: the message is kept, so ``git commit -e -F $editMsg`` reopens it.")
+    # Quoted, as a path with a space would split into two arguments.
+    $lines.Add("dated-line: the message is kept, so ``git commit -e -F `"$editMsg`"`` reopens it.")
     @{ Code = 1; Lines = $lines }
 }
 
@@ -242,7 +244,9 @@ if (-not $SelfTest) {
 
 # ---------------------------------------------------------------------------------- self-test
 $hooks = $PSScriptRoot
-$scratch = Join-Path ([IO.Path]::GetTempPath()) "dated-line-selftest-$([guid]::NewGuid().ToString('N'))"
+# A space in the name, so the linked worktree's git directory has one, which the refusal's
+# recovery command must quote.
+$scratch = Join-Path ([IO.Path]::GetTempPath()) "dated-line selftest-$([guid]::NewGuid().ToString('N'))"
 # A hook's git environment would point the scratch repository's git at this one's index. Removed,
 # not set to $null, which PowerShell hands the setter as an empty string, a path git refuses.
 $saved = @{}
@@ -477,8 +481,8 @@ try {
     git -C $linked add -A 2>&1 | Out-Null
     [IO.File]::WriteAllText((Join-Path $scratch 'message.txt'), $plain)
     $result = Invoke-DatedLineCheck -Root $linked -MessageFile (Join-Path $scratch 'message.txt')
-    $named = ($result.Lines -join "`n").Contains("git commit -e -F $editMsg``")
-    if ($result.Code -eq 1 -and $editMsg -notmatch '^\.git/' -and $named) {
+    $named = ($result.Lines -join "`n").Contains("git commit -e -F `"$editMsg`"``")
+    if ($result.Code -eq 1 -and $editMsg -notmatch '^\.git/' -and $editMsg.Contains(' ') -and $named) {
         "OK - dated-line -SelfTest: a refusal in a linked worktree names its message file, $editMsg."
     } else {
         "FAILED - dated-line -SelfTest: a refusal in a linked worktree gave exit $($result.Code), wanted 1 naming ${editMsg}:"
