@@ -28,5 +28,7 @@ if [ ! -f "$CHECK" ]; then
 else
     pwsh -NoProfile -File "$CHECK" -ScopeFile "$ROOT/commit-scopes.txt" "$1" || status=1
 fi
+# -Root is the default git gives too, as it runs the hook at the top of the working tree; it is
+# passed so the check reads that tree whatever directory pwsh starts it in.
 pwsh -NoProfile -File "$ROOT/.githooks/dated-line.ps1" -Root "$ROOT" "$1" || status=1
 exit $status
