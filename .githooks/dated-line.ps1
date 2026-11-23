@@ -14,7 +14,8 @@
 
     THE GATE SCRIPTS are $GATE_SCRIPTS below, and nowhere else: scripts/ship-check.ps1,
     scripts/load-check.ps1, every scripts/check-*.ps1 and scripts/run-gates.ps1. A staged path is
-    read against them with -like.
+    read against them with -like, the staged list read NUL-separated, so a name git would quote, one
+    holding a double quote, a backslash or a control character, is read as it is.
 
     A CODE CHANGE is one that moves a token outside the comments. Each version of a staged gate
     script, the one at HEAD and the one in the index, is read by PowerShell's own tokenizer, its
@@ -64,13 +65,14 @@
     none, a changed #Requires line, a gate added that holds only comments and one deleted, a dated
     line reworded with none added, a date in an added line that does not open it, a Dated-Line: none
     that does not open its line, a string whose case alone changes, a staged list git cannot read,
-    refused as NOT checked, and a gate left with an unclosed block comment; and to pass a code
-    change with a dated line, one under color.ui, diff.external and a textconv, a change to comments
-    and help alone, a code change with the trailer, naming the script, the trailer in a paragraph
-    with a Closes line, a code change to a script not in the list, and a merge of a gate change. In
-    a linked worktree of it, require a refusal to name the COMMIT_EDITMSG that git rev-parse
-    --git-path gives. Then commit through the commit-msg hook in a copy of .githooks, once refused
-    and once let through, so the hook's wiring is held too.
+    refused as NOT checked, a gate left with an unclosed block comment and one whose name git
+    quotes, staged in the index alone; and to pass a code change with a dated line, one under
+    color.ui, diff.external and a textconv, a change to comments and help alone, a code change with
+    the trailer, naming the script, the trailer in a paragraph with a Closes line, a code change to
+    a script not in the list, and a merge of a gate change. In a linked worktree of it, require a
+    refusal to name the COMMIT_EDITMSG that git rev-parse --git-path gives. Then commit through the
+    commit-msg hook in a copy of .githooks, once refused and once let through, so the hook's wiring
+    is held too.
 
 .EXAMPLE
     pwsh -NoProfile -File .githooks/dated-line.ps1 -Root (git rev-parse --show-toplevel) .git/COMMIT_EDITMSG
@@ -144,8 +146,12 @@ function Invoke-DatedLineCheck {
     }
     $base = git -C $Root rev-parse --verify --quiet 'HEAD^{commit}' 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $base) { $base = $EMPTY_TREE }
-    $staged = @(git -C $Root -c core.quotePath=false diff --cached --name-only --no-renames $base)
-    if ($LASTEXITCODE -ne 0) {
+    # NUL-separated, as git quotes a name holding a double quote, a backslash or a control
+    # character even with core.quotePath off, and a quoted name matches no pattern.
+    $listed = (git -C $Root diff --cached --name-only -z --no-renames $base) -join ''
+    $listedAt = $LASTEXITCODE
+    $staged = @($listed -split "`0" | Where-Object { $_ })
+    if ($listedAt -ne 0) {
         $lines.Add("dated-line: git diff --cached failed, so whether a gate's code changed was NOT checked.")
         return @{ Code = 1; Lines = $lines }
     }
@@ -369,6 +375,26 @@ try {
     git -C $repo config --unset color.ui
     git -C $repo config --unset diff.external
     git -C $repo config --unset diff.bad.textconv
+
+    # A gate whose name git quotes even with core.quotePath off, a double quote in it: Windows
+    # refuses such a file, so it is staged in the index alone, from a blob of the gate's text, as
+    # a clone off Windows could hold it.
+    # Test-Case's git add -A would drop an entry with no file, so this case is written out.
+    $cases++
+    $blob = $gate | git -C $repo hash-object -w --stdin
+    # Git for Windows refuses the name too, by core.protectNTFS, so the case turns that off.
+    git -C $repo -c core.protectNTFS=false update-index --add --cacheinfo "100644,$blob,scripts/check-`"q`".ps1" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "could not stage a gate whose name git quotes at $repo" }
+    [IO.File]::WriteAllText((Join-Path $scratch 'message.txt'), $plain)
+    $result = Invoke-DatedLineCheck -Root $repo -MessageFile (Join-Path $scratch 'message.txt')
+    if ($result.Code -eq 1 -and ($result.Lines -join "`n").Contains('scripts/check-"q".ps1 changes')) {
+        "OK - dated-line -SelfTest: a gate whose name git quotes is read by its name (exit 1)."
+    } else {
+        "FAILED - dated-line -SelfTest: a gate whose name git quotes gave exit $($result.Code), wanted 1 naming it:"
+        $result.Lines | ForEach-Object { "    $_" }
+        $failures++
+    }
+    git -C $repo reset -q --hard HEAD 2>&1 | Out-Null
 
     # A merge of a branch whose gate change was let through by its trailer: MERGE_HEAD stands while
     # the merge commit's message is checked, and the merge is not read again.
