@@ -672,7 +672,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   but a `#Requires` line and each parse error kept, where this page gains no line opening
   `- YYYY-MM-DD`, net of any it removes, read past the clone's colour, external-diff and textconv
   settings, and no line of the message opens `Dated-Line: none` with `none` ending at a delimiter.
-  A merge is let through unread. Its `-SelfTest` passed 26 of 26 cases, one a commit through a
+  A merge is let through unread. Its `-SelfTest` passed 28 of 28 cases, one a commit through a
   copy of the hook, and the workflow's `pwsh` job runs it. Over
   `origin/main`'s last twelve commits it refused the four #911 commits #913 names, three more that
   changed its code, one of them only in three strings of the self-test, and let the one that
