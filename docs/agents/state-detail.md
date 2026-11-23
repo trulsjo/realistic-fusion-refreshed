@@ -669,9 +669,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-11-22, #913: the `commit-msg` hook runs `.githooks/dated-line.ps1` after the message check,
   and refuses a commit that changes the code of `ship-check.ps1`, `load-check.ps1`, a
   `check-*.ps1` or `run-gates.ps1`, read by PowerShell's tokenizer with comments and help dropped
-  but a `#Requires` line kept, where this page gains no line opening `- YYYY-MM-DD`, net of any it
-  removes, and no line of the message opens `Dated-Line: none`. Its `-SelfTest` passed 15 of 15
-  cases, one a commit through a copy of the hook, and the workflow's `pwsh` job runs it. Over
+  but a `#Requires` line and each parse error kept, where this page gains no line opening
+  `- YYYY-MM-DD`, net of any it removes, read past the clone's colour, external-diff and textconv
+  settings, and no line of the message opens `Dated-Line: none` with `none` ending at a delimiter.
+  A merge is let through unread. Its `-SelfTest` passed 26 of 26 cases, one a commit through a
+  copy of the hook, and the workflow's `pwsh` job runs it. Over
   `origin/main`'s last twelve commits it refused the four #911 commits #913 names, three more that
   changed its code, one of them only in three strings of the self-test, and let the one that
   changed comments and help alone pass.
