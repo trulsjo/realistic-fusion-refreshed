@@ -49,13 +49,12 @@
     is read against the commit it amends, so amending a code change into a commit that already
     carries its dated line is refused and wants the trailer; a merge, while MERGE_HEAD stands, is
     let through unread: a commit it brings in was checked only where it was made with this hook, and
-    not where it was made with --no-verify, in a clone without the hook or by someone else, and a
-    gate's code that a conflict's resolution changes is not read; a change to a gate that is not a
-    script in the list, a shared check in vendor/, gates.yml or a hook, is not read; a token the
-    tokenizer gives a different text for the same code, and joining two lines that a line end kept
-    apart as two statements, are not told from a change of meaning in one direction or the other. A
-    commit made with --no-verify runs no hook, and the workflow does not run this over a pull
-    request.
+    not where it was made with --no-verify or in a clone without the hook, and a gate's code that a
+    conflict's resolution changes is not read; a change to a gate that is not a script in the list,
+    a shared check in vendor/, gates.yml or a hook, is not read; a token the tokenizer gives a
+    different text for the same code, and joining two lines that a line end kept apart as two
+    statements, are not told from a change of meaning in one direction or the other. A commit made
+    with --no-verify runs no hook, and the workflow does not run this over a pull request.
 
 .PARAMETER MessageFile
     The file holding the commit message, as git hands it to commit-msg.
